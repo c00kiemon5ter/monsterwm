@@ -1,0 +1,67 @@
+I started this from catwm 31/12/10 ( https://bbs.archlinux.org/viewtopic.php?id=100215&p=1 )
+See dminiwm.c or config.h for thanks and licensing.
+
+
+Summary
+-------
+
+
+dminiwm is a very minimal and lightweight dynamic tiling window manager.
+    I will try to stay under 1000 SLOC.
+    Currently well under 900 lines with the config file included.
+
+
+Modes
+-----
+
+It allows the "normal" method of tiling window managers(with the new window as the master)
+    and with the new window opened at the bottom of the stack(like dwm's attach_aside)
+
+    There's vertical tiling mode:
+    --------------
+    |        | W |
+    |        |___|
+    | Master |   |
+    |        |___|
+    |        |   |
+    --------------
+
+    Fullscreen mode(which you'll know when you see it)
+
+    All accessible with keyboard shortcuts defined in the config.h file.
+    The window at the top of the stack can be resized on a per desktop bases.
+    Changing a tiling mode on one workspace doesn't affect the other workspaces.
+
+
+Recent Changes
+--------------
+
+7/9/11
+Added resizing of window at the bottom of the stack.
+
+Status
+------
+
+There are a couple more options in the config file than the original catwm.
+    Fixed the window manager crashing on a bad window error.
+    Fixed the keyboard shortcuts not working if numlock was on.
+    Added option to resize window on the top of the stack.
+
+
+Installation
+------------
+
+Need Xlib, then:
+    $ make
+    # make install
+    $ make clean
+
+
+Bugs
+----
+
+[ * No bugs for the moment ;) (I mean, no importants bugs ;)]
+
+
+Todo
+----
