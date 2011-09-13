@@ -21,6 +21,7 @@ It allows the "normal" method of tiling window managers(with the new window as t
     and with the new window opened at the bottom of the stack(like dwm's attach_aside)
 
  *There's vertical tiling mode:*
+
     --------------
     |        |   |
     |        |___|
@@ -30,6 +31,7 @@ It allows the "normal" method of tiling window managers(with the new window as t
     --------------
 
  *Horizontal tiling mode:*
+
     -------------
     |           |
     |  Master   |
@@ -38,6 +40,7 @@ It allows the "normal" method of tiling window managers(with the new window as t
     -------------
     
  *Grid tiling mode:*
+
     -------------
     |      |    |
     |      |    |
