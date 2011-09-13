@@ -1,8 +1,8 @@
-/* dminiwm.c [ 0.0.1 ]
+/* dminiwm.c [ 0.0.2 ]
 *
-*  I started this from catwm 31/12/10 with many thanks!
+*  I started this from catwm 31/12/10 
 *  Bad window error checking and numlock checking used from
-*  2wm at http://hg.suckless.org/2wm/ with many thanks !
+*  2wm at http://hg.suckless.org/2wm/
 *
 *  This program is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
@@ -68,6 +68,7 @@ static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
 static void decrease();
 static void destroynotify(XEvent *e);
+static void enternotify(XEvent *e);
 static void logger(const char* e);
 static unsigned long getcolor(const char* color);
 static void grabkeys();
@@ -76,6 +77,8 @@ static void increase();
 static void keypress(XEvent *e);
 static void kill_client();
 static void maprequest(XEvent *e);
+static void move_down();
+static void move_up();
 static void next_desktop();
 static void next_win();
 static void prev_desktop();
@@ -93,6 +96,7 @@ static void start();
 static void swap_master();
 static void tile();
 static void switch_fullscreen();
+static void switch_horizontal();
 static void switch_vertical();
 static void update_current();
 
@@ -122,6 +126,7 @@ static client *current;
 static void (*events[LASTEvent])(XEvent *e) = {
     [KeyPress] = keypress,
     [MapRequest] = maprequest,
+    [EnterNotify] = enternotify,
     [DestroyNotify] = destroynotify,
     [ConfigureNotify] = configurenotify,
     [ConfigureRequest] = configurerequest
@@ -170,6 +175,9 @@ void add_window(Window w) {
 
     current = c;
     save_desktop(current_desktop);
+    // for folow mouse
+    if(FOLLOW_MOUSE == 0)
+        XSelectInput(dis, c->win, EnterWindowMask);
 }
 
 void remove_window(Window w) {
@@ -257,6 +265,33 @@ void prev_win() {
             tile();
         update_current();
     }
+}
+
+void move_down() {
+    Window tmp;
+    if(current == NULL || current->next == NULL || current->win == head->win || current->prev == NULL)
+        return;
+
+    tmp = current->win;
+    current->win = current->next->win;
+    current->next->win = tmp;
+    //keep the moved window activated
+    next_win();
+    save_desktop(current_desktop);
+    tile();
+}
+
+void move_up() {
+    Window tmp;
+    if(current == NULL || current->prev == head || current->win == head->win) {
+        return;
+    }
+    tmp = current->win;
+    current->win = current->prev->win;
+    current->prev->win = tmp;
+    prev_win();
+    save_desktop(current_desktop);
+    tile();
 }
 
 void swap_master() {
@@ -407,6 +442,20 @@ void tile() {
                     XMoveResizeWindow(dis,c->win,0,0,sw-BORDER_WIDTH,sh-BORDER_WIDTH);
                 }
                 break;
+            case 2: /* Horizontal */
+            	// Master window
+                XMoveResizeWindow(dis,head->win,0,0,sw-BORDER_WIDTH,master_size - BORDER_WIDTH);
+
+                // Stack
+                for(c=head->next;c;c=c->next) ++n;
+                if(n == 1) growth = 0;
+                XMoveResizeWindow(dis,head->next->win,0,master_size + BORDER_WIDTH,(sw/n)+growth-BORDER_WIDTH,sh-master_size-(2*BORDER_WIDTH));
+                x = (sw/n)+growth;
+                for(c=head->next->next;c;c=c->next) {
+                    XMoveResizeWindow(dis,c->win,x,master_size + BORDER_WIDTH,(sw/n)-(growth/(n-1)) - BORDER_WIDTH,sh-master_size-(2*BORDER_WIDTH));
+                    x += (sw/n)-(growth/(n-1));
+                }
+                break;
         }
     }
 }
@@ -428,6 +477,15 @@ void update_current() {
     XSync(dis, False);
 }
 
+void switch_vertical() {
+    if(mode != 0) {
+        mode = 0;
+        master_size = sw * MASTER_SIZE;
+	tile();
+        update_current();
+    }
+}
+
 void switch_fullscreen() {
     if(mode != 1) {
         mode = 1;
@@ -436,10 +494,11 @@ void switch_fullscreen() {
     }
 }
 
-void switch_vertical() {
-    if(mode != 0) {
-        mode = 0;
-	tile();
+void switch_horizontal() {
+    if(mode != 2) {
+        mode = 2;
+        master_size = sh * MASTER_SIZE;
+        tile();
         update_current();
     }
 }
@@ -547,6 +606,22 @@ void destroynotify(XEvent *e) {
         i = 0;
     }
     select_desktop(tmp);
+}
+
+void enternotify(XEvent *e) {
+    client *c;
+    XCrossingEvent *ev = &e->xcrossing;
+
+    if(FOLLOW_MOUSE == 0) {
+        if((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
+            return;
+        for(c=head;c;c=c->next)
+           if(ev->window == c->win) {
+                current = c;
+                update_current();
+                return;
+       }
+   }
 }
 
 void send_kill_signal(Window w) { 

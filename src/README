@@ -8,7 +8,7 @@ Summary
 
 dminiwm is a very minimal and lightweight dynamic tiling window manager.
     I will try to stay under 1000 SLOC.
-    Currently well under 900 lines with the config file included.
+    Currently well under 800 lines with the config file included.
 
 
 Modes
@@ -24,6 +24,15 @@ It allows the "normal" method of tiling window managers(with the new window as t
     | Master |   |
     |        |___|
     |        |   |
+    --------------
+
+    There's horizontal tiling mode:
+    --------------
+    |            |
+    |   Master   |
+    |____________|
+    |       |    |
+    |   W   |    |
     --------------
 
     Fullscreen mode(which you'll know when you see it)
@@ -45,6 +54,7 @@ Status
 There are a couple more options in the config file than the original catwm.
     Fixed the window manager crashing on a bad window error.
     Fixed the keyboard shortcuts not working if numlock was on.
+    Added option to focus the window the mouse moves into
     Added option to resize window on the top of the stack.
 
 

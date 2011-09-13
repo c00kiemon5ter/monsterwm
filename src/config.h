@@ -1,8 +1,8 @@
- /* config.h for dminiwm.c [ 0..0.1 ]
+ /* config.h for dminiwm.c [ 0..0.2 ]
  *
- *  Started from catwm 31/12/10 with many thanks !
+ *  Started from catwm 31/12/10 
  *  Bad window error checking and numlock checking used from
- *  2wm at http://hg.suckless.org/2wm/ with many thanks !
+ *  2wm at http://hg.suckless.org/2wm/
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #define BORDER_WIDTH    2
 #define ATTACH_ASIDE    1  /* 0=TRUE, 1=New window is master */
 #define DEFAULT_MODE    0  /* 0 = Vertical, 1 = Fullscreen */
+#define FOLLOW_MOUSE    0  /* 1=Don't 0=Focus the window the mouse just entered */
 
 // Colors
 #define FOCUS           "#664422" // dkorange
@@ -44,9 +45,9 @@ const char* thunarcmd[]     = {"thunar",NULL};
 const char* firefoxcmd[]    = {"firefox",NULL};
 const char* conkerorcmd[]   = {"conkeror",NULL};
 const char* mailcmd[]       = {"thunderbird",NULL };
-const char* voldowncmd[]    = {"/home/pnewm/bin/voldown",NULL};
-const char* volupcmd[]      = {"/home/pnewm/bin/volup",NULL};
-const char* vols_what[]     = {"/home/pnewm/bin/volumes_what",NULL};
+const char* voldowncmd[]    = {"/home/pnewm/.bin/voldown",NULL};
+const char* volupcmd[]      = {"/home/pnewm/.bin/volup",NULL};
+const char* vols_what[]     = {"/home/pnewm/.bin/volumes_what",NULL};
 // for reboot and shutdown
 const char* rebootcmd[]     = {"sudo","reboot",NULL};
 const char* shutdowncmd[]   = {"sudo","shutdown","-h","now",NULL};
@@ -71,7 +72,10 @@ static key keys[] = {
     {  MOD1,             XK_Up,		 spawn,             {.com = volupcmd}},
     {  MOD1,             XK_Down,	 spawn,             {.com = voldowncmd}},
 // alt + shift + shortcut
+    {  MOD1|ShiftMask,   XK_j,          move_up,           {NULL}},
+    {  MOD1|ShiftMask,   XK_k,          move_down,         {NULL}},
     {  MOD1|ShiftMask,   XK_Return,     swap_master,       {NULL}},
+    {  MOD1|ShiftMask,   XK_h,          switch_horizontal, {NULL}},
     {  MOD1|ShiftMask,   XK_m,          switch_fullscreen, {NULL}},
     {  MOD1|ShiftMask,   XK_v,          switch_vertical,   {NULL}},
 // Control + alt + shortcut
