@@ -1,5 +1,8 @@
+13/9/11
+  Added back horizontal tiling, follow mouse and follow window
+
 12/9/11
-  Reurned to catwm tiling methods - with the ability to resize the window at the top of the stack
+  Returned to catwm tiling methods - with the ability to resize the window at the top of the stack
 
 9/9/11
    Fine tuned the next/prev desktop and the destroy notify functions

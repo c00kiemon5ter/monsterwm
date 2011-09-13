@@ -33,6 +33,7 @@
 #define ATTACH_ASIDE    1  /* 0=TRUE, 1=New window is master */
 #define DEFAULT_MODE    0  /* 0 = Vertical, 1 = Fullscreen */
 #define FOLLOW_MOUSE    0  /* 1=Don't 0=Focus the window the mouse just entered */
+#define FOLLOW_WINDOW   0  /* 1=Don't 0=Follow the window when moved to a different desktop */
 
 // Colors
 #define FOCUS           "#664422" // dkorange

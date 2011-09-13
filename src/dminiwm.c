@@ -393,6 +393,8 @@ void client_to_desktop(const Arg arg) {
     save_desktop(tmp2);
     tile();
     update_current();
+    if(FOLLOW_WINDOW == 0)
+        change_desktop(arg);
 }
 
 void save_desktop(int i) {
