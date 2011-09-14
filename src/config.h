@@ -1,4 +1,4 @@
- /* config.h for dminiwm.c [ 0..0.2 ]
+ /* config.h for dminiwm.c [ 0..0.3 ]
  *
  *  Started from catwm 31/12/10 
  *  Bad window error checking and numlock checking used from
@@ -60,22 +60,23 @@ const char* shutdowncmd[]   = {"sudo","shutdown","-h","now",NULL};
 
 // Shortcuts
 static key keys[] = {
-    // MOD               KEY              FUNCTION            ARGS
-    {  MOD1,             XK_h,           increase,          {NULL}},
-    {  MOD1,             XK_l,           decrease,          {NULL}},
-    {  MOD1,             XK_c,           kill_client,       {NULL}},
-    {  MOD1,             XK_j,           next_win,          {NULL}},
-    {  MOD1,             XK_k,           prev_win,          {NULL}},
-    {  MOD1,             XK_v,           spawn,             {.com = dmenucmd}},
-    {  MOD1,             XK_p,           grow_window,       {NULL}},
-    {  MOD1,             XK_o,           shrink_window,     {NULL}},
-    {  MOD1,             XK_Return,      spawn,             {.com = urxvtcmd}},
-    {  MOD1,             XK_Up,		 spawn,             {.com = volupcmd}},
-    {  MOD1,             XK_Down,	 spawn,             {.com = voldowncmd}},
+    // MOD               KEY             FUNCTION            ARGS
+    {  MOD1,             XK_h,          increase,          {NULL}},
+    {  MOD1,             XK_l,          decrease,          {NULL}},
+    {  MOD1,             XK_c,          kill_client,       {NULL}},
+    {  MOD1,             XK_j,          next_win,          {NULL}},
+    {  MOD1,             XK_k,          prev_win,          {NULL}},
+    {  MOD1,             XK_v,          spawn,             {.com = dmenucmd}},
+    {  MOD1,             XK_p,          grow_window,       {NULL}},
+    {  MOD1,             XK_o,          shrink_window,     {NULL}},
+    {  MOD1,             XK_Return,     spawn,             {.com = urxvtcmd}},
+    {  MOD1,             XK_Up,	        spawn,             {.com = volupcmd}},
+    {  MOD1,             XK_Down,       spawn,             {.com = voldowncmd}},
 // alt + shift + shortcut
     {  MOD1|ShiftMask,   XK_j,          move_up,           {NULL}},
     {  MOD1|ShiftMask,   XK_k,          move_down,         {NULL}},
     {  MOD1|ShiftMask,   XK_Return,     swap_master,       {NULL}},
+    {  MOD1|ShiftMask,   XK_g,          switch_grid,       {NULL}},
     {  MOD1|ShiftMask,   XK_h,          switch_horizontal, {NULL}},
     {  MOD1|ShiftMask,   XK_m,          switch_fullscreen, {NULL}},
     {  MOD1|ShiftMask,   XK_v,          switch_vertical,   {NULL}},

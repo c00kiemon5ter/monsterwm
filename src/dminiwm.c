@@ -96,6 +96,7 @@ static void start();
 static void swap_master();
 static void tile();
 static void switch_fullscreen();
+static void switch_grid();
 static void switch_horizontal();
 static void switch_vertical();
 static void update_current();
@@ -458,6 +459,65 @@ void tile() {
                     x += (sw/n)-(growth/(n-1));
                 }
                 break;
+            case 3: { // Grid
+                int xpos = 0;
+                int y = 0;
+                int wdt = 0;
+                int ht = 0;
+
+                for(c=head;c;c=c->next) {
+                    ++n;
+                    if((n == 1) || (n == 3) || (n == 5) || (n == 7))
+                        x += 1;
+                }
+                n = 0;
+                for(c=head;c;c=c->next) {
+                    ++n;
+                    if(x == 4) {
+                        wdt = (sw/3) - BORDER_WIDTH;
+                        ht  = (sh/3) - BORDER_WIDTH;
+                        if((n == 1) || (n == 4) || (n == 7))
+                            xpos = 0;
+                        if((n == 2) || (n == 5) || (n == 8))
+                            xpos = (sw/3) + BORDER_WIDTH;
+                        if((n == 3) || (n == 6) || (n == 9))
+                            xpos = (2*(sw/3)) + BORDER_WIDTH;
+                        if((n == 4) || (n == 7))
+                            y += (sh/3) + BORDER_WIDTH;
+                    } else 
+                    if(x == 3) {
+                        wdt = (sw/3) - BORDER_WIDTH;
+                        ht  = (sh/2) - BORDER_WIDTH;
+                        if((n == 1) || (n == 4))
+                            xpos = 0;
+                        if((n == 2) || (n == 5))
+                            xpos = (sw/3) + BORDER_WIDTH;
+                        if((n == 3) || (n == 6))
+                            xpos = (2*(sw/3)) + BORDER_WIDTH;
+                        if(n == 4)
+                            y = (sh/2) + BORDER_WIDTH;
+                    } else {
+                        if(n > 2)
+                            ht = (sh/x) - 2*BORDER_WIDTH;
+                        else
+                            ht = sh/x;
+                        if((n == 1) || (n == 3)) {
+                            xpos = 0;
+                            wdt = master_size - BORDER_WIDTH;
+                        }
+                        if((n == 2) || (n == 4)) {
+                            xpos = master_size+BORDER_WIDTH;
+                            wdt = (sw - master_size) - BORDER_WIDTH;
+                        }
+                        if(n == 3)
+                            y += (sh/x)+2*BORDER_WIDTH;
+                    }
+                    XMoveResizeWindow(dis,c->win,xpos,y,wdt,ht);
+                }
+            }
+            break;
+            default:
+                break;
         }
     }
 }
@@ -500,6 +560,15 @@ void switch_horizontal() {
     if(mode != 2) {
         mode = 2;
         master_size = sh * MASTER_SIZE;
+        tile();
+        update_current();
+    }
+}
+
+void switch_grid() {
+    if(mode != 3) {
+        mode = 3;
+        master_size = sw * MASTER_SIZE;
         tile();
         update_current();
     }
