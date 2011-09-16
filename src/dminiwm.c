@@ -419,49 +419,54 @@ void tile() {
     client *c;
     int n = 0;
     int x = 0;
+    int y = 0;
+
+    // For a top panel
+    if(TOP_PANEL == 0)
+        y = PANEL_HEIGHT;
+
 
     // If only one window
     if(head != NULL && head->next == NULL) {
-        XMoveResizeWindow(dis,head->win,0,0,sw-BORDER_WIDTH,sh-BORDER_WIDTH);
+        XMoveResizeWindow(dis,head->win,0,y,sw-BORDER_WIDTH,sh-BORDER_WIDTH);
     }
     else if(head != NULL) {
         switch(mode) {
             case 0: /* Vertical */
             	// Master window
-                XMoveResizeWindow(dis,head->win,0,0,master_size - BORDER_WIDTH,sh - BORDER_WIDTH);
+                XMoveResizeWindow(dis,head->win,0,y,master_size - BORDER_WIDTH,sh - BORDER_WIDTH);
 
                 // Stack
                 for(c=head->next;c;c=c->next) ++n;
                 if(n == 1) growth = 0;
-                XMoveResizeWindow(dis,head->next->win,master_size + BORDER_WIDTH,0,sw-master_size-(2*BORDER_WIDTH),(sh/n)+growth - BORDER_WIDTH);
-                x = (sh/n)+growth;
+                XMoveResizeWindow(dis,head->next->win,master_size + BORDER_WIDTH,y,sw-master_size-(2*BORDER_WIDTH),(sh/n)+growth - BORDER_WIDTH);
+                y += (sh/n)+growth;
                 for(c=head->next->next;c;c=c->next) {
-                    XMoveResizeWindow(dis,c->win,master_size + BORDER_WIDTH,x,sw-master_size-(2*BORDER_WIDTH),(sh/n)-(growth/(n-1)) - BORDER_WIDTH);
-                    x += (sh/n)-(growth/(n-1));
+                    XMoveResizeWindow(dis,c->win,master_size + BORDER_WIDTH,y,sw-master_size-(2*BORDER_WIDTH),(sh/n)-(growth/(n-1)) - BORDER_WIDTH);
+                    y += (sh/n)-(growth/(n-1));
                 }
                 break;
             case 1: /* Fullscreen */
                 for(c=head;c;c=c->next) {
-                    XMoveResizeWindow(dis,c->win,0,0,sw-BORDER_WIDTH,sh-BORDER_WIDTH);
+                    XMoveResizeWindow(dis,c->win,0,y,sw-BORDER_WIDTH,sh-BORDER_WIDTH);
                 }
                 break;
             case 2: /* Horizontal */
             	// Master window
-                XMoveResizeWindow(dis,head->win,0,0,sw-BORDER_WIDTH,master_size - BORDER_WIDTH);
+                XMoveResizeWindow(dis,head->win,0,y,sw-BORDER_WIDTH,master_size - BORDER_WIDTH);
 
                 // Stack
                 for(c=head->next;c;c=c->next) ++n;
                 if(n == 1) growth = 0;
-                XMoveResizeWindow(dis,head->next->win,0,master_size + BORDER_WIDTH,(sw/n)+growth-BORDER_WIDTH,sh-master_size-(2*BORDER_WIDTH));
+                XMoveResizeWindow(dis,head->next->win,0,y+master_size + BORDER_WIDTH,(sw/n)+growth-BORDER_WIDTH,sh-master_size-(2*BORDER_WIDTH));
                 x = (sw/n)+growth;
                 for(c=head->next->next;c;c=c->next) {
-                    XMoveResizeWindow(dis,c->win,x,master_size + BORDER_WIDTH,(sw/n)-(growth/(n-1)) - BORDER_WIDTH,sh-master_size-(2*BORDER_WIDTH));
+                    XMoveResizeWindow(dis,c->win,x,y+master_size + BORDER_WIDTH,(sw/n)-(growth/(n-1)) - BORDER_WIDTH,sh-master_size-(2*BORDER_WIDTH));
                     x += (sw/n)-(growth/(n-1));
                 }
                 break;
             case 3: { // Grid
                 int xpos = 0;
-                int y = 0;
                 int wdt = 0;
                 int ht = 0;
 
@@ -495,22 +500,22 @@ void tile() {
                         if((n == 3) || (n == 6))
                             xpos = (2*(sw/3)) + BORDER_WIDTH;
                         if(n == 4)
-                            y = (sh/2) + BORDER_WIDTH;
+                            y += (sh/2); // + BORDER_WIDTH;
                     } else {
                         if(n > 2)
                             ht = (sh/x) - 2*BORDER_WIDTH;
                         else
-                            ht = sh/x;
+                            ht = (sh/x)-BORDER_WIDTH;
                         if((n == 1) || (n == 3)) {
                             xpos = 0;
                             wdt = master_size - BORDER_WIDTH;
                         }
                         if((n == 2) || (n == 4)) {
                             xpos = master_size+BORDER_WIDTH;
-                            wdt = (sw - master_size) - BORDER_WIDTH;
+                            wdt = (sw - master_size) - 2*BORDER_WIDTH;
                         }
                         if(n == 3)
-                            y += (sh/x)+2*BORDER_WIDTH;
+                            y += (sh/x)+BORDER_WIDTH;
                     }
                     XMoveResizeWindow(dis,c->win,xpos,y,wdt,ht);
                 }

@@ -34,6 +34,7 @@
 #define DEFAULT_MODE    0  /* 0 = Vertical, 1 = Fullscreen */
 #define FOLLOW_MOUSE    0  /* 1=Don't 0=Focus the window the mouse just entered */
 #define FOLLOW_WINDOW   0  /* 1=Don't 0=Follow the window when moved to a different desktop */
+#define TOP_PANEL       1  /* 1=Don't 0=Have the panel at the top instead of the bottom */
 
 // Colors
 #define FOCUS           "#664422" // dkorange
