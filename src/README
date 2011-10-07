@@ -95,7 +95,6 @@ Need Xlib, then:
 ###Todo
 ----
 
-  * Sort out grid tiling mode without any useless gaps
   * Fix mplayer full screen window sizing
   * Have no window borders in fullscreen mode
 
