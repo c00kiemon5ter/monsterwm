@@ -1,4 +1,4 @@
- /* config.h for dminiwm.c [ 0..0.3 ]
+ /* config.h for dminiwm.c [ 0.0.5 ]
  *
  *  Started from catwm 31/12/10 
  *  Bad window error checking and numlock checking used from

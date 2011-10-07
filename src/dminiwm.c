@@ -1,4 +1,4 @@
-/* dminiwm.c [ 0.0.2 ]
+/* dminiwm.c [ 0.0.5 ]
 *
 *  I started this from catwm 31/12/10 
 *  Bad window error checking and numlock checking used from
@@ -469,13 +469,13 @@ void tile() {
                 int xpos = 0;
                 int wdt = 0;
                 int ht = 0;
+                int nwin = 0;
 
                 for(c=head;c;c=c->next) {
-                    ++n;
-                    if((n == 1) || (n == 3) || (n == 5) || (n == 7))
+                    ++nwin;
+                    if((nwin == 1) || (nwin == 3) || (nwin == 5) || (nwin == 7))
                         x += 1;
                 }
-                n = 0;
                 for(c=head;c;c=c->next) {
                     ++n;
                     if(x == 4) {
@@ -489,6 +489,10 @@ void tile() {
                             xpos = (2*(sw/3)) + BORDER_WIDTH;
                         if((n == 4) || (n == 7))
                             y += (sh/3) + BORDER_WIDTH;
+                        if((n == nwin) && (n == 7))
+                            wdt = sw - BORDER_WIDTH;
+                        if((n == nwin) && (n == 8))
+                            wdt = 2*sw/3 - BORDER_WIDTH;
                     } else 
                     if(x == 3) {
                         wdt = (sw/3) - BORDER_WIDTH;
@@ -501,6 +505,9 @@ void tile() {
                             xpos = (2*(sw/3)) + BORDER_WIDTH;
                         if(n == 4)
                             y += (sh/2); // + BORDER_WIDTH;
+                        if((n == nwin) && (n == 5))
+                            wdt = 2*sw/3 - BORDER_WIDTH;
+
                     } else {
                         if(n > 2)
                             ht = (sh/x) - 2*BORDER_WIDTH;
@@ -516,6 +523,8 @@ void tile() {
                         }
                         if(n == 3)
                             y += (sh/x)+BORDER_WIDTH;
+                        if((n == nwin) && (n == 3))
+                            wdt = sw - BORDER_WIDTH;
                     }
                     XMoveResizeWindow(dis,c->win,xpos,y,wdt,ht);
                 }
