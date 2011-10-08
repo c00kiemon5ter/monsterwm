@@ -1,4 +1,4 @@
-/* dminiwm.c [ 0.0.5 ]
+/* dminiwm.c [ 0.0.6 ]
 *
 *  I started this from catwm 31/12/10 
 *  Bad window error checking and numlock checking used from
@@ -428,7 +428,7 @@ void tile() {
 
     // If only one window
     if(head != NULL && head->next == NULL) {
-        XMoveResizeWindow(dis,head->win,0,y,sw-BORDER_WIDTH,sh-BORDER_WIDTH);
+        XMoveResizeWindow(dis,head->win,0,y,sw+2*BORDER_WIDTH,sh+2*BORDER_WIDTH);
     }
     else if(head != NULL) {
         switch(mode) {
@@ -448,7 +448,7 @@ void tile() {
                 break;
             case 1: /* Fullscreen */
                 for(c=head;c;c=c->next) {
-                    XMoveResizeWindow(dis,c->win,0,y,sw-BORDER_WIDTH,sh-BORDER_WIDTH);
+                    XMoveResizeWindow(dis,c->win,0,y,sw+2*BORDER_WIDTH,sh+2*BORDER_WIDTH);
                 }
                 break;
             case 2: /* Horizontal */
@@ -539,17 +539,21 @@ void tile() {
 void update_current() {
     client *c;
 
-    for(c=head;c;c=c->next)
+    for(c=head;c;c=c->next) {
+        if((head->next == NULL) || (mode == 1))
+            XSetWindowBorderWidth(dis,c->win,0);
+        else
+            XSetWindowBorderWidth(dis,c->win,BORDER_WIDTH);
+
         if(current == c) {
             // "Enable" current window
-            XSetWindowBorderWidth(dis,c->win,BORDER_WIDTH);
             XSetWindowBorder(dis,c->win,win_focus);
             XSetInputFocus(dis,c->win,RevertToParent,CurrentTime);
             XRaiseWindow(dis,c->win);
         }
         else
             XSetWindowBorder(dis,c->win,win_unfocus);
-
+    }
     XSync(dis, False);
 }
 
@@ -640,15 +644,17 @@ void configurerequest(XEvent *e) {
     XWindowChanges wc;
     wc.x = ev->x;
     wc.y = ev->y;
-    if(ev->width < sw)
+    if(ev->width < sw) {
         wc.width = ev->width;
-    else
-        wc.width = sw - BORDER_WIDTH;
+    }
+    else {
+        wc.width = sw-BORDER_WIDTH;
+    }
     if(ev->height < sh)
         wc.height = ev->height;
     else
-        wc.height = sh - BORDER_WIDTH;
-    wc.border_width = ev->border_width;
+        wc.height = sh-BORDER_WIDTH;
+    wc.border_width = 0; // ev->border_width;
     wc.sibling = ev->above;
     wc.stack_mode = ev->detail;
     XConfigureWindow(dis, ev->window, ev->value_mask, &wc);

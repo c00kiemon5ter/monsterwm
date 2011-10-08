@@ -11,7 +11,7 @@ See dminiwm.c or config.h for thanks and licensing.
 
 **dminiwm** is a very minimal and lightweight dynamic tiling window manager.
     I will try to stay under 1000 SLOC.
-    Currently under 900 lines with the config file included.
+    Currently under 1000 lines with the config file included.
 
 
 ###Modes
