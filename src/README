@@ -95,6 +95,5 @@ Need Xlib, then:
 ###Todo
 ----
 
-  * Fix mplayer full screen window sizing
   * Have no window borders in fullscreen mode
 

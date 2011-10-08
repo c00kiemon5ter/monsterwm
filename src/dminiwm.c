@@ -640,8 +640,14 @@ void configurerequest(XEvent *e) {
     XWindowChanges wc;
     wc.x = ev->x;
     wc.y = ev->y;
-    wc.width = ev->width;
-    wc.height = ev->height;
+    if(ev->width < sw)
+        wc.width = ev->width;
+    else
+        wc.width = sw - BORDER_WIDTH;
+    if(ev->height < sh)
+        wc.height = ev->height;
+    else
+        wc.height = sh - BORDER_WIDTH;
     wc.border_width = ev->border_width;
     wc.sibling = ev->above;
     wc.stack_mode = ev->detail;
