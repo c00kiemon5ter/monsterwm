@@ -1,4 +1,4 @@
- /* config.h for dminiwm.c [ 0.0.6 ]
+ /* config.h for dminiwm.c [ 0.1.0 ]
  *
  *  Started from catwm 31/12/10 
  *  Bad window error checking and numlock checking used from
@@ -31,7 +31,7 @@
 #define PANEL_HEIGHT	18 /* 0 for no space for a panel */
 #define BORDER_WIDTH    2
 #define ATTACH_ASIDE    1  /* 0=TRUE, 1=New window is master */
-#define DEFAULT_MODE    0  /* 0 = Vertical, 1 = Fullscreen */
+#define DEFAULT_MODE    0  /* 0=Vertical, 1=Fullscreen 2=Horizontal 3=grid*/
 #define FOLLOW_MOUSE    0  /* 1=Don't 0=Focus the window the mouse just entered */
 #define FOLLOW_WINDOW   0  /* 1=Don't 0=Follow the window when moved to a different desktop */
 #define TOP_PANEL       1  /* 1=Don't 0=Have the panel at the top instead of the bottom */
@@ -40,7 +40,7 @@
 #define FOCUS           "#664422" // dkorange
 #define UNFOCUS         "#004050" // blueish
 
-const char* dmenucmd[]      = {"dmenu_run","-i","-nb","#664422","-nf","white",NULL};
+const char* dmenucmd[]      = {"dmenu_run","-i","-nb","#666622","-nf","white",NULL};
 const char* urxvtcmd[]      = {"urxvtc",NULL};
 const char* terminalcmd[]   = {"Terminal",NULL};
 const char* thunarcmd[]     = {"thunar",NULL};

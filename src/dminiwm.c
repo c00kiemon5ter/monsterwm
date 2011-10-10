@@ -1,4 +1,4 @@
-/* dminiwm.c [ 0.0.6 ]
+/* dminiwm.c [ 0.1.0 ]
 *
 *  I started this from catwm 31/12/10 
 *  Bad window error checking and numlock checking used from
@@ -648,12 +648,12 @@ void configurerequest(XEvent *e) {
         wc.width = ev->width;
     }
     else {
-        wc.width = sw-BORDER_WIDTH;
+        wc.width = sw;
     }
     if(ev->height < sh)
         wc.height = ev->height;
     else
-        wc.height = sh-BORDER_WIDTH;
+        wc.height = sh;
     wc.border_width = 0; // ev->border_width;
     wc.sibling = ev->above;
     wc.stack_mode = ev->detail;
@@ -830,7 +830,10 @@ void setup() {
     current = NULL;
 
     // Master size
-    master_size = sw*MASTER_SIZE;
+    if(mode == 2)
+        master_size = sh*MASTER_SIZE;
+    else
+        master_size = sw*MASTER_SIZE;
 
     // Set up all desktop
     int i;
