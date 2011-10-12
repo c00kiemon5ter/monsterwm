@@ -1,3 +1,6 @@
+13/10/11
+  Popup windows now aren't managed/added to the stack
+
 10/10/11
   Reapplied setting master_size relevant to default mode
 

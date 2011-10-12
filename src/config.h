@@ -1,4 +1,4 @@
- /* config.h for dminiwm.c [ 0.1.0 ]
+ /* config.h for dminiwm.c [ 0.1.1 ]
  *
  *  Started from catwm 31/12/10 
  *  Bad window error checking and numlock checking used from
@@ -28,13 +28,13 @@
 #define MOD1            Mod1Mask
 #define MOD4		Mod4Mask
 #define MASTER_SIZE     0.6
+#define TOP_PANEL       1  /* 1=Don't 0=Have the panel at the top instead of the bottom */
 #define PANEL_HEIGHT	18 /* 0 for no space for a panel */
 #define BORDER_WIDTH    2
 #define ATTACH_ASIDE    1  /* 0=TRUE, 1=New window is master */
 #define DEFAULT_MODE    0  /* 0=Vertical, 1=Fullscreen 2=Horizontal 3=grid*/
 #define FOLLOW_MOUSE    0  /* 1=Don't 0=Focus the window the mouse just entered */
 #define FOLLOW_WINDOW   0  /* 1=Don't 0=Follow the window when moved to a different desktop */
-#define TOP_PANEL       1  /* 1=Don't 0=Have the panel at the top instead of the bottom */
 
 // Colors
 #define FOCUS           "#664422" // dkorange

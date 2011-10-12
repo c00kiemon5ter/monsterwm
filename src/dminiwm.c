@@ -1,4 +1,4 @@
-/* dminiwm.c [ 0.1.0 ]
+/* dminiwm.c [ 0.1.1 ]
 *
 *  I started this from catwm 31/12/10 
 *  Bad window error checking and numlock checking used from
@@ -350,7 +350,6 @@ void change_desktop(const Arg arg) {
 
     tile();
     update_current();
-
 }
 
 void next_desktop() {
@@ -424,7 +423,6 @@ void tile() {
     // For a top panel
     if(TOP_PANEL == 0)
         y = PANEL_HEIGHT;
-
 
     // If only one window
     if(head != NULL && head->next == NULL) {
@@ -642,19 +640,18 @@ void configurerequest(XEvent *e) {
     // Paste from DWM, thx again \o/
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     XWindowChanges wc;
+
     wc.x = ev->x;
     wc.y = ev->y;
-    if(ev->width < sw) {
+    if(ev->width < sw-BORDER_WIDTH)
         wc.width = ev->width;
-    }
-    else {
-        wc.width = sw;
-    }
-    if(ev->height < sh)
+    else
+        wc.width = sw-BORDER_WIDTH;
+    if(ev->height < sh-BORDER_WIDTH)
         wc.height = ev->height;
     else
-        wc.height = sh;
-    wc.border_width = 0; // ev->border_width;
+        wc.height = sh-BORDER_WIDTH;
+    wc.border_width = ev->border_width;
     wc.sibling = ev->above;
     wc.stack_mode = ev->detail;
     XConfigureWindow(dis, ev->window, ev->value_mask, &wc);
@@ -663,14 +660,24 @@ void configurerequest(XEvent *e) {
 
 void maprequest(XEvent *e) {
     XMapRequestEvent *ev = &e->xmaprequest;
+    Window dialog_window;
     
+    // For dialog windows
+    XGetTransientForHint(dis, ev->window, &dialog_window);
+        if(dialog_window != 0) {
+            XMapWindow(dis, ev->window);
+            XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
+            XRaiseWindow(dis,ev->window);
+            return;
+        }
+
     // For fullscreen mplayer (and maybe some other program)
     client *c;
     
     for(c=head;c;c=c->next)
         if(ev->window == c->win) {
             XMapWindow(dis,ev->window);
-            XMoveResizeWindow(dis,c->win,0,0,sw-BORDER_WIDTH,sh-BORDER_WIDTH);
+            XMoveResizeWindow(dis,c->win,-BORDER_WIDTH,-BORDER_WIDTH,sw+BORDER_WIDTH,sh+BORDER_WIDTH);
             return;
         }
 
@@ -681,7 +688,7 @@ void maprequest(XEvent *e) {
 }
 
 void destroynotify(XEvent *e) {
-    int i=0;
+    int i = 0;
     int j = 0;
     int tmp = current_desktop;
     client *c;
