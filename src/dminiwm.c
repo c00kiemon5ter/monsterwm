@@ -1,4 +1,4 @@
-/* dminiwm.c [ 0.1.1 ]
+/* dminiwm.c [ 0.1.2 ]
 *
 *  I started this from catwm 31/12/10 
 *  Bad window error checking and numlock checking used from
@@ -665,6 +665,7 @@ void maprequest(XEvent *e) {
     // For dialog windows
     XGetTransientForHint(dis, ev->window, &dialog_window);
         if(dialog_window != 0) {
+            add_window(ev->window);
             XMapWindow(dis, ev->window);
             XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
             XRaiseWindow(dis,ev->window);
