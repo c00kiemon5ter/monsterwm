@@ -467,16 +467,12 @@ void tile() {
                 int xpos = 0;
                 int wdt = 0;
                 int ht = 0;
-                int nwin = 0;
+
+                for(c=head;c;c=c->next) ++x;
 
                 for(c=head;c;c=c->next) {
-                    ++nwin;
-                    if((nwin == 1) || (nwin == 3) || (nwin == 5) || (nwin == 7))
-                        x += 1;
-                }
-                for(c=head;c;c=c->next) {
                     ++n;
-                    if(x == 4) {
+                    if(x >= 7) {
                         wdt = (sw/3) - BORDER_WIDTH;
                         ht  = (sh/3) - BORDER_WIDTH;
                         if((n == 1) || (n == 4) || (n == 7))
@@ -487,12 +483,12 @@ void tile() {
                             xpos = (2*(sw/3)) + BORDER_WIDTH;
                         if((n == 4) || (n == 7))
                             y += (sh/3) + BORDER_WIDTH;
-                        if((n == nwin) && (n == 7))
+                        if((n == x) && (n == 7))
                             wdt = sw - BORDER_WIDTH;
-                        if((n == nwin) && (n == 8))
+                        if((n == x) && (n == 8))
                             wdt = 2*sw/3 - BORDER_WIDTH;
                     } else 
-                    if(x == 3) {
+                    if(x >= 5) {
                         wdt = (sw/3) - BORDER_WIDTH;
                         ht  = (sh/2) - BORDER_WIDTH;
                         if((n == 1) || (n == 4))
@@ -503,14 +499,18 @@ void tile() {
                             xpos = (2*(sw/3)) + BORDER_WIDTH;
                         if(n == 4)
                             y += (sh/2); // + BORDER_WIDTH;
-                        if((n == nwin) && (n == 5))
+                        if((n == x) && (n == 5))
                             wdt = 2*sw/3 - BORDER_WIDTH;
 
                     } else {
-                        if(n > 2)
-                            ht = (sh/x) - 2*BORDER_WIDTH;
+                        if(x > 2) {
+                            if((n == 1) || (n == 2))
+                                ht = (sh/2) + growth - BORDER_WIDTH;
+                            if(n >= 3)
+                                ht = (sh/2) - growth - 2*BORDER_WIDTH;
+                        }
                         else
-                            ht = (sh/x)-BORDER_WIDTH;
+                            ht = sh - BORDER_WIDTH;
                         if((n == 1) || (n == 3)) {
                             xpos = 0;
                             wdt = master_size - BORDER_WIDTH;
@@ -520,8 +520,8 @@ void tile() {
                             wdt = (sw - master_size) - 2*BORDER_WIDTH;
                         }
                         if(n == 3)
-                            y += (sh/x)+BORDER_WIDTH;
-                        if((n == nwin) && (n == 3))
+                            y += (sh/2) + growth + BORDER_WIDTH;
+                        if((n == x) && (n == 3))
                             wdt = sw - BORDER_WIDTH;
                     }
                     XMoveResizeWindow(dis,c->win,xpos,y,wdt,ht);
