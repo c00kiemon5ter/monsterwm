@@ -142,7 +142,7 @@ static void (*events[LASTEvent])(XEvent *e) = {
 };
 
 // Desktop array
-static desktop desktops[6];
+static desktop desktops[DESKTOPS];
 
 /* ***************************** Window Management ******************************* */
 void add_window(Window w) {
@@ -697,7 +697,6 @@ void maprequest(XEvent *e) {
     if(XGetClassHint(dis, ev->window, &ch))
         for(i=0;i<len;i++)
             if(strcmp(ch.res_class, convenience[i].class) == 0) {
-                fprintf(stdout, "%s will be moved....\n", ch.res_class);
                 save_desktop(tmp);
                 select_desktop(convenience[i].preferredd-1);
                 add_window(ev->window);

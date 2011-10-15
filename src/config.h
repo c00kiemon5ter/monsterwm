@@ -35,17 +35,19 @@
 #define DEFAULT_MODE    0  /* 0=Vertical, 1=Fullscreen 2=Horizontal 3=grid*/
 #define FOLLOW_MOUSE    0  /* 1=Don't 0=Focus the window the mouse just entered */
 #define FOLLOW_WINDOW   0  /* 1=Don't 0=Follow the window when moved to a different desktop */
+#define DESKTOPS        6  /* Must edit DESKTOPCHANGE keys to suit */
 
 // Colors
 #define FOCUS           "#664422" // dkorange
 #define UNFOCUS         "#004050" // blueish
 
-// Applications to a set desktop
+// Applications to a specific desktop
 static const Convenience convenience[] = { \
     /*  class     desktop follow */
     { "Thunar",       2,    1 },
     { "Leafpad",      2,    1 },
     { "Firefox",      3,    0 },
+    { "MPlayer",      4,    1 },
     { "Thunderbird",  5,    0 },
     { "Pysol",        6,    0 },
 };
