@@ -83,6 +83,7 @@ There are more options in the config file than the original catwm.
 Need Xlib, then:
 
     edit the config.h file to suit your needs
+
     $ make
     # make install
     $ make clean
