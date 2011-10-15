@@ -1,4 +1,4 @@
- /* config.h for dminiwm.c [ 0.1.2 ]
+ /* config.h for dminiwm.c [ 0.1.3 ]
  *
  *  Started from catwm 31/12/10 
  *  Bad window error checking and numlock checking used from
@@ -39,6 +39,16 @@
 // Colors
 #define FOCUS           "#664422" // dkorange
 #define UNFOCUS         "#004050" // blueish
+
+// Applications to a set desktop
+static const Convenience convenience[] = { \
+    /*  class     desktop follow */
+    { "Thunar",       2,    1 },
+    { "Leafpad",      2,    1 },
+    { "Firefox",      3,    0 },
+    { "Thunderbird",  5,    0 },
+    { "Pysol",        6,    0 },
+};
 
 const char* dmenucmd[]      = {"dmenu_run","-i","-nb","#666622","-nf","white",NULL};
 const char* urxvtcmd[]      = {"urxvtc",NULL};

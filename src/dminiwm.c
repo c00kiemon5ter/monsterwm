@@ -1,4 +1,4 @@
-/* dminiwm.c [ 0.1.2 ]
+/* dminiwm.c [ 0.1.3 ]
 *
 *  I started this from catwm 31/12/10 
 *  Bad window error checking and numlock checking used from
@@ -20,11 +20,13 @@
 #include <X11/keysym.h>
 //#include <X11/XF86keysym.h>
 #include <X11/Xproto.h>
+#include <X11/Xutil.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <string.h>
 
 #define TABLENGTH(X)    (sizeof(X)/sizeof(*X))
 
@@ -59,6 +61,12 @@ struct desktop{
     client *head;
     client *current;
 };
+
+typedef struct {
+    const char *class;
+    int preferredd;
+    int followwin;
+} Convenience;
 
 // Functions
 static void add_window(Window w);
@@ -681,6 +689,35 @@ void maprequest(XEvent *e) {
             XMoveResizeWindow(dis,c->win,-BORDER_WIDTH,-BORDER_WIDTH,sw+BORDER_WIDTH,sh+BORDER_WIDTH);
             return;
         }
+
+    XClassHint ch = {0};
+    static unsigned int len = sizeof convenience / sizeof convenience[0];
+    int i = 0;
+    int tmp = current_desktop;
+    if(XGetClassHint(dis, ev->window, &ch))
+        for(i=0;i<len;i++)
+            if(strcmp(ch.res_class, convenience[i].class) == 0) {
+                fprintf(stdout, "%s will be moved....\n", ch.res_class);
+                save_desktop(tmp);
+                select_desktop(convenience[i].preferredd-1);
+                add_window(ev->window);
+                if(tmp == convenience[i].preferredd-1) {
+                    XMapWindow(dis, ev->window);
+                    tile();
+                    update_current();
+                } else {
+                    select_desktop(tmp);
+                }
+                if(convenience[i].followwin != 0) {
+                    Arg a = {.i = convenience[i].preferredd-1};
+                    change_desktop(a);
+                }
+                if(ch.res_class)
+                    XFree(ch.res_class);
+                if(ch.res_name)
+                    XFree(ch.res_name);
+                return;
+            }
 
     add_window(ev->window);
     XMapWindow(dis,ev->window);
