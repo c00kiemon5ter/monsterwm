@@ -1,4 +1,4 @@
-/* dminiwm.c [ 0.1.3 ]
+/* dminiwm.c [ 0.1.4 ]
 *
 *  I started this from catwm 31/12/10 
 *  Bad window error checking and numlock checking used from

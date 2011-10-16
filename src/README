@@ -2,7 +2,8 @@
 ### it's minimal and dynamic
 
 I started this from catwm 31/12/10 ( https://bbs.archlinux.org/viewtopic.php?id=100215&p=1 )
-See dminiwm.c or config.h for thanks and licensing.
+    See dminiwm.c or config.h for thanks and licensing.
+Screenshots and ramblings/updates at https://bbs.archlinux.org/viewtopic.php?id=126463
 
 
 ###Summary
@@ -42,7 +43,7 @@ It allows the "normal" method of tiling window managers(with the new window as t
  *Grid tiling mode:*
 
     -------------
-    |      |    |
+    |      | W  |
     |      |    |
     |------|----|
     |      |    |
