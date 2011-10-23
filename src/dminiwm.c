@@ -696,6 +696,16 @@ void configurerequest(XEvent *e) {
 void maprequest(XEvent *e) {
     XMapRequestEvent *ev = &e->xmaprequest;
 
+    // For fullscreen mplayer (and maybe some other program)
+    client *c;
+
+    for(c=head;c;c=c->next)
+        if(ev->window == c->win) {
+            XMapWindow(dis,ev->window);
+            XMoveResizeWindow(dis,c->win,-BORDER_WIDTH,-BORDER_WIDTH,sw+BORDER_WIDTH,sh+BORDER_WIDTH);
+            return;
+        }
+
     unsigned long count, j, extra;
     Atom realType;
     int realFormat;
@@ -707,10 +717,10 @@ void maprequest(XEvent *e) {
             type = (unsigned long*)temp;
             for(j=0; j<count; j++) {
                 if((type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_UTILITY]) ||
-                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_DOCK]) ||
+                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION]) ||
                   (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_SPLASH]) ||
                   (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_DIALOG]) ||
-                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION])) {
+                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_DOCK])) {
                     add_window(ev->window);
                     XMapWindow(dis, ev->window);
                     XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
@@ -722,16 +732,6 @@ void maprequest(XEvent *e) {
         if(temp)
          XFree(temp);
     }
-
-    // For fullscreen mplayer (and maybe some other program)
-    client *c;
-    
-    for(c=head;c;c=c->next)
-        if(ev->window == c->win) {
-            XMapWindow(dis,ev->window);
-            XMoveResizeWindow(dis,c->win,-BORDER_WIDTH,-BORDER_WIDTH,sw+BORDER_WIDTH,sh+BORDER_WIDTH);
-            return;
-        }
 
     XClassHint ch = {0};
     static unsigned int len = sizeof convenience / sizeof convenience[0];
@@ -783,6 +783,7 @@ void destroynotify(XEvent *e) {
 
         if(i != 0) {
             remove_window(ev->window);
+            grabkeys();
             select_desktop(tmp);
             return;
         }
