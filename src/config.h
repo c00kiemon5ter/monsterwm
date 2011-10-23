@@ -45,8 +45,9 @@
 static const Convenience convenience[] = { \
     /*  class     desktop follow */
     { "Thunar",       2,    1 },
-    { "Leafpad",      2,    1 },
+    //{ "Leafpad",      2,    1 },
     { "Firefox",      3,    0 },
+    { "Links",        3,    1 },
     { "MPlayer",      4,    1 },
     { "Thunderbird",  5,    0 },
     { "Pysol",        6,    0 },
@@ -57,7 +58,7 @@ const char* urxvtcmd[]      = {"urxvtc",NULL};
 const char* terminalcmd[]   = {"Terminal",NULL};
 const char* thunarcmd[]     = {"thunar",NULL};
 const char* firefoxcmd[]    = {"firefox",NULL};
-const char* conkerorcmd[]   = {"conkeror",NULL};
+const char* webcmd[]        = {"links","-g",NULL};
 const char* mailcmd[]       = {"thunderbird",NULL };
 const char* voldowncmd[]    = {"/home/pnewm/.bin/voldown",NULL};
 const char* volupcmd[]      = {"/home/pnewm/.bin/volup",NULL};
@@ -102,7 +103,7 @@ static key keys[] = {
     {  MOD4,             XK_Left,       prev_desktop,      {NULL}},
     {  MOD4,             XK_e,		spawn,             {.com = mailcmd}},
     {  MOD4,             XK_f,		spawn,             {.com = firefoxcmd}},
-    {  MOD4,             XK_w,		spawn,             {.com = conkerorcmd}},
+    {  MOD4,             XK_w,		spawn,             {.com = webcmd}},
     {  MOD4,             XK_h,		spawn,             {.com = thunarcmd}},
     {  MOD4,             XK_t,          spawn,             {.com = terminalcmd}},
     {  MOD4,             XK_v,          spawn,             {.com = vols_what}},

@@ -21,6 +21,7 @@
 //#include <X11/XF86keysym.h>
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
+#include <X11/Xatom.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -67,6 +68,32 @@ typedef struct {
     int preferredd;
     int followwin;
 } Convenience;
+
+typedef enum {
+    ATOM_NET_WM_WINDOW_TYPE,
+    ATOM_NET_WM_WINDOW_TYPE_UTILITY,
+    ATOM_NET_WM_WINDOW_TYPE_DOCK,
+    ATOM_NET_WM_WINDOW_TYPE_SPLASH,
+    ATOM_NET_WM_WINDOW_TYPE_DIALOG,
+    ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION,
+    ATOM_COUNT
+} AtomType;
+
+typedef struct {
+   Atom *atom;
+   const char *name;
+} AtomNode;
+
+Atom atoms[ATOM_COUNT];
+
+static const AtomNode atomList[] = {
+    { &atoms[ATOM_NET_WM_WINDOW_TYPE],              "_NET_WM_WINDOW_TYPE"             },
+    { &atoms[ATOM_NET_WM_WINDOW_TYPE_UTILITY],      "_NET_WM_WINDOW_TYPE_UTILITY"     },
+    { &atoms[ATOM_NET_WM_WINDOW_TYPE_DOCK],         "_NET_WM_WINDOW_TYPE_DOCK"        },
+    { &atoms[ATOM_NET_WM_WINDOW_TYPE_SPLASH],       "_NET_WM_WINDOW_TYPE_SPLASH"      },
+    { &atoms[ATOM_NET_WM_WINDOW_TYPE_DIALOG],       "_NET_WM_WINDOW_TYPE_DIALOG"      },
+    { &atoms[ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION], "_NET_WM_WINDOW_TYPE_NOTIFICATION"},
+};
 
 // Functions
 static void add_window(Window w);
@@ -668,17 +695,33 @@ void configurerequest(XEvent *e) {
 
 void maprequest(XEvent *e) {
     XMapRequestEvent *ev = &e->xmaprequest;
-    Window dialog_window;
-    
-    // For dialog windows
-    XGetTransientForHint(dis, ev->window, &dialog_window);
-        if(dialog_window != 0) {
-            add_window(ev->window);
-            XMapWindow(dis, ev->window);
-            XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
-            XRaiseWindow(dis,ev->window);
-            return;
+
+    unsigned long count, j, extra;
+    Atom realType;
+    int realFormat;
+    unsigned char *temp;
+    Atom *type;
+
+    if(XGetWindowProperty(dis, ev->window, atoms[ATOM_NET_WM_WINDOW_TYPE], 0, 32, False, XA_ATOM, &realType, &realFormat, &count, &extra, &temp) == Success) {
+        if(count > 0) {
+            type = (unsigned long*)temp;
+            for(j=0; j<count; j++) {
+                if((type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_UTILITY]) ||
+                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_DOCK]) ||
+                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_SPLASH]) ||
+                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_DIALOG]) ||
+                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION])) {
+                    add_window(ev->window);
+                    XMapWindow(dis, ev->window);
+                    XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
+                    XRaiseWindow(dis,ev->window);
+                    return;
+                }
+            }
         }
+        if(temp)
+         XFree(temp);
+    }
 
     // For fullscreen mplayer (and maybe some other program)
     client *c;
@@ -893,6 +936,10 @@ void setup() {
     const Arg arg = {.i = 0};
     current_desktop = arg.i;
     change_desktop(arg);
+    // Set up atoms for dialog/notification windows
+    int x;
+    for(x = 0; x < ATOM_COUNT; x++)
+        *atomList[x].atom = XInternAtom(dis, atomList[x].name, False);
     // To catch maprequest and destroynotify (if other wm running)
     XSelectInput(dis,root,SubstructureNotifyMask|SubstructureRedirectMask);
     XSetErrorHandler(xerror);

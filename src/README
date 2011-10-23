@@ -54,7 +54,7 @@ It allows the "normal" method of tiling window managers(with the new window as t
  All accessible with keyboard shortcuts defined in the config.h file.
  
  * The window W at the top of the stack can be resized on a per desktop basis.
- * Changing a tiling mode on one workspace doesn't affect the other workspaces.
+ * Changing a tiling mode or window size on one desktop doesn't affect the other desktops.
 
 
 ###Recent Changes
