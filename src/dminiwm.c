@@ -1,4 +1,4 @@
-/* dminiwm.c [ 0.1.4 ]
+/* dminiwm.c [ 0.1.5 ]
 *
 *  I started this from catwm 31/12/10 
 *  Bad window error checking and numlock checking used from
@@ -783,7 +783,6 @@ void destroynotify(XEvent *e) {
 
         if(i != 0) {
             remove_window(ev->window);
-            grabkeys();
             select_desktop(tmp);
             return;
         }
