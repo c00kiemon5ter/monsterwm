@@ -27,7 +27,7 @@
 /* Mod (Mod1 == alt) (Mod4 == Super/windows) */
 #define MOD1            Mod1Mask
 #define MOD4		Mod4Mask
-#define MASTER_SIZE     0.6
+#define MASTER_SIZE     0.52
 #define TOP_PANEL       1  /* 1=Don't 0=Have the panel at the top instead of the bottom */
 #define PANEL_HEIGHT	18 /* 0 for no space for a panel */
 #define BORDER_WIDTH    2
@@ -50,7 +50,7 @@ static const Convenience convenience[] = { \
     { "Links",        3,    1 },
     { "MPlayer",      4,    1 },
     { "Thunderbird",  5,    0 },
-    { "Pysol",        6,    0 },
+    { "Pysol",        6,    1 },
 };
 
 const char* dmenucmd[]      = {"dmenu_run","-i","-nb","#666622","-nf","white",NULL};
@@ -62,6 +62,8 @@ const char* webcmd[]        = {"links","-g",NULL};
 const char* mailcmd[]       = {"thunderbird",NULL };
 const char* voldowncmd[]    = {"/home/pnewm/.bin/voldown",NULL};
 const char* volupcmd[]      = {"/home/pnewm/.bin/volup",NULL};
+const char* prevoldowncmd[] = {"/home/pnewm/.bin/prevoldown",NULL};
+const char* prevolupcmd[]   = {"/home/pnewm/.bin/prevolup",NULL};
 const char* vols_what[]     = {"/home/pnewm/.bin/volumes_what",NULL};
 // for reboot and shutdown
 const char* rebootcmd[]     = {"sudo","reboot",NULL};
@@ -101,12 +103,14 @@ static key keys[] = {
 // Window key + shortcut
     {  MOD4,             XK_Right,      next_desktop,      {NULL}},
     {  MOD4,             XK_Left,       prev_desktop,      {NULL}},
-    {  MOD4,             XK_e,		spawn,             {.com = mailcmd}},
-    {  MOD4,             XK_f,		spawn,             {.com = firefoxcmd}},
-    {  MOD4,             XK_w,		spawn,             {.com = webcmd}},
-    {  MOD4,             XK_h,		spawn,             {.com = thunarcmd}},
+    {  MOD4,             XK_e,          spawn,             {.com = mailcmd}},
+    {  MOD4,             XK_f,          spawn,             {.com = firefoxcmd}},
+    {  MOD4,             XK_w,          spawn,             {.com = webcmd}},
+    {  MOD4,             XK_h,		    spawn,             {.com = thunarcmd}},
     {  MOD4,             XK_t,          spawn,             {.com = terminalcmd}},
     {  MOD4,             XK_v,          spawn,             {.com = vols_what}},
+    {  MOD4,             XK_Up,	        spawn,             {.com = prevolupcmd}},
+    {  MOD4,             XK_Down,       spawn,             {.com = prevoldowncmd}},
        DESKTOPCHANGE(   XK_1,                              0)
        DESKTOPCHANGE(   XK_2,                              1)
        DESKTOPCHANGE(   XK_3,                              2)

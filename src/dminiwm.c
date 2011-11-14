@@ -333,7 +333,7 @@ void move_up() {
 void swap_master() {
     Window tmp;
 
-    if(head != NULL && current != NULL && mode != 1) {
+    if(head->next != NULL && current != NULL && mode != 1) {
         if(current == head) {
             tmp = head->next->win;
             head->next->win = head->win;
