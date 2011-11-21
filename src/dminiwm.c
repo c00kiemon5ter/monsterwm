@@ -1,4 +1,4 @@
-/* dminiwm.c [ 0.1.5 ]
+/* dminiwm.c [ 0.1.6 ]
 *
 *  I started this from catwm 31/12/10 
 *  Bad window error checking and numlock checking used from
@@ -705,6 +705,15 @@ void maprequest(XEvent *e) {
             XMoveResizeWindow(dis,c->win,-BORDER_WIDTH,-BORDER_WIDTH,sw+BORDER_WIDTH,sh+BORDER_WIDTH);
             return;
         }
+
+   	Window trans = None;
+   	if (XGetTransientForHint(dis, ev->window, &trans) && trans != None) {
+   	    add_window(ev->window);
+        XMapWindow(dis, ev->window);
+        XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
+        XRaiseWindow(dis,ev->window);
+        return;
+    }
 
     unsigned long count, j, extra;
     Atom realType;
