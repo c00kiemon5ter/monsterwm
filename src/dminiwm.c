@@ -1,6 +1,6 @@
 /* dminiwm.c [ 0.1.6 ]
 *
-*  I started this from catwm 31/12/10 
+*  I started this from catwm 31/12/10
 *  Bad window error checking and numlock checking used from
 *  2wm at http://hg.suckless.org/2wm/
 *
@@ -118,7 +118,7 @@ static void next_desktop();
 static void next_win();
 static void prev_desktop();
 static void prev_win();
-static void quit();
+static void quit(const Arg arg);
 static void remove_window(Window w);
 static void save_desktop(int i);
 static void select_desktop(int i);
@@ -189,7 +189,7 @@ void add_window(Window w) {
     else {
         if(ATTACH_ASIDE == 0) {
             for(t=head;t->next;t=t->next);
-            
+
             c->next = NULL;
             c->prev = t;
             c->win = w;
@@ -522,7 +522,7 @@ void tile() {
                             wdt = sw - BORDER_WIDTH;
                         if((n == x) && (n == 8))
                             wdt = 2*sw/3 - BORDER_WIDTH;
-                    } else 
+                    } else
                     if(x >= 5) {
                         wdt = (sw/3) - BORDER_WIDTH;
                         ht  = (sh/2) - BORDER_WIDTH;
@@ -817,7 +817,7 @@ void enternotify(XEvent *e) {
    }
 }
 
-void send_kill_signal(Window w) { 
+void send_kill_signal(Window w) {
     XEvent ke;
     ke.type = ClientMessage;
     ke.xclient.window = w;
@@ -839,11 +839,11 @@ unsigned long getcolor(const char* color) {
     return c.pixel;
 }
 
-void quit() {
+void quit(const Arg arg) {
     Window root_return, parent;
     Window *children;
     int i;
-    unsigned int nchildren; 
+    unsigned int nchildren;
     XEvent ev;
 
     /*
@@ -859,6 +859,7 @@ void quit() {
         logger(" \033[0;33mThanks for using!");
         XCloseDisplay(dis);
         logger("\033[0;31mforced shutdown");
+        exit(arg.i);
     }
 
     bool_quit = 1;
@@ -876,12 +877,13 @@ void quit() {
 
     XUngrabKey(dis,AnyKey,AnyModifier,root);
     logger("\033[0;34mYou Quit : Thanks for using!");
+    exit(arg.i);
 }
 
 void logger(const char* e) {
     fprintf(stdout,"\n\033[0;34m:: dminiwm : %s \033[0;m\n", e);
 }
- 
+
 void setup() {
     // Install a signal
     sigchld(0);
@@ -1004,7 +1006,7 @@ void start() {
 
 
 int main(int argc, char **argv) {
-    // Open display   
+    // Open display
     if(!(dis = XOpenDisplay(NULL))) {
         logger("\033[0;31mCannot open display!");
         exit(1);

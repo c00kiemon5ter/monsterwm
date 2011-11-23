@@ -90,9 +90,10 @@ static key keys[] = {
     {  MOD1|ShiftMask,   XK_m,          switch_fullscreen, {NULL} },
     {  MOD1,             XK_Right,      next_desktop,      {NULL} },
     {  MOD1,             XK_Left,       prev_desktop,      {NULL} },
-    {  MOD1|ControlMask, XK_q,          quit,              {NULL} },
     {  MOD1|ControlMask, XK_r,          spawn,             {.com = rebootcmd}   },
     {  MOD1|ControlMask, XK_s,          spawn,             {.com = shutdowncmd} },
+    {  MOD1|ShiftMask,   XK_r,          quit,              {.i = 0} }, /* restart */
+    {  MOD1|ShiftMask,   XK_q,          quit,              {.i = 1} }, /* quit    */
     {  MOD1|ShiftMask,   XK_Return,     spawn,             {.com = termcmd}  },
     {  MOD4,             XK_v,          spawn,             {.com = dmenucmd} },
     {  MOD4,             XK_grave,      spawn,             {.com = urxvtcmd} },
