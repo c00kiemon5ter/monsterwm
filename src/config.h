@@ -74,8 +74,8 @@ const char* shutdowncmd[] = { "sudo", "shutdown", "-h", "now", NULL};
 /** Shortcuts **/
 static key keys[] = {
 /*     modifier          key            function           argument */
-    {  MOD1,             XK_h,          increase,          {NULL} },
-    {  MOD1,             XK_l,          decrease,          {NULL} },
+    {  MOD1,             XK_h,          decrease,          {NULL} },
+    {  MOD1,             XK_l,          increase,          {NULL} },
     {  MOD1|ShiftMask,   XK_c,          kill_client,       {NULL} },
     {  MOD1,             XK_j,          next_win,          {NULL} },
     {  MOD1,             XK_k,          prev_win,          {NULL} },
