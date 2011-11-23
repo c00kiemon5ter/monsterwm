@@ -1,9 +1,9 @@
 CFLAGS+= -Wall
-LDADD+= -lX11 
+LDADD+= -lX11
 LDFLAGS=
 EXEC=dminiwm
 
-PREFIX?= /usr
+PREFIX?= /usr/local
 BINDIR?= $(PREFIX)/bin
 
 CC=gcc
@@ -18,3 +18,4 @@ install: all
 
 clean:
 	rm -fv dminiwm *.o
+
