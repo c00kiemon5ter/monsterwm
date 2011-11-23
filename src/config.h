@@ -107,10 +107,10 @@ static key keys[] = {
     {  MOD4,             XK_j,	        spawn,             {.com = mnextcmd}   },
     {  MOD4,             XK_k,	        spawn,             {.com = mprevcmd}   },
     {  MOD4,             XK_p,	        spawn,             {.com = mtogglecmd} },
-       DESKTOPCHANGE(    XK_1,                              0)
-       DESKTOPCHANGE(    XK_2,                              1)
-       DESKTOPCHANGE(    XK_3,                              2)
-       DESKTOPCHANGE(    XK_4,                              3)
+       DESKTOPCHANGE(    XK_F1,                             0)
+       DESKTOPCHANGE(    XK_F2,                             1)
+       DESKTOPCHANGE(    XK_F3,                             2)
+       DESKTOPCHANGE(    XK_F4,                             3)
 };
 
 #endif
