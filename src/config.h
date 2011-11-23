@@ -34,7 +34,7 @@
 #define ATTACH_ASIDE    0  /* 0=TRUE, 1=New window is master */
 #define DEFAULT_MODE    0  /* 0=Vertical, 1=Fullscreen 2=Horizontal 3=grid */
 #define FOLLOW_MOUSE    0  /* 1=Don't 0=Focus the window the mouse just entered */
-#define FOLLOW_WINDOW   0  /* 1=Don't 0=Follow the window when moved to a different desktop */
+#define FOLLOW_WINDOW   1  /* 1=Don't 0=Follow the window when moved to a different desktop */
 #define DESKTOPS        4  /* Must edit DESKTOPCHANGE keys to suit */
 
 /** Colors **/
