@@ -101,14 +101,13 @@ static void change_desktop(const Arg arg);
 static void client_to_desktop(const Arg arg);
 static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
-static void decrease();
 static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
 static void logger(const char* e);
 static unsigned long getcolor(const char* color);
 static void grabkeys();
-static void grow_window();
-static void increase();
+static void resize_window(const Arg arg);
+static void resize(const Arg arg);
 static void keypress(XEvent *e);
 static void kill_client();
 static void maprequest(XEvent *e);
@@ -124,7 +123,6 @@ static void save_desktop(int i);
 static void select_desktop(int i);
 static void send_kill_signal(Window w);
 static void setup();
-static void shrink_window();
 static void sigchld(int unused);
 static void spawn(const Arg arg);
 static void start();
@@ -350,13 +348,8 @@ void swap_master() {
     }
 }
 
-void decrease() {
-        master_size -= 10;
-        tile();
-}
-
-void increase() {
-        master_size += 10;
+void resize(const Arg arg) {
+        master_size += arg.i;
         tile();
 }
 
@@ -625,13 +618,8 @@ void switch_grid() {
     }
 }
 
-void grow_window() {
-    growth += 10;
-    tile();
-}
-
-void shrink_window() {
-    growth -= 10;
+void resize_window(const Arg arg) {
+    growth += arg.i;
     tile();
 }
 
