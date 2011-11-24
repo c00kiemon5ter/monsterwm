@@ -39,7 +39,7 @@
 
 /** Colors **/
 #define FOCUS           "#ff950e"
-#define UNFOCUS         "#282828"
+#define UNFOCUS         "#444444"
 
 /** Applications to a specific desktop **/
 static const Convenience convenience[] = { \
@@ -49,9 +49,9 @@ static const Convenience convenience[] = { \
 
 /** commands **/
 const char *termcmd[]     = { "urxvt",    NULL };
-const char* dmenucmd[]    = { "dmn",      NULL };
-const char* urxvtcmd[]    = { "urxvtdc",  NULL };
-const char* chromiumcmd[] = { "chromium", NULL };
+const char *dmenucmd[]    = { "dmn",      NULL };
+const char *urxvtcmd[]    = { "urxvtdc",  NULL };
+const char *chromiumcmd[] = { "chromium", NULL };
 /* audio volume */
 static const char *volupcmd[]     = { "volctrl", "+2",     NULL };
 static const char *voldowncmd[]   = { "volctrl", "-2",     NULL };
