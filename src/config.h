@@ -63,8 +63,10 @@ const char *mnextcmd[]   = { "mpc", "next",   NULL };
 const char *mprevcmd[]   = { "mpc", "prev",   NULL };
 const char *mtogglecmd[] = { "mpc", "toggle", NULL };
 /* operation */
-const char* rebootcmd[]   = { "sudo", "reboot", NULL};
-const char* shutdowncmd[] = { "sudo", "shutdown", "-h", "now", NULL};
+/*
+ * const char* rebootcmd[]   = { "sudo", "reboot", NULL};
+ * const char* shutdowncmd[] = { "sudo", "shutdown", "-h", "now", NULL};
+ */
 
 /* Avoid multiple paste */
 #define DESKTOPCHANGE(K,N) \
@@ -90,8 +92,10 @@ static key keys[] = {
     {  MOD1|ShiftMask,   XK_m,          switch_fullscreen, {NULL} },
     {  MOD1|ShiftMask,   XK_Right,      next_desktop,      {NULL} },
     {  MOD1|ShiftMask,   XK_Left,       prev_desktop,      {NULL} },
-    {  MOD1|ControlMask, XK_r,          spawn,             {.com = rebootcmd}   },
-    {  MOD1|ControlMask, XK_s,          spawn,             {.com = shutdowncmd} },
+    /*
+     * {  MOD1|ControlMask, XK_r,          spawn,             {.com = rebootcmd}   },
+     * {  MOD1|ControlMask, XK_s,          spawn,             {.com = shutdowncmd} },
+     */
     {  MOD1|ShiftMask,   XK_r,          quit,              {.i = 0} }, /* restart */
     {  MOD1|ShiftMask,   XK_q,          quit,              {.i = 1} }, /* quit    */
     {  MOD1|ShiftMask,   XK_Return,     spawn,             {.com = termcmd}  },
