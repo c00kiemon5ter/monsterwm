@@ -1,4 +1,4 @@
- /* config.h for dminiwm.c [ 0.1.6 ]
+ /* config.h for dminiwm.c [ 0.1.7 ]
  *
  *  Started from catwm 31/12/10
  *  Bad window error checking and numlock checking used from
@@ -76,13 +76,13 @@ const char *mtogglecmd[] = { "mpc", "toggle", NULL };
 /** Shortcuts **/
 static key keys[] = {
 /*     modifier          key            function           argument */
-    {  MOD1,             XK_h,          resize,            {.i = -10}}, /* decrease */
-    {  MOD1,             XK_l,          resize,            {.i = +10}}, /* increase */
+    {  MOD1,             XK_h,          resize_master,     {.i = -10}}, /* decrease */
+    {  MOD1,             XK_l,          resize_master,     {.i = +10}}, /* increase */
     {  MOD1|ShiftMask,   XK_c,          kill_client,       {NULL} },
     {  MOD1,             XK_j,          next_win,          {NULL} },
     {  MOD1,             XK_k,          prev_win,          {NULL} },
-    {  MOD1,             XK_o,          resize_window,     {.i = -10}}, /* shrink */
-    {  MOD1,             XK_p,          resize_window,     {.i = +10}}, /* grow   */
+    {  MOD1,             XK_o,          resize_stack,      {.i = -10}}, /* shrink */
+    {  MOD1,             XK_p,          resize_stack,      {.i = +10}}, /* grow   */
     {  MOD1,             XK_Return,     swap_master,       {NULL} },
     {  MOD1|ShiftMask,   XK_j,          move_down,         {NULL} },
     {  MOD1|ShiftMask,   XK_k,          move_up,           {NULL} },

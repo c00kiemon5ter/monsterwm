@@ -1,4 +1,4 @@
-/* dminiwm.c [ 0.1.6 ]
+/* dminiwm.c [ 0.1.7 ]
 *
 *  I started this from catwm 31/12/10
 *  Bad window error checking and numlock checking used from
@@ -106,8 +106,6 @@ static void enternotify(XEvent *e);
 static void logger(const char* e);
 static unsigned long getcolor(const char* color);
 static void grabkeys();
-static void resize_window(const Arg arg);
-static void resize(const Arg arg);
 static void keypress(XEvent *e);
 static void kill_client();
 static void maprequest(XEvent *e);
@@ -119,6 +117,8 @@ static void prev_desktop();
 static void prev_win();
 static void quit(const Arg arg);
 static void remove_window(Window w);
+static void resize_master(const Arg arg);
+static void resize_stack(const Arg arg);
 static void save_desktop(int i);
 static void select_desktop(int i);
 static void send_kill_signal(Window w);
@@ -346,11 +346,6 @@ void swap_master() {
         tile();
         update_current();
     }
-}
-
-void resize(const Arg arg) {
-        master_size += arg.i;
-        tile();
 }
 
 /* **************************** Desktop Management ************************************* */
@@ -618,7 +613,12 @@ void switch_grid() {
     }
 }
 
-void resize_window(const Arg arg) {
+void resize_master(const Arg arg) {
+        master_size += arg.i;
+        tile();
+}
+
+void resize_stack(const Arg arg) {
     growth += arg.i;
     tile();
 }
