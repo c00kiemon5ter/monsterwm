@@ -99,5 +99,5 @@ Need Xlib, then:
 ###Todo
 ----
 
-  * I'll think of something
+  * when swithching desktops stop the mouse being in an unfocused window changing focus.
 
