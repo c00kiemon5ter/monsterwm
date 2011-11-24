@@ -1,6 +1,6 @@
-/* dminiwm.c [ 0.1.6 ]
+/* dminiwm.c [ 0.1.7 ]
 *
-*  I started this from catwm 31/12/10 
+*  I started this from catwm 31/12/10
 *  Bad window error checking and numlock checking used from
 *  2wm at http://hg.suckless.org/2wm/
 *
@@ -101,14 +101,11 @@ static void change_desktop(const Arg arg);
 static void client_to_desktop(const Arg arg);
 static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
-static void decrease();
 static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
 static void logger(const char* e);
 static unsigned long getcolor(const char* color);
 static void grabkeys();
-static void grow_window();
-static void increase();
 static void keypress(XEvent *e);
 static void kill_client();
 static void maprequest(XEvent *e);
@@ -120,11 +117,12 @@ static void prev_desktop();
 static void prev_win();
 static void quit();
 static void remove_window(Window w);
+static void resize_master(const Arg arg);
+static void resize_stack(const Arg arg);
 static void save_desktop(int i);
 static void select_desktop(int i);
 static void send_kill_signal(Window w);
 static void setup();
-static void shrink_window();
 static void sigchld(int unused);
 static void spawn(const Arg arg);
 static void start();
@@ -189,7 +187,7 @@ void add_window(Window w) {
     else {
         if(ATTACH_ASIDE == 0) {
             for(t=head;t->next;t=t->next);
-            
+
             c->next = NULL;
             c->prev = t;
             c->win = w;
@@ -348,16 +346,6 @@ void swap_master() {
         tile();
         update_current();
     }
-}
-
-void decrease() {
-        master_size -= 10;
-        tile();
-}
-
-void increase() {
-        master_size += 10;
-        tile();
 }
 
 /* **************************** Desktop Management ************************************* */
@@ -522,7 +510,7 @@ void tile() {
                             wdt = sw - BORDER_WIDTH;
                         if((n == x) && (n == 8))
                             wdt = 2*sw/3 - BORDER_WIDTH;
-                    } else 
+                    } else
                     if(x >= 5) {
                         wdt = (sw/3) - BORDER_WIDTH;
                         ht  = (sh/2) - BORDER_WIDTH;
@@ -625,13 +613,13 @@ void switch_grid() {
     }
 }
 
-void grow_window() {
-    growth += 10;
-    tile();
+void resize_master(const Arg arg) {
+        master_size += arg.i;
+        tile();
 }
 
-void shrink_window() {
-    growth -= 10;
+void resize_stack(const Arg arg) {
+    growth += arg.i;
     tile();
 }
 
@@ -817,7 +805,7 @@ void enternotify(XEvent *e) {
    }
 }
 
-void send_kill_signal(Window w) { 
+void send_kill_signal(Window w) {
     XEvent ke;
     ke.type = ClientMessage;
     ke.xclient.window = w;
@@ -843,7 +831,7 @@ void quit() {
     Window root_return, parent;
     Window *children;
     int i;
-    unsigned int nchildren; 
+    unsigned int nchildren;
     XEvent ev;
 
     /*
@@ -881,7 +869,7 @@ void quit() {
 void logger(const char* e) {
     fprintf(stdout,"\n\033[0;34m:: dminiwm : %s \033[0;m\n", e);
 }
- 
+
 void setup() {
     // Install a signal
     sigchld(0);
@@ -1004,7 +992,7 @@ void start() {
 
 
 int main(int argc, char **argv) {
-    // Open display   
+    // Open display
     if(!(dis = XOpenDisplay(NULL))) {
         logger("\033[0;31mCannot open display!");
         exit(1);

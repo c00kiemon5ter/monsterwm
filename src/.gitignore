@@ -1,4 +1,5 @@
 dminiwm
+config.h
 *.o
 *.swp
 *~

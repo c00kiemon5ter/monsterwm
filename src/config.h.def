@@ -1,6 +1,6 @@
- /* config.h for dminiwm.c [ 0.1.6 ]
+ /* config.h for dminiwm.c [ 0.1.7 ]
  *
- *  Started from catwm 31/12/10 
+ *  Started from catwm 31/12/10
  *  Bad window error checking and numlock checking used from
  *  2wm at http://hg.suckless.org/2wm/
  *
@@ -26,7 +26,7 @@
 
 /* Mod (Mod1 == alt) (Mod4 == Super/windows) */
 #define MOD1            Mod1Mask
-#define MOD4		Mod4Mask
+#define MOD4            Mod4Mask
 #define MASTER_SIZE     0.52
 #define TOP_PANEL       1  /* 1=Don't 0=Have the panel at the top instead of the bottom */
 #define PANEL_HEIGHT	18 /* 0 for no space for a panel */
@@ -77,14 +77,14 @@ const char* shutdowncmd[]   = {"sudo","shutdown","-h","now",NULL};
 // Shortcuts
 static key keys[] = {
     // MOD               KEY             FUNCTION            ARGS
-    {  MOD1,             XK_h,          increase,          {NULL}},
-    {  MOD1,             XK_l,          decrease,          {NULL}},
+    {  MOD1,             XK_h,          resize_master,     {.i = 10}},
+    {  MOD1,             XK_l,          resize_master,     {.i = -10}},
     {  MOD1,             XK_c,          kill_client,       {NULL}},
     {  MOD1,             XK_j,          next_win,          {NULL}},
     {  MOD1,             XK_k,          prev_win,          {NULL}},
     {  MOD1,             XK_v,          spawn,             {.com = dmenucmd}},
-    {  MOD1,             XK_p,          grow_window,       {NULL}},
-    {  MOD1,             XK_o,          shrink_window,     {NULL}},
+    {  MOD1,             XK_p,          resize_stack,      {.i = 10}},
+    {  MOD1,             XK_o,          resize_stack,      {.i = -10}},
     {  MOD1,             XK_Return,     spawn,             {.com = urxvtcmd}},
     {  MOD1,             XK_Up,	        spawn,             {.com = volupcmd}},
     {  MOD1,             XK_Down,       spawn,             {.com = voldowncmd}},
