@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-/* dminiwm.c [ 0.1.7 ]
-=======
 /* dminiwm.c [ 0.1.8 ]
->>>>>>> mirror
 *
 *  I started this from catwm 31/12/10
 *  Bad window error checking and numlock checking used from

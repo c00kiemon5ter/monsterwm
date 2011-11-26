@@ -1,4 +1,4 @@
- /* config.h for dminiwm.c [ 0.1.7 ]
+ /* config.h for dminiwm.c [ 0.1.8 ]
  *
  *  Started from catwm 31/12/10
  *  Bad window error checking and numlock checking used from
@@ -35,6 +35,7 @@
 #define DEFAULT_MODE    0  /* 0=Vertical, 1=Fullscreen 2=Horizontal 3=grid */
 #define FOLLOW_MOUSE    1  /* 1=Don't 0=Focus the window the mouse just entered */
 #define FOLLOW_WINDOW   1  /* 1=Don't 0=Follow the window when moved to a different desktop */
+#define CLICK_TO_FOCUS  1  /* 1=Don't 0=Focus an unfocused window when clicked */
 #define DESKTOPS        4  /* Must edit DESKTOPCHANGE keys to suit */
 
 /** Colors **/
