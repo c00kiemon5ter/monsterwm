@@ -11,7 +11,7 @@ CC=gcc
 all: $(EXEC)
 
 dminiwm: dminiwm.o
-	$(CC) $(LDFLAGS) -Os -o $@ $+ $(LDADD)
+	$(CC) $(LDFLAGS) -s -Os -o $@ $+ $(LDADD)
 
 install: all
 	install -Dm 755 dminiwm $(DESTDIR)$(BINDIR)/dminiwm

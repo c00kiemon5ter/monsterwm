@@ -12,7 +12,7 @@ Screenshots and ramblings/updates at https://bbs.archlinux.org/viewtopic.php?id=
 
 **dminiwm** is a very minimal and lightweight dynamic tiling window manager.
     I will try to stay under 1000 SLOC.
-    Currently under 900 lines with the config file included.
+    Currently under 950 lines with the config file included.
 
 
 ###Modes
@@ -60,9 +60,8 @@ It allows the "normal" method of tiling window managers(with the new window as t
 ###Recent Changes
 --------------
 
-15/10/11
- Added having applications open on specified desktop
-
+26/11/11
+	Added a click to focus option
 
 ###Status
 ------
@@ -76,6 +75,7 @@ There are more options in the config file than the original catwm.
   * Fixed a window being destroyed on another desktop creating ghost windows.
   * Added ability to resize the window on the top of the stack
   * Added having applications open on specified desktop
+  * Added a click to focus option
 
 
 ###Installation
