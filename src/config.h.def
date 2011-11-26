@@ -1,6 +1,6 @@
- /* config.h for dminiwm.c [ 0.1.7 ]
+ /* config.h for dminiwm.c [ 0.1.8 ]
  *
- *  Started from catwm 31/12/10 
+ *  Started from catwm 31/12/10
  *  Bad window error checking and numlock checking used from
  *  2wm at http://hg.suckless.org/2wm/
  *
@@ -35,6 +35,7 @@
 #define DEFAULT_MODE    0  /* 0=Vertical, 1=Fullscreen 2=Horizontal 3=grid*/
 #define FOLLOW_MOUSE    0  /* 1=Don't 0=Focus the window the mouse just entered */
 #define FOLLOW_WINDOW   0  /* 1=Don't 0=Follow the window when moved to a different desktop */
+#define CLICK_TO_FOCUS  0  /* 1=Don't 0=Focus an unfocused window when clicked */
 #define DESKTOPS        6  /* Must edit DESKTOPCHANGE keys to suit */
 
 // Colors

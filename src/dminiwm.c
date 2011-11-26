@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 /* dminiwm.c [ 0.1.7 ]
+=======
+/* dminiwm.c [ 0.1.8 ]
+>>>>>>> mirror
 *
-*  I started this from catwm 31/12/10 
+*  I started this from catwm 31/12/10
 *  Bad window error checking and numlock checking used from
 *  2wm at http://hg.suckless.org/2wm/
 *
@@ -97,6 +101,7 @@ static const AtomNode atomList[] = {
 
 // Functions
 static void add_window(Window w);
+static void buttonpressed(XEvent *e);
 static void change_desktop(const Arg arg);
 static void client_to_desktop(const Arg arg);
 static void configurenotify(XEvent *e);
@@ -161,6 +166,7 @@ static void (*events[LASTEvent])(XEvent *e) = {
     [KeyPress] = keypress,
     [MapRequest] = maprequest,
     [EnterNotify] = enternotify,
+    [ButtonPress] = buttonpressed,
     [DestroyNotify] = destroynotify,
     [ConfigureNotify] = configurenotify,
     [ConfigureRequest] = configurerequest
@@ -187,7 +193,7 @@ void add_window(Window w) {
     else {
         if(ATTACH_ASIDE == 0) {
             for(t=head;t->next;t=t->next);
-            
+
             c->next = NULL;
             c->prev = t;
             c->win = w;
@@ -510,7 +516,7 @@ void tile() {
                             wdt = sw - BORDER_WIDTH;
                         if((n == x) && (n == 8))
                             wdt = 2*sw/3 - BORDER_WIDTH;
-                    } else 
+                    } else
                     if(x >= 5) {
                         wdt = (sw/3) - BORDER_WIDTH;
                         ht  = (sh/2) - BORDER_WIDTH;
@@ -571,9 +577,14 @@ void update_current() {
             XSetWindowBorder(dis,c->win,win_focus);
             XSetInputFocus(dis,c->win,RevertToParent,CurrentTime);
             XRaiseWindow(dis,c->win);
+            if(CLICK_TO_FOCUS == 0)
+                XUngrabButton(dis, AnyButton, AnyModifier, c->win);
         }
-        else
+        else {
             XSetWindowBorder(dis,c->win,win_unfocus);
+            if(CLICK_TO_FOCUS == 0)
+                XGrabButton(dis, AnyButton, AnyModifier, c->win, True, ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
+        }
     }
     XSync(dis, False);
 }
@@ -805,7 +816,21 @@ void enternotify(XEvent *e) {
    }
 }
 
-void send_kill_signal(Window w) { 
+void buttonpressed(XEvent *e) {
+    client *c;
+    XButtonPressedEvent *ev = &e->xbutton;
+
+    // change focus with LMB
+    if(CLICK_TO_FOCUS == 0 && ev->window != current->win && ev->button == Button1)
+        for(c=head;c;c=c->next)
+            if(ev->window == c->win) {
+                current = c;
+                update_current();
+                return;
+            }
+}
+
+void send_kill_signal(Window w) {
     XEvent ke;
     ke.type = ClientMessage;
     ke.xclient.window = w;
@@ -831,7 +856,7 @@ void quit() {
     Window root_return, parent;
     Window *children;
     int i;
-    unsigned int nchildren; 
+    unsigned int nchildren;
     XEvent ev;
 
     /*
@@ -869,7 +894,7 @@ void quit() {
 void logger(const char* e) {
     fprintf(stdout,"\n\033[0;34m:: dminiwm : %s \033[0;m\n", e);
 }
- 
+
 void setup() {
     // Install a signal
     sigchld(0);
@@ -992,7 +1017,7 @@ void start() {
 
 
 int main(int argc, char **argv) {
-    // Open display   
+    // Open display
     if(!(dis = XOpenDisplay(NULL))) {
         logger("\033[0;31mCannot open display!");
         exit(1);
