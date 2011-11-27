@@ -129,6 +129,7 @@ static void spawn(const Arg arg);
 static void start();
 static void swap_master();
 static void tile();
+static void toggle_desktop();
 static void switch_fullscreen();
 static void switch_grid();
 static void switch_horizontal();
@@ -142,6 +143,7 @@ static void update_current();
 static Display *dis;
 static int bool_quit;
 static int current_desktop;
+static int previous_desktop;
 static int growth;
 static int master_size;
 static int mode;
@@ -359,6 +361,7 @@ void change_desktop(const Arg arg) {
 
     // Save current "properties"
     save_desktop(current_desktop);
+    previous_desktop = current_desktop;
 
     // Unmap all window
     if(head != NULL)
@@ -375,6 +378,11 @@ void change_desktop(const Arg arg) {
 
     tile();
     update_current();
+}
+
+void toggle_desktop() {
+    Arg a = {.i = previous_desktop};
+    change_desktop(a);
 }
 
 void next_desktop() {
