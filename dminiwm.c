@@ -128,7 +128,7 @@ static void spawn(const Arg arg);
 static void start();
 static void swap_master();
 static void tile();
-static void toggle_desktop();
+static void last_desktop();
 static void switch_fullscreen();
 static void switch_grid();
 static void switch_horizontal();
@@ -379,7 +379,7 @@ void change_desktop(const Arg arg) {
     update_current();
 }
 
-void toggle_desktop() {
+void last_desktop() {
     Arg a = {.i = previous_desktop};
     change_desktop(a);
 }
