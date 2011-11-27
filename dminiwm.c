@@ -112,9 +112,8 @@ static void kill_client();
 static void maprequest(XEvent *e);
 static void move_down();
 static void move_up();
-static void next_desktop();
+static void next_desktop(const Arg arg);
 static void next_win();
-static void prev_desktop();
 static void prev_win();
 static void quit();
 static void remove_window(Window w);
@@ -385,25 +384,9 @@ void toggle_desktop() {
     change_desktop(a);
 }
 
-void next_desktop() {
-    int tmp = current_desktop;
-    if(tmp == TABLENGTH(desktops)-1)
-        tmp = 0;
-    else
-        tmp++;
-
-    Arg a = {.i = tmp};
-    change_desktop(a);
-}
-
-void prev_desktop() {
-    int tmp = current_desktop;
-    if(tmp == 0)
-        tmp = TABLENGTH(desktops)-1;
-    else
-        tmp--;
-
-    Arg a = {.i = tmp};
+void next_desktop(const Arg arg) {
+    int ndesktops = TABLENGTH(desktops);
+    Arg a = {.i = (current_desktop + ndesktops + arg.i) % ndesktops};
     change_desktop(a);
 }
 
