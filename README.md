@@ -80,20 +80,6 @@ All accessible with keyboard shortcuts defined in the config.h file.
  * Changing a tiling mode or window size on one desktop doesn't affect the other desktops.
 
 
-Status
-------
-
-There are more options in the config file than the original catwm.
-
- * Fixed the window manager crashing on a bad window error.
- * Fixed the keyboard shortcuts not working if numlock was on.
- * Added some functions.
- * Added an option to focus the window the mouse just moved to.
- * Fixed a window being destroyed on another desktop creating ghost windows.
- * Added ability to resize the window on the top of the stack
- * Added having applications open on specified desktop
-
-
 Installation
 ------------
 
@@ -118,6 +104,6 @@ No bugs for the moment ;) (I mean, no importants bugs)
 For any issues report at [the topic on ArchLinux forums][dminif],
 or [fill an issue][bug] on [GitHub][ghp]
 
-  [bug]: https://github.com/moetunes/dminimalwm/issues
-  [ghp]: https://github.com/moetunes/dminimalwm
+  [bug]: https://github.com/c00kiemon5ter/dminiwm/issues
+  [ghp]: https://github.com/c00kiemon5ter/dminiwm
 
