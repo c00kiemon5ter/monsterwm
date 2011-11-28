@@ -103,8 +103,8 @@ static key keys[] = {
     {  MOD1|ControlMask, XK_r,          spawn,             {.com = rebootcmd}},
     {  MOD1|ControlMask, XK_s,          spawn,             {.com = shutdowncmd}},
 // Window key + shortcut
-    {  MOD4,             XK_Right,      next_desktop,      {.i = +1}},
-    {  MOD4,             XK_Left,       next_desktop,      {.i = -1}},
+    {  MOD4,             XK_Right,      rotate_desktop,    {.i = 1}},
+    {  MOD4,             XK_Left,       rotate_desktop,    {.i = -1}},
     {  MOD4,             XK_e,          spawn,             {.com = mailcmd}},
     {  MOD4,             XK_f,          spawn,             {.com = firefoxcmd}},
     {  MOD4,             XK_w,          spawn,             {.com = webcmd}},

@@ -112,7 +112,7 @@ static void kill_client();
 static void maprequest(XEvent *e);
 static void move_down();
 static void move_up();
-static void next_desktop(const Arg arg);
+static void rotate_desktop(const Arg arg);
 static void next_win();
 static void prev_win();
 static void quit();
@@ -384,7 +384,7 @@ void last_desktop() {
     change_desktop(a);
 }
 
-void next_desktop(const Arg arg) {
+void rotate_desktop(const Arg arg) {
     int ndesktops = TABLENGTH(desktops);
     Arg a = {.i = (current_desktop + ndesktops + arg.i) % ndesktops};
     change_desktop(a);
