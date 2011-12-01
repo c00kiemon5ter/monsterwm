@@ -68,13 +68,15 @@ const char *mtogglecmd[] = { "mpc", "toggle", NULL };
 /** Shortcuts **/
 static key keys[] = {
 /*     modifier          key            function           argument */
-    {  MOD1,             XK_h,          resize_master,     {.i = -10}}, /* decrease */
-    {  MOD1,             XK_l,          resize_master,     {.i = +10}}, /* increase */
     {  MOD1|ShiftMask,   XK_c,          kill_client,       {NULL}},
     {  MOD1,             XK_j,          next_win,          {NULL}},
     {  MOD1,             XK_k,          prev_win,          {NULL}},
+    {  MOD1,             XK_h,          resize_master,     {.i = -10}}, /* decrease */
+    {  MOD1,             XK_l,          resize_master,     {.i = +10}}, /* increase */
     {  MOD1,             XK_o,          resize_stack,      {.i = -10}}, /* shrink */
     {  MOD1,             XK_p,          resize_stack,      {.i = +10}}, /* grow   */
+    {  MOD1|ShiftMask,   XK_Left,       rotate_desktop,    {.i = -1}}, /* prev */
+    {  MOD1|ShiftMask,   XK_Right,      rotate_desktop,    {.i = +1}}, /* next */
     {  MOD1,             XK_Tab,        last_desktop,      {NULL}},
     {  MOD1,             XK_Return,     swap_master,       {NULL}},
     {  MOD1|ShiftMask,   XK_j,          move_down,         {NULL}},
@@ -83,8 +85,6 @@ static key keys[] = {
     {  MOD1|ShiftMask,   XK_h,          switch_horizontal, {NULL}},
     {  MOD1|ShiftMask,   XK_g,          switch_grid,       {NULL}},
     {  MOD1|ShiftMask,   XK_m,          switch_fullscreen, {NULL}},
-    {  MOD1|ShiftMask,   XK_Right,      rotate_desktop,    {.i = +1}}, /* next */
-    {  MOD1|ShiftMask,   XK_Left,       rotate_desktop,    {.i = -1}}, /* prev */
     {  MOD1|ShiftMask,   XK_q,          quit,              {NULL}},
     {  MOD1|ShiftMask,   XK_Return,     spawn,             {.com = termcmd}},
     {  MOD4,             XK_v,          spawn,             {.com = dmenucmd}},
