@@ -1,21 +1,64 @@
-CFLAGS+= -Wall
-LDADD+= -lX11
-LDFLAGS=
-EXEC=dminiwm
+VERSION = 0.2.1
 
-PREFIX?= /usr/local
-BINDIR?= $(PREFIX)/bin
+CFLAGS += -Wall
+LDADD  += -lX11
+LDFLAGS =
+EXEC    = dminiwm
 
-CC=gcc
+PREFIX ?= /usr/local
+BINDIR ?= ${PREFIX}/bin
+MANPREFIX = ${PREFIX}/share/man
 
-all: $(EXEC)
+X11INC = /usr/include/X11
+X11LIB = /usr/lib/X11
 
-dminiwm: dminiwm.o
-	$(CC) $(LDFLAGS) -s -Os -o $@ $+ $(LDADD)
+INCS = -I. -I/usr/include -I${X11INC}
+LIBS = -L/usr/lib -lc -L${X11LIB} -lX11
 
-install: all
-	install -Dm 755 dminiwm $(DESTDIR)$(BINDIR)/dminiwm
+CPPFLAGS = -DVERSION=\"${VERSION}\"
+CFLAGS   = -g -std=c99 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}
+LDFLAGS  = -g ${LIBS}
+#$(CC) $(LDFLAGS) -s -Os -o $@ $+ $(LDADD)
+
+CC = cc
+
+SRC = dminiwm.c
+OBJ = ${SRC:.c=.o}
+
+all: options dminiwm
+
+options:
+	@echo dminiwm build options:
+	@echo "CFLAGS   = ${CFLAGS}"
+	@echo "LDFLAGS  = ${LDFLAGS}"
+	@echo "CC       = ${CC}"
+
+.c.o:
+	@echo CC $<
+	@${CC} -c ${CFLAGS} $<
+
+${OBJ}: config.h
+
+config.h:
+	@echo creating $@ from config.def.h
+	@cp config.def.h $@
+
+dminiwm: ${OBJ}
+	@echo CC -o $@
+	@${CC} -o $@ ${OBJ} ${LDFLAGS}
 
 clean:
-	rm -fv dminiwm *.o
+	@echo cleaning
+	@rm -fv dminiwm ${OBJ} dminiwm-${VERSION}.tar.gz
 
+install: all
+	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
+	@mkdir -p ${DESTDIR}${PREFIX}/bin
+	@cp -f dminiwm ${DESTDIR}${PREFIX}/bin
+	@chmod 755 ${DESTDIR}${PREFIX}/bin/dminiwm
+
+uninstall:
+	@echo removing executable file from ${DESTDIR}${PREFIX}/bin
+	@rm -f ${DESTDIR}${PREFIX}/bin/dminiwm
+
+.PHONY: all options clean install uninstall
