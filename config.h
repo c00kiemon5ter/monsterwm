@@ -1,22 +1,18 @@
- /* config.h for dminiwm.c [ 0.2.1 ]
+/* Based on:
+ * - catwm at https://github.com/pyknite/catwm
+ * - 2wm at http://hg.suckless.org/2wm/
+ * - dwm at http://dwm.suckless.org/
  *
- *  Started from catwm 31/12/10
- *  Bad window error checking and numlock checking used from
- *  2wm at http://hg.suckless.org/2wm/
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef CONFIG_H
@@ -63,11 +59,6 @@ const char *mstopcmd[]   = { "mpc", "stop",   NULL };
 const char *mnextcmd[]   = { "mpc", "next",   NULL };
 const char *mprevcmd[]   = { "mpc", "prev",   NULL };
 const char *mtogglecmd[] = { "mpc", "toggle", NULL };
-/* operation */
-/*
- * const char* rebootcmd[]   = { "sudo", "reboot", NULL};
- * const char* shutdowncmd[] = { "sudo", "shutdown", "-h", "now", NULL};
- */
 
 /* Avoid multiple paste */
 #define DESKTOPCHANGE(K,N) \
@@ -79,40 +70,36 @@ static key keys[] = {
 /*     modifier          key            function           argument */
     {  MOD1,             XK_h,          resize_master,     {.i = -10}}, /* decrease */
     {  MOD1,             XK_l,          resize_master,     {.i = +10}}, /* increase */
-    {  MOD1|ShiftMask,   XK_c,          kill_client,       {NULL} },
-    {  MOD1,             XK_j,          next_win,          {NULL} },
-    {  MOD1,             XK_k,          prev_win,          {NULL} },
+    {  MOD1|ShiftMask,   XK_c,          kill_client,       {NULL}},
+    {  MOD1,             XK_j,          next_win,          {NULL}},
+    {  MOD1,             XK_k,          prev_win,          {NULL}},
     {  MOD1,             XK_o,          resize_stack,      {.i = -10}}, /* shrink */
     {  MOD1,             XK_p,          resize_stack,      {.i = +10}}, /* grow   */
-    {  MOD1,             XK_Tab,        last_desktop,      {NULL} },
-    {  MOD1,             XK_Return,     swap_master,       {NULL} },
-    {  MOD1|ShiftMask,   XK_j,          move_down,         {NULL} },
-    {  MOD1|ShiftMask,   XK_k,          move_up,           {NULL} },
-    {  MOD1|ShiftMask,   XK_v,          switch_vertical,   {NULL} },
-    {  MOD1|ShiftMask,   XK_h,          switch_horizontal, {NULL} },
-    {  MOD1|ShiftMask,   XK_g,          switch_grid,       {NULL} },
-    {  MOD1|ShiftMask,   XK_m,          switch_fullscreen, {NULL} },
-    {  MOD1|ShiftMask,   XK_Right,      rotate_desktop,      {.i = +1} }, /* next */
-    {  MOD1|ShiftMask,   XK_Left,       rotate_desktop,      {.i = -1} }, /* prev */
-    /*
-     * {  MOD1|ControlMask, XK_r,          spawn,             {.com = rebootcmd}   },
-     * {  MOD1|ControlMask, XK_s,          spawn,             {.com = shutdowncmd} },
-     */
-    {  MOD1|ShiftMask,   XK_q,          quit,              {NULL} },
-    {  MOD1|ShiftMask,   XK_Return,     spawn,             {.com = termcmd}  },
-    {  MOD4,             XK_v,          spawn,             {.com = dmenucmd} },
-    {  MOD4,             XK_grave,      spawn,             {.com = urxvtcmd} },
-    {  MOD4,             XK_equal,	    spawn,             {.com = volupcmd}   },
-    {  MOD4,             XK_KP_Add,	    spawn,             {.com = volupcmd}   },
-    {  MOD4,             XK_minus,      spawn,             {.com = voldowncmd} },
-    {  MOD4,             XK_KP_Subtract,spawn,             {.com = voldowncmd} },
-    {  MOD4,             XK_m,	        spawn,             {.com = voltogglecmd} },
-    {  MOD4,             XK_w,          spawn,             {.com = chromiumcmd} },
-    {  MOD4,             XK_c,	        spawn,             {.com = mplaycmd}   },
-    {  MOD4,             XK_s,	        spawn,             {.com = mstopcmd}   },
-    {  MOD4,             XK_j,	        spawn,             {.com = mnextcmd}   },
-    {  MOD4,             XK_k,	        spawn,             {.com = mprevcmd}   },
-    {  MOD4,             XK_p,	        spawn,             {.com = mtogglecmd} },
+    {  MOD1,             XK_Tab,        last_desktop,      {NULL}},
+    {  MOD1,             XK_Return,     swap_master,       {NULL}},
+    {  MOD1|ShiftMask,   XK_j,          move_down,         {NULL}},
+    {  MOD1|ShiftMask,   XK_k,          move_up,           {NULL}},
+    {  MOD1|ShiftMask,   XK_v,          switch_vertical,   {NULL}},
+    {  MOD1|ShiftMask,   XK_h,          switch_horizontal, {NULL}},
+    {  MOD1|ShiftMask,   XK_g,          switch_grid,       {NULL}},
+    {  MOD1|ShiftMask,   XK_m,          switch_fullscreen, {NULL}},
+    {  MOD1|ShiftMask,   XK_Right,      rotate_desktop,    {.i = +1}}, /* next */
+    {  MOD1|ShiftMask,   XK_Left,       rotate_desktop,    {.i = -1}}, /* prev */
+    {  MOD1|ShiftMask,   XK_q,          quit,              {NULL}},
+    {  MOD1|ShiftMask,   XK_Return,     spawn,             {.com = termcmd}},
+    {  MOD4,             XK_v,          spawn,             {.com = dmenucmd}},
+    {  MOD4,             XK_grave,      spawn,             {.com = urxvtcmd}},
+    {  MOD4,             XK_equal,	    spawn,             {.com = volupcmd}},
+    {  MOD4,             XK_KP_Add,	    spawn,             {.com = volupcmd}},
+    {  MOD4,             XK_minus,      spawn,             {.com = voldowncmd}},
+    {  MOD4,             XK_KP_Subtract,spawn,             {.com = voldowncmd}},
+    {  MOD4,             XK_m,	        spawn,             {.com = voltogglecmd}},
+    {  MOD4,             XK_w,          spawn,             {.com = chromiumcmd}},
+    {  MOD4,             XK_c,	        spawn,             {.com = mplaycmd}},
+    {  MOD4,             XK_s,	        spawn,             {.com = mstopcmd}},
+    {  MOD4,             XK_j,	        spawn,             {.com = mnextcmd}},
+    {  MOD4,             XK_k,	        spawn,             {.com = mprevcmd}},
+    {  MOD4,             XK_p,	        spawn,             {.com = mtogglecmd}},
        DESKTOPCHANGE(    XK_F1,                             0)
        DESKTOPCHANGE(    XK_F2,                             1)
        DESKTOPCHANGE(    XK_F3,                             2)
