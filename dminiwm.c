@@ -1,42 +1,40 @@
-/* dminiwm.c [ 0.2.1 ]
-*
-*  I started this from catwm 31/12/10
-*  Bad window error checking and numlock checking used from
-*  2wm at http://hg.suckless.org/2wm/
-*
-*  This program is free software: you can redistribute it and/or modify
-*  it under the terms of the GNU General Public License as published by
-*  the Free Software Foundation, either version 3 of the License, or
-*  (at your option) any later version.
-*  This program is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*  GNU General Public License for more details.
-*  You should have received a copy of the GNU General Public License
-*  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+/* Based on:
+ * - catwm at https://github.com/pyknite/catwm
+ * - 2wm at http://hg.suckless.org/2wm/
+ * - dwm at http://dwm.suckless.org/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+#include <signal.h>
+#include <sys/wait.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
-//#include <X11/XF86keysym.h>
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <sys/wait.h>
-#include <string.h>
 
 #define TABLENGTH(X)    (sizeof(X)/sizeof(*X))
 
+/* structs */
 typedef union {
     const char** com;
     const int i;
 } Arg;
 
-// Structs
 typedef struct {
     unsigned int mod;
     KeySym keysym;
@@ -44,24 +42,19 @@ typedef struct {
     const Arg arg;
 } key;
 
-typedef struct client client;
-struct client{
-    // Prev and next client
-    client *next;
-    client *prev;
-
-    // The window
+typedef struct client {
+    struct client *next;
+    struct client *prev;
     Window win;
-};
+} client;
 
-typedef struct desktop desktop;
-struct desktop{
+typedef struct {
     int master_size;
     int mode;
     int growth;
     client *head;
     client *current;
-};
+} desktop;
 
 typedef struct {
     const char *class;
@@ -80,8 +73,8 @@ typedef enum {
 } AtomType;
 
 typedef struct {
-   Atom *atom;
-   const char *name;
+    Atom *atom;
+    const char *name;
 } AtomNode;
 
 Atom atoms[ATOM_COUNT];
@@ -95,7 +88,7 @@ static const AtomNode atomList[] = {
     { &atoms[ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION], "_NET_WM_WINDOW_TYPE_NOTIFICATION"},
 };
 
-// Functions
+/* Functions */
 static void add_window(Window w);
 static void buttonpressed(XEvent *e);
 static void change_desktop(const Arg arg);
@@ -138,7 +131,7 @@ static void update_current();
 // Include configuration file (need struct key)
 #include "config.h"
 
-// Variable
+/* variables */
 static Display *dis;
 static int bool_quit;
 static int current_desktop;
@@ -158,7 +151,7 @@ static Window root;
 static client *head;
 static client *current;
 
-// Events array
+/* events array */
 static void (*events[LASTEvent])(XEvent *e) = {
     [KeyPress] = keypress,
     [MapRequest] = maprequest,
@@ -169,7 +162,7 @@ static void (*events[LASTEvent])(XEvent *e) = {
     [ConfigureRequest] = configurerequest
 };
 
-// Desktop array
+/* desktops array */
 static desktop desktops[DESKTOPS];
 
 /* ***************************** Window Management ******************************* */
@@ -220,7 +213,7 @@ void add_window(Window w) {
 void remove_window(Window w) {
     client *c;
 
-    // CHANGE THIS UGLY CODE
+    /* FIXME: change this ugly code */
     for(c=head;c;c=c->next) {
 
         if(c->win == w) {
@@ -257,19 +250,18 @@ void remove_window(Window w) {
 }
 
 void kill_client() {
-    if(current != NULL) {
-        //send delete signal to window
-        XEvent ke;
-        ke.type = ClientMessage;
-        ke.xclient.window = current->win;
-        ke.xclient.message_type = XInternAtom(dis, "WM_PROTOCOLS", True);
-        ke.xclient.format = 32;
-        ke.xclient.data.l[0] = XInternAtom(dis, "WM_DELETE_WINDOW", True);
-        ke.xclient.data.l[1] = CurrentTime;
-        XSendEvent(dis, current->win, False, NoEventMask, &ke);
-        send_kill_signal(current->win);
-        remove_window(current->win);
-	}
+    if(current == NULL) return;
+    //send delete signal to window
+    XEvent ke;
+    ke.type = ClientMessage;
+    ke.xclient.window = current->win;
+    ke.xclient.message_type = XInternAtom(dis, "WM_PROTOCOLS", True);
+    ke.xclient.format = 32;
+    ke.xclient.data.l[0] = XInternAtom(dis, "WM_DELETE_WINDOW", True);
+    ke.xclient.data.l[1] = CurrentTime;
+    XSendEvent(dis, current->win, False, NoEventMask, &ke);
+    send_kill_signal(current->win);
+    remove_window(current->win);
 }
 
 void next_win() {
@@ -447,7 +439,7 @@ void tile() {
     else if(head != NULL) {
         switch(mode) {
             case 0: /* Vertical */
-            	// Master window
+                // Master window
                 XMoveResizeWindow(dis,head->win,0,y,master_size - BORDER_WIDTH,sh - BORDER_WIDTH);
 
                 // Stack
@@ -466,7 +458,7 @@ void tile() {
                 }
                 break;
             case 2: /* Horizontal */
-            	// Master window
+                // Master window
                 XMoveResizeWindow(dis,head->win,0,y,sw-BORDER_WIDTH,master_size - BORDER_WIDTH);
 
                 // Stack
@@ -479,7 +471,7 @@ void tile() {
                     x += (sw/n)-(growth/(n-1));
                 }
                 break;
-            case 3: { // Grid
+            case 3: { /* Grid */
                 int xpos = 0;
                 int wdt = 0;
                 int ht = 0;
@@ -504,46 +496,45 @@ void tile() {
                         if((n == x) && (n == 8))
                             wdt = 2*sw/3 - BORDER_WIDTH;
                     } else
-                    if(x >= 5) {
-                        wdt = (sw/3) - BORDER_WIDTH;
-                        ht  = (sh/2) - BORDER_WIDTH;
-                        if((n == 1) || (n == 4))
-                            xpos = 0;
-                        if((n == 2) || (n == 5))
-                            xpos = (sw/3) + BORDER_WIDTH;
-                        if((n == 3) || (n == 6))
-                            xpos = (2*(sw/3)) + BORDER_WIDTH;
-                        if(n == 4)
-                            y += (sh/2); // + BORDER_WIDTH;
-                        if((n == x) && (n == 5))
-                            wdt = 2*sw/3 - BORDER_WIDTH;
-
-                    } else {
-                        if(x > 2) {
-                            if((n == 1) || (n == 2))
-                                ht = (sh/2) + growth - BORDER_WIDTH;
-                            if(n >= 3)
-                                ht = (sh/2) - growth - 2*BORDER_WIDTH;
+                        if(x >= 5) {
+                            wdt = (sw/3) - BORDER_WIDTH;
+                            ht  = (sh/2) - BORDER_WIDTH;
+                            if((n == 1) || (n == 4))
+                                xpos = 0;
+                            if((n == 2) || (n == 5))
+                                xpos = (sw/3) + BORDER_WIDTH;
+                            if((n == 3) || (n == 6))
+                                xpos = (2*(sw/3)) + BORDER_WIDTH;
+                            if(n == 4)
+                                y += (sh/2); // + BORDER_WIDTH;
+                            if((n == x) && (n == 5))
+                                wdt = 2*sw/3 - BORDER_WIDTH;
+                        } else {
+                            if(x > 2) {
+                                if((n == 1) || (n == 2))
+                                    ht = (sh/2) + growth - BORDER_WIDTH;
+                                if(n >= 3)
+                                    ht = (sh/2) - growth - 2*BORDER_WIDTH;
+                            }
+                            else
+                                ht = sh - BORDER_WIDTH;
+                            if((n == 1) || (n == 3)) {
+                                xpos = 0;
+                                wdt = master_size - BORDER_WIDTH;
+                            }
+                            if((n == 2) || (n == 4)) {
+                                xpos = master_size+BORDER_WIDTH;
+                                wdt = (sw - master_size) - 2*BORDER_WIDTH;
+                            }
+                            if(n == 3)
+                                y += (sh/2) + growth + BORDER_WIDTH;
+                            if((n == x) && (n == 3))
+                                wdt = sw - BORDER_WIDTH;
                         }
-                        else
-                            ht = sh - BORDER_WIDTH;
-                        if((n == 1) || (n == 3)) {
-                            xpos = 0;
-                            wdt = master_size - BORDER_WIDTH;
-                        }
-                        if((n == 2) || (n == 4)) {
-                            xpos = master_size+BORDER_WIDTH;
-                            wdt = (sw - master_size) - 2*BORDER_WIDTH;
-                        }
-                        if(n == 3)
-                            y += (sh/2) + growth + BORDER_WIDTH;
-                        if((n == x) && (n == 3))
-                            wdt = sw - BORDER_WIDTH;
-                    }
                     XMoveResizeWindow(dis,c->win,xpos,y,wdt,ht);
                 }
-            }
-            break;
+                }
+                break;
             default:
                 break;
         }
@@ -577,43 +568,38 @@ void update_current() {
 }
 
 void switch_vertical() {
-    if(mode != 0) {
-        mode = 0;
-        master_size = sw * MASTER_SIZE;
-	tile();
-        update_current();
-    }
+    if(mode == 0) return;
+    mode = 0;
+    master_size = sw * MASTER_SIZE;
+    tile();
+    update_current();
 }
 
 void switch_fullscreen() {
-    if(mode != 1) {
-        mode = 1;
-        tile();
-        update_current();
-    }
+    if(mode == 1) return;
+    mode = 1;
+    tile();
+    update_current();
 }
 
 void switch_horizontal() {
-    if(mode != 2) {
-        mode = 2;
-        master_size = sh * MASTER_SIZE;
-        tile();
-        update_current();
-    }
+    if(mode == 2) return;
+    mode = 2;
+    master_size = sh * MASTER_SIZE;
+    tile();
 }
 
 void switch_grid() {
-    if(mode != 3) {
-        mode = 3;
-        master_size = sw * MASTER_SIZE;
-        tile();
-        update_current();
-    }
+    if(mode == 3) return;
+    mode = 3;
+    master_size = sw * MASTER_SIZE;
+    tile();
+    update_current();
 }
 
 void resize_master(const Arg arg) {
-        master_size += arg.i;
-        tile();
+    master_size += arg.i;
+    tile();
 }
 
 void resize_stack(const Arg arg) {
@@ -652,6 +638,7 @@ void keypress(XEvent *e) {
     }
 }
 
+/* FIXME: what's this for ? */
 void configurenotify(XEvent *e) {
     // Do nothing for the moment
 }
@@ -692,9 +679,9 @@ void maprequest(XEvent *e) {
             return;
         }
 
-   	Window trans = None;
-   	if (XGetTransientForHint(dis, ev->window, &trans) && trans != None) {
-   	    add_window(ev->window);
+    Window trans = None;
+    if (XGetTransientForHint(dis, ev->window, &trans) && trans != None) {
+        add_window(ev->window);
         XMapWindow(dis, ev->window);
         XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
         XRaiseWindow(dis,ev->window);
@@ -712,10 +699,10 @@ void maprequest(XEvent *e) {
             type = (unsigned long*)temp;
             for(j=0; j<count; j++) {
                 if((type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_UTILITY]) ||
-                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION]) ||
-                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_SPLASH]) ||
-                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_DIALOG]) ||
-                  (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_DOCK])) {
+                        (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION]) ||
+                        (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_SPLASH]) ||
+                        (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_DIALOG]) ||
+                        (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_DOCK])) {
                     add_window(ev->window);
                     XMapWindow(dis, ev->window);
                     XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
@@ -725,7 +712,7 @@ void maprequest(XEvent *e) {
             }
         }
         if(temp)
-         XFree(temp);
+            XFree(temp);
     }
 
     XClassHint ch = {0};
@@ -795,12 +782,12 @@ void enternotify(XEvent *e) {
         if((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
             return;
         for(c=head;c;c=c->next)
-           if(ev->window == c->win) {
+            if(ev->window == c->win) {
                 current = c;
                 update_current();
                 return;
-       }
-   }
+            }
+    }
 }
 
 void buttonpressed(XEvent *e) {
@@ -839,6 +826,7 @@ unsigned long getcolor(const char* color) {
     return c.pixel;
 }
 
+/* FIXME: fix segfaults */
 void quit() {
     Window root_return, parent;
     Window *children;
@@ -914,6 +902,7 @@ void setup() {
     // Shortcuts
     grabkeys();
 
+    /* FIXME: move defaults to declerations */
     // Default stack
     mode = DEFAULT_MODE;
     growth = 0;
@@ -957,11 +946,11 @@ void setup() {
 
 void sigchld(int unused) {
     // Again, thx to dwm ;)
-	if(signal(SIGCHLD, sigchld) == SIG_ERR) {
-		logger("\033[0;31mCan't install SIGCHLD handler");
-		exit(1);
-        }
-	while(0 < waitpid(-1, NULL, WNOHANG));
+    if(signal(SIGCHLD, sigchld) == SIG_ERR) {
+        logger("\033[0;31mCan't install SIGCHLD handler");
+        exit(1);
+    }
+    while(0 < waitpid(-1, NULL, WNOHANG));
 }
 
 void spawn(const Arg arg) {
@@ -980,18 +969,19 @@ void spawn(const Arg arg) {
 /* There's no way to check accesses to destroyed windows, thus those cases are ignored (especially on UnmapNotify's).  Other types of errors call Xlibs default error handler, which may call exit.  */
 int xerror(Display *dis, XErrorEvent *ee) {
     if(ee->error_code == BadWindow
-	|| (ee->request_code == X_SetInputFocus && ee->error_code == BadMatch)
-	|| (ee->request_code == X_PolyText8 && ee->error_code == BadDrawable)
-	|| (ee->request_code == X_PolyFillRectangle && ee->error_code == BadDrawable)
-	|| (ee->request_code == X_PolySegment && ee->error_code == BadDrawable)
-	|| (ee->request_code == X_ConfigureWindow && ee->error_code == BadMatch)
-	|| (ee->request_code == X_GrabKey && ee->error_code == BadAccess)
-	|| (ee->request_code == X_CopyArea && ee->error_code == BadDrawable))
+            || (ee->request_code == X_SetInputFocus && ee->error_code == BadMatch)
+            || (ee->request_code == X_PolyText8 && ee->error_code == BadDrawable)
+            || (ee->request_code == X_PolyFillRectangle && ee->error_code == BadDrawable)
+            || (ee->request_code == X_PolySegment && ee->error_code == BadDrawable)
+            || (ee->request_code == X_ConfigureWindow && ee->error_code == BadMatch)
+            || (ee->request_code == X_GrabKey && ee->error_code == BadAccess)
+            || (ee->request_code == X_CopyArea && ee->error_code == BadDrawable))
         return 0;
     logger("\033[0;31mBad Window Error!");
     return xerrorxlib(dis, ee); /* may call exit */
 }
 
+/* FIXME: this is run() actually */
 void start() {
     XEvent ev;
 
@@ -1002,12 +992,21 @@ void start() {
     }
 }
 
+int main(int argc, char *argv[]) {
+    if (argc > 0) {
+        if (strcmp("-v", argv[1]) == 0) {
+            printf("dminiwm-%s", VERSION);
+            return 0;
+        } else {
+            printf("dminiwm [-v]");
+            return 1;
+        }
+    }
 
-int main(int argc, char **argv) {
     // Open display
     if(!(dis = XOpenDisplay(NULL))) {
         logger("\033[0;31mCannot open display!");
-        exit(1);
+        return 1;
     }
 
     // Setup env
@@ -1019,5 +1018,6 @@ int main(int argc, char **argv) {
     // Close display
     XCloseDisplay(dis);
 
+    /* FIXME: return a meaningful value maybe :] */
     return 0;
 }
