@@ -17,14 +17,15 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/keysym.h>
 #include <X11/Xproto.h>
-#include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
 #define TABLENGTH(X)    (sizeof(X)/sizeof(*X))
@@ -97,9 +98,11 @@ static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
 static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
-static void logger(const char* e);
+static void die(const char* errstr, ...);
+static int xerrorstart(Display *dis, XErrorEvent *ee);
+static void checkotherwm(void);
 static unsigned long getcolor(const char* color);
-static void grabkeys();
+static void grabkeys(void);
 static void keypress(XEvent *e);
 static void kill_client();
 static void maprequest(XEvent *e);
@@ -115,20 +118,19 @@ static void resize_stack(const Arg arg);
 static void save_desktop(int i);
 static void select_desktop(int i);
 static void send_kill_signal(Window w);
-static void setup();
+static void setup(void);
 static void sigchld(int unused);
 static void spawn(const Arg arg);
-static void start();
+static void run(void);
 static void swap_master();
-static void tile();
+static void tile(void);
 static void last_desktop();
 static void switch_fullscreen();
 static void switch_grid();
 static void switch_horizontal();
 static void switch_vertical();
-static void update_current();
+static void update_current(void);
 
-// Include configuration file (need struct key)
 #include "config.h"
 
 /* variables */
@@ -146,7 +148,7 @@ static int xerror(Display *dis, XErrorEvent *ee);
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int win_focus;
 static unsigned int win_unfocus;
-unsigned int numlockmask;		/* dynamic key lock mask */
+static unsigned int numlockmask; /* dynamic key lock mask */
 static Window root;
 static client *head;
 static client *current;
@@ -169,10 +171,8 @@ static desktop desktops[DESKTOPS];
 void add_window(Window w) {
     client *c,*t;
 
-    if(!(c = (client *)calloc(1,sizeof(client)))) {
-        logger("\033[0;31mError calloc!");
-        exit(1);
-    }
+    if(!(c = (client *)calloc(1,sizeof(client))))
+        die("error: could not calloc() %u bytes\n", sizeof(client));
 
     if(head == NULL) {
         c->next = NULL;
@@ -205,7 +205,7 @@ void add_window(Window w) {
 
     current = c;
     save_desktop(current_desktop);
-    // for folow mouse
+
     if(FOLLOW_MOUSE == 0)
         XSelectInput(dis, c->win, EnterWindowMask);
 }
@@ -249,7 +249,7 @@ void remove_window(Window w) {
     }
 }
 
-void kill_client() {
+void kill_client(void) {
     if(current == NULL) return;
     //send delete signal to window
     XEvent ke;
@@ -264,7 +264,7 @@ void kill_client() {
     remove_window(current->win);
 }
 
-void next_win() {
+void next_win(void) {
     client *c;
 
     if(current != NULL && head != NULL) {
@@ -280,7 +280,7 @@ void next_win() {
     }
 }
 
-void prev_win() {
+void prev_win(void) {
     client *c;
 
     if(current != NULL && head != NULL) {
@@ -296,7 +296,7 @@ void prev_win() {
     }
 }
 
-void move_down() {
+void move_down(void) {
     Window tmp;
     if(current == NULL || current->next == NULL || current->win == head->win || current->prev == NULL)
         return;
@@ -310,7 +310,7 @@ void move_down() {
     tile();
 }
 
-void move_up() {
+void move_up(void) {
     Window tmp;
     if(current == NULL || current->prev == head || current->win == head->win) {
         return;
@@ -323,7 +323,7 @@ void move_up() {
     tile();
 }
 
-void swap_master() {
+void swap_master(void) {
     Window tmp;
 
     if(head->next != NULL && current != NULL && mode != 1) {
@@ -371,7 +371,7 @@ void change_desktop(const Arg arg) {
     update_current();
 }
 
-void last_desktop() {
+void last_desktop(void) {
     Arg a = {.i = previous_desktop};
     change_desktop(a);
 }
@@ -422,7 +422,7 @@ void select_desktop(int i) {
     current_desktop = i;
 }
 
-void tile() {
+void tile(void) {
     client *c;
     int n = 0;
     int x = 0;
@@ -541,7 +541,7 @@ void tile() {
     }
 }
 
-void update_current() {
+void update_current(void) {
     client *c;
 
     for(c=head;c;c=c->next) {
@@ -567,7 +567,7 @@ void update_current() {
     XSync(dis, False);
 }
 
-void switch_vertical() {
+void switch_vertical(void) {
     if(mode == 0) return;
     mode = 0;
     master_size = sw * MASTER_SIZE;
@@ -575,21 +575,21 @@ void switch_vertical() {
     update_current();
 }
 
-void switch_fullscreen() {
+void switch_fullscreen(void) {
     if(mode == 1) return;
     mode = 1;
     tile();
     update_current();
 }
 
-void switch_horizontal() {
+void switch_horizontal(void) {
     if(mode == 2) return;
     mode = 2;
     master_size = sh * MASTER_SIZE;
     tile();
 }
 
-void switch_grid() {
+void switch_grid(void) {
     if(mode == 3) return;
     mode = 3;
     master_size = sw * MASTER_SIZE;
@@ -608,7 +608,7 @@ void resize_stack(const Arg arg) {
 }
 
 /* ********************** Keyboard Management ********************** */
-void grabkeys() {
+void grabkeys(void) {
     int i;
     KeyCode code;
 
@@ -645,7 +645,6 @@ void configurenotify(XEvent *e) {
 
 /* ********************** Signal Management ************************** */
 void configurerequest(XEvent *e) {
-    // Paste from DWM, thx again \o/
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     XWindowChanges wc;
 
@@ -816,18 +815,16 @@ void send_kill_signal(Window w) {
 }
 
 unsigned long getcolor(const char* color) {
-    XColor c;
     Colormap map = DefaultColormap(dis,screen);
+    XColor c;
 
-    if(!XAllocNamedColor(dis,map,color,&c,&c)) {
-        logger("\033[0;31mError parsing color!");
-        exit(1);
-    }
+    if(!XAllocNamedColor(dis,map,color,&c,&c))
+        die("error: cannot allocate color '%s'\n", c);
     return c.pixel;
 }
 
 /* FIXME: fix segfaults */
-void quit() {
+void quit(void) {
     Window root_return, parent;
     Window *children;
     int i;
@@ -844,9 +841,8 @@ void quit() {
     if(bool_quit == 1) {
         XUngrabKey(dis, AnyKey, AnyModifier, root);
         XDestroySubwindows(dis, root);
-        logger(" \033[0;33mThanks for using!");
         XCloseDisplay(dis);
-        logger("\033[0;31mforced shutdown");
+        die("error: forced shutdown\n");
     }
 
     bool_quit = 1;
@@ -863,14 +859,9 @@ void quit() {
     }
 
     XUngrabKey(dis,AnyKey,AnyModifier,root);
-    logger("\033[0;34mYou Quit : Thanks for using!");
 }
 
-void logger(const char* e) {
-    fprintf(stdout,"\n\033[0;34m:: dminiwm : %s \033[0;m\n", e);
-}
-
-void setup() {
+void setup(void) {
     // Install a signal
     sigchld(0);
 
@@ -939,85 +930,82 @@ void setup() {
     for(x = 0; x < ATOM_COUNT; x++)
         *atomList[x].atom = XInternAtom(dis, atomList[x].name, False);
     // To catch maprequest and destroynotify (if other wm running)
-    XSelectInput(dis,root,SubstructureNotifyMask|SubstructureRedirectMask);
+    XSelectInput(dis, root, SubstructureNotifyMask|SubstructureRedirectMask);
+}
+
+int xerrorstart(Display *dis, XErrorEvent *ee) {
+    die("error: another window manager is already running\n");
+    return -1;
+}
+
+void checkotherwm(void) {
+    xerrorxlib = XSetErrorHandler(xerrorstart);
+    /* this causes an error if some other window manager is running */
+    XSelectInput(dis, DefaultRootWindow(dis), SubstructureRedirectMask);
+    XSync(dis, False);
     XSetErrorHandler(xerror);
-    logger("\033[0;32mWe're up and running!");
+    XSync(dis, False);
+}
+
+/* There's no way to check accesses to destroyed windows, thus those cases are
+ * ignored (especially on UnmapNotify's). Other types of errors call Xlibs
+ * default error handler, which may call exit.  */
+int xerror(Display *dis, XErrorEvent *ee) {
+    if(ee->error_code == BadWindow
+            || (ee->error_code == BadMatch && (ee->request_code == X_SetInputFocus || ee->request_code ==  X_ConfigureWindow))
+            || (ee->error_code == BadDrawable && (ee->request_code == X_PolyText8 || ee->request_code == X_PolyFillRectangle
+                 || ee->request_code == X_PolySegment || ee->request_code == X_CopyArea))
+            || (ee->error_code == BadAccess && ee->request_code == X_GrabKey))
+        return 0;
+    fprintf(stderr, "error: xerror: request code: %d, error code: %d\n", ee->request_code, ee->error_code);
+    return xerrorxlib(dis, ee); /* may call exit */
 }
 
 void sigchld(int unused) {
-    // Again, thx to dwm ;)
-    if(signal(SIGCHLD, sigchld) == SIG_ERR) {
-        logger("\033[0;31mCan't install SIGCHLD handler");
-        exit(1);
-    }
+    if(signal(SIGCHLD, sigchld) == SIG_ERR)
+        die("error: can't install SIGCHLD handler\n");
     while(0 < waitpid(-1, NULL, WNOHANG));
 }
 
 void spawn(const Arg arg) {
     if(fork() == 0) {
-        if(fork() == 0) {
-            if(dis)
-                close(ConnectionNumber(dis));
-
-            setsid();
-            execvp((char*)arg.com[0],(char**)arg.com);
-        }
-        exit(0);
+        if(dis)
+            close(ConnectionNumber(dis));
+        setsid();
+        execvp((char*)arg.com[0], (char**)arg.com);
+        fprintf(stderr, "error: execvp %s", (char *)arg.com[0]);
+        perror(" failed"); /* also prints the err msg */
+        exit(EXIT_SUCCESS);
     }
 }
 
-/* There's no way to check accesses to destroyed windows, thus those cases are ignored (especially on UnmapNotify's).  Other types of errors call Xlibs default error handler, which may call exit.  */
-int xerror(Display *dis, XErrorEvent *ee) {
-    if(ee->error_code == BadWindow
-            || (ee->request_code == X_SetInputFocus && ee->error_code == BadMatch)
-            || (ee->request_code == X_PolyText8 && ee->error_code == BadDrawable)
-            || (ee->request_code == X_PolyFillRectangle && ee->error_code == BadDrawable)
-            || (ee->request_code == X_PolySegment && ee->error_code == BadDrawable)
-            || (ee->request_code == X_ConfigureWindow && ee->error_code == BadMatch)
-            || (ee->request_code == X_GrabKey && ee->error_code == BadAccess)
-            || (ee->request_code == X_CopyArea && ee->error_code == BadDrawable))
-        return 0;
-    logger("\033[0;31mBad Window Error!");
-    return xerrorxlib(dis, ee); /* may call exit */
-}
-
-/* FIXME: this is run() actually */
-void start() {
+void run(void) {
     XEvent ev;
-
-    // Main loop, just dispatch events (thx to dwm ;)
-    while(!bool_quit && !XNextEvent(dis,&ev)) {
+    while(!bool_quit && !XNextEvent(dis,&ev))
         if(events[ev.type])
             events[ev.type](&ev);
-    }
+}
+
+void die(const char *errstr, ...) {
+    va_list ap;
+    va_start(ap, errstr);
+    vfprintf(stderr, errstr, ap);
+    va_end(ap);
+    exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[]) {
-    if (argc > 0) {
-        if (strcmp("-v", argv[1]) == 0) {
-            printf("dminiwm-%s", VERSION);
-            return 0;
-        } else {
-            printf("dminiwm [-v]");
-            return 1;
-        }
-    }
-
-    // Open display
-    if(!(dis = XOpenDisplay(NULL))) {
-        logger("\033[0;31mCannot open display!");
-        return 1;
-    }
-
-    // Setup env
+    if (argc == 2 && strcmp("-v", argv[1]) == 0) {
+        fprintf(stdout, "dminiwm-%s\n", VERSION);
+        return EXIT_SUCCESS;
+    } else if(argc != 1)
+        die("usage: dminiwm [-v]\n");
+    if(!(dis = XOpenDisplay(NULL)))
+        die("error: cannot open display\n");
+    checkotherwm();
     setup();
-
-    // Start wm
-    start();
-
-    // Close display
+    run();
     XCloseDisplay(dis);
-
-    /* FIXME: return a meaningful value maybe :] */
-    return 0;
+    return EXIT_SUCCESS;
 }
+
