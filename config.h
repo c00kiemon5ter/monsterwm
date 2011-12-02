@@ -21,22 +21,20 @@
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 
 /** generic settings **/
-#define MOD1            Mod1Mask /* ALT key */
-#define MOD4            Mod4Mask /* Super/Windows key */
+#define MOD1            Mod1Mask  /* ALT key */
+#define MOD4            Mod4Mask  /* Super/Windows key */
 #define MASTER_SIZE     0.52
-#define TOP_PANEL       0  /* Place panel at the 1=bottom or 0=top */
-#define PANEL_HEIGHT	18 /* 0 for no space for a panel */
-#define BORDER_WIDTH    2
-#define ATTACH_ASIDE    0  /* 0=TRUE, 1=New window is master */
-#define DEFAULT_MODE    0  /* 0=Vertical, 1=Fullscreen 2=Horizontal 3=grid */
-#define FOLLOW_MOUSE    1  /* 1=Don't 0=Focus the window the mouse just entered */
-#define FOLLOW_WINDOW   1  /* 1=Don't 0=Follow the window when moved to a different desktop */
-#define CLICK_TO_FOCUS  1  /* 1=Don't 0=Focus an unfocused window when clicked */
-#define DESKTOPS        4  /* Must edit DESKTOPCHANGE keys to suit */
-
-/** Colors **/
-#define FOCUS           "#ff950e"
-#define UNFOCUS         "#444444"
+#define TOP_PANEL       0         /* Place panel at the 1=bottom or 0=top */
+#define PANEL_HEIGHT	18        /* 0 for no space for a panel */
+#define ATTACH_ASIDE    0         /* 0=TRUE, 1=New window is master */
+#define DEFAULT_MODE    0         /* 0=Vertical 1=Fullscreen 2=Horizontal 3=grid */
+#define FOLLOW_MOUSE    1         /* 1=Don't 0=Focus the window the mouse just entered */
+#define FOLLOW_WINDOW   1         /* 1=Don't 0=Follow the window when moved to a different desktop */
+#define CLICK_TO_FOCUS  1         /* 1=Don't 0=Focus an unfocused window when clicked */
+#define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
+#define BORDER_WIDTH    2         /* window border width */
+#define FOCUS           "#ff950e" /* focused window border color   */
+#define UNFOCUS         "#444444" /* unfocused window border color */
 
 /** Applications to a specific desktop **/
 static const Convenience convenience[] = { \

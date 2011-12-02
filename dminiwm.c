@@ -104,14 +104,14 @@ static void checkotherwm(void);
 static unsigned long getcolor(const char* color);
 static void grabkeys(void);
 static void keypress(XEvent *e);
-static void kill_client();
+static void kill_client(const Arg arg);
 static void maprequest(XEvent *e);
-static void move_down();
-static void move_up();
+static void move_down(const Arg arg);
+static void move_up(const Arg arg);
 static void rotate_desktop(const Arg arg);
-static void next_win();
-static void prev_win();
-static void quit();
+static void next_win(const Arg arg);
+static void prev_win(const Arg arg);
+static void quit(const Arg arg);
 static void remove_window(Window w);
 static void resize_master(const Arg arg);
 static void resize_stack(const Arg arg);
@@ -122,13 +122,13 @@ static void setup(void);
 static void sigchld(int unused);
 static void spawn(const Arg arg);
 static void run(void);
-static void swap_master();
+static void swap_master(const Arg arg);
 static void tile(void);
-static void last_desktop();
-static void switch_fullscreen();
-static void switch_grid();
-static void switch_horizontal();
-static void switch_vertical();
+static void last_desktop(const Arg arg);
+static void switch_fullscreen(const Arg arg);
+static void switch_grid(const Arg arg);
+static void switch_horizontal(const Arg arg);
+static void switch_vertical(const Arg arg);
 static void update_current(void);
 
 #include "config.h"
@@ -249,7 +249,7 @@ void remove_window(Window w) {
     }
 }
 
-void kill_client(void) {
+void kill_client(const Arg arg) {
     if(current == NULL) return;
     //send delete signal to window
     XEvent ke;
@@ -264,7 +264,7 @@ void kill_client(void) {
     remove_window(current->win);
 }
 
-void next_win(void) {
+void next_win(const Arg arg) {
     client *c;
 
     if(current != NULL && head != NULL) {
@@ -280,7 +280,7 @@ void next_win(void) {
     }
 }
 
-void prev_win(void) {
+void prev_win(const Arg arg) {
     client *c;
 
     if(current != NULL && head != NULL) {
@@ -296,7 +296,7 @@ void prev_win(void) {
     }
 }
 
-void move_down(void) {
+void move_down(const Arg arg) {
     Window tmp;
     if(current == NULL || current->next == NULL || current->win == head->win || current->prev == NULL)
         return;
@@ -304,13 +304,12 @@ void move_down(void) {
     tmp = current->win;
     current->win = current->next->win;
     current->next->win = tmp;
-    //keep the moved window activated
-    next_win();
+    next_win((Arg){NULL});
     save_desktop(current_desktop);
     tile();
 }
 
-void move_up(void) {
+void move_up(const Arg arg) {
     Window tmp;
     if(current == NULL || current->prev == head || current->win == head->win) {
         return;
@@ -318,12 +317,12 @@ void move_up(void) {
     tmp = current->win;
     current->win = current->prev->win;
     current->prev->win = tmp;
-    prev_win();
+    prev_win((Arg){NULL});
     save_desktop(current_desktop);
     tile();
 }
 
-void swap_master(void) {
+void swap_master(const Arg arg) {
     Window tmp;
 
     if(head->next != NULL && current != NULL && mode != 1) {
@@ -371,7 +370,7 @@ void change_desktop(const Arg arg) {
     update_current();
 }
 
-void last_desktop(void) {
+void last_desktop(const Arg arg) {
     Arg a = {.i = previous_desktop};
     change_desktop(a);
 }
@@ -567,7 +566,7 @@ void update_current(void) {
     XSync(dis, False);
 }
 
-void switch_vertical(void) {
+void switch_vertical(const Arg arg) {
     if(mode == 0) return;
     mode = 0;
     master_size = sw * MASTER_SIZE;
@@ -575,21 +574,21 @@ void switch_vertical(void) {
     update_current();
 }
 
-void switch_fullscreen(void) {
+void switch_fullscreen(const Arg arg) {
     if(mode == 1) return;
     mode = 1;
     tile();
     update_current();
 }
 
-void switch_horizontal(void) {
+void switch_horizontal(const Arg arg) {
     if(mode == 2) return;
     mode = 2;
     master_size = sh * MASTER_SIZE;
     tile();
 }
 
-void switch_grid(void) {
+void switch_grid(const Arg arg) {
     if(mode == 3) return;
     mode = 3;
     master_size = sw * MASTER_SIZE;
@@ -824,7 +823,7 @@ unsigned long getcolor(const char* color) {
 }
 
 /* FIXME: fix segfaults */
-void quit(void) {
+void quit(const Arg arg) {
     Window root_return, parent;
     Window *children;
     int i;
