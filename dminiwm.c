@@ -140,7 +140,7 @@ static void update_current(void);
 
 /* variables */
 static Display *dis;
-static int bool_quit;
+static Bool running;
 static int current_desktop;
 static int previous_desktop;
 static int growth;
@@ -819,14 +819,14 @@ void quit(const Arg arg) {
      * we can't exit through the main method.
      * This all happens if MOD+q is pushed a second time.
      */
-    if(bool_quit == 1) {
+    if(!running) {
         XUngrabKey(dis, AnyKey, AnyModifier, root);
         XDestroySubwindows(dis, root);
         XCloseDisplay(dis);
         die("error: forced shutdown\n");
     }
 
-    bool_quit = 1;
+    running = False;
     XQueryTree(dis, root, &root_return, &parent, &children, &nchildren);
     for(i = 0; i < nchildren; i++) {
         send_kill_signal(children[i]);
@@ -880,7 +880,7 @@ void setup(void) {
     growth = 0;
 
     // For exiting
-    bool_quit = 0;
+    running = True;
 
     // List of client
     head = NULL;
@@ -962,7 +962,7 @@ void spawn(const Arg arg) {
 
 void run(void) {
     XEvent ev;
-    while(!bool_quit && !XNextEvent(dis,&ev))
+    while(running && !XNextEvent(dis,&ev))
         if(events[ev.type])
             events[ev.type](&ev);
 }
