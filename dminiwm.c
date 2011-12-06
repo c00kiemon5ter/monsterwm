@@ -89,6 +89,14 @@ static const AtomNode atomList[] = {
     { &atoms[ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION], "_NET_WM_WINDOW_TYPE_NOTIFICATION"},
 };
 
+/* layout modes */
+enum mode {
+    TILE,
+    MONOCYCLE,
+    BSTACK,
+    GRID,
+};
+
 /* Functions */
 static void add_window(Window w);
 static void buttonpressed(XEvent *e);
@@ -125,10 +133,7 @@ static void run(void);
 static void swap_master(const Arg arg);
 static void tile(void);
 static void last_desktop(const Arg arg);
-static void switch_fullscreen(const Arg arg);
-static void switch_grid(const Arg arg);
-static void switch_horizontal(const Arg arg);
-static void switch_vertical(const Arg arg);
+static void switch_mode(const Arg arg);
 static void update_current(void);
 
 #include "config.h"
@@ -274,7 +279,7 @@ void next_win(const Arg arg) {
             c = current->next;
 
         current = c;
-        if(mode == 1)
+        if(mode == MONOCYCLE)
             tile();
         update_current();
     }
@@ -290,7 +295,7 @@ void prev_win(const Arg arg) {
             c = current->prev;
 
         current = c;
-        if(mode == 1)
+        if(mode == MONOCYCLE)
             tile();
         update_current();
     }
@@ -325,7 +330,7 @@ void move_up(const Arg arg) {
 void swap_master(const Arg arg) {
     Window tmp;
 
-    if(head->next != NULL && current != NULL && mode != 1) {
+    if(head->next != NULL && current != NULL && mode != MONOCYCLE) {
         if(current == head) {
             tmp = head->next->win;
             head->next->win = head->win;
@@ -437,10 +442,9 @@ void tile(void) {
     }
     else if(head != NULL) {
         switch(mode) {
-            case 0: /* Vertical */
+            case TILE:
                 // Master window
                 XMoveResizeWindow(dis,head->win,0,y,master_size - BORDER_WIDTH,sh - BORDER_WIDTH);
-
                 // Stack
                 for(c=head->next;c;c=c->next) ++n;
                 if(n == 1) growth = 0;
@@ -451,15 +455,14 @@ void tile(void) {
                     y += (sh/n)-(growth/(n-1));
                 }
                 break;
-            case 1: /* Fullscreen */
+            case MONOCYCLE:
                 for(c=head;c;c=c->next) {
                     XMoveResizeWindow(dis,c->win,0,y,sw+2*BORDER_WIDTH,sh+2*BORDER_WIDTH);
                 }
                 break;
-            case 2: /* Horizontal */
+            case BSTACK:
                 // Master window
                 XMoveResizeWindow(dis,head->win,0,y,sw-BORDER_WIDTH,master_size - BORDER_WIDTH);
-
                 // Stack
                 for(c=head->next;c;c=c->next) ++n;
                 if(n == 1) growth = 0;
@@ -470,68 +473,69 @@ void tile(void) {
                     x += (sw/n)-(growth/(n-1));
                 }
                 break;
-            case 3: { /* Grid */
-                int xpos = 0;
-                int wdt = 0;
-                int ht = 0;
+            case GRID:
+                {
+                    int xpos = 0;
+                    int wdt = 0;
+                    int ht = 0;
 
-                for(c=head;c;c=c->next) ++x;
+                    for(c=head;c;c=c->next) ++x;
 
-                for(c=head;c;c=c->next) {
-                    ++n;
-                    if(x >= 7) {
-                        wdt = (sw/3) - BORDER_WIDTH;
-                        ht  = (sh/3) - BORDER_WIDTH;
-                        if((n == 1) || (n == 4) || (n == 7))
-                            xpos = 0;
-                        if((n == 2) || (n == 5) || (n == 8))
-                            xpos = (sw/3) + BORDER_WIDTH;
-                        if((n == 3) || (n == 6) || (n == 9))
-                            xpos = (2*(sw/3)) + BORDER_WIDTH;
-                        if((n == 4) || (n == 7))
-                            y += (sh/3) + BORDER_WIDTH;
-                        if((n == x) && (n == 7))
-                            wdt = sw - BORDER_WIDTH;
-                        if((n == x) && (n == 8))
-                            wdt = 2*sw/3 - BORDER_WIDTH;
-                    } else
-                        if(x >= 5) {
+                    for(c=head;c;c=c->next) {
+                        ++n;
+                        if(x >= 7) {
                             wdt = (sw/3) - BORDER_WIDTH;
-                            ht  = (sh/2) - BORDER_WIDTH;
-                            if((n == 1) || (n == 4))
+                            ht  = (sh/3) - BORDER_WIDTH;
+                            if((n == 1) || (n == 4) || (n == 7))
                                 xpos = 0;
-                            if((n == 2) || (n == 5))
+                            if((n == 2) || (n == 5) || (n == 8))
                                 xpos = (sw/3) + BORDER_WIDTH;
-                            if((n == 3) || (n == 6))
+                            if((n == 3) || (n == 6) || (n == 9))
                                 xpos = (2*(sw/3)) + BORDER_WIDTH;
-                            if(n == 4)
-                                y += (sh/2); // + BORDER_WIDTH;
-                            if((n == x) && (n == 5))
-                                wdt = 2*sw/3 - BORDER_WIDTH;
-                        } else {
-                            if(x > 2) {
-                                if((n == 1) || (n == 2))
-                                    ht = (sh/2) + growth - BORDER_WIDTH;
-                                if(n >= 3)
-                                    ht = (sh/2) - growth - 2*BORDER_WIDTH;
-                            }
-                            else
-                                ht = sh - BORDER_WIDTH;
-                            if((n == 1) || (n == 3)) {
-                                xpos = 0;
-                                wdt = master_size - BORDER_WIDTH;
-                            }
-                            if((n == 2) || (n == 4)) {
-                                xpos = master_size+BORDER_WIDTH;
-                                wdt = (sw - master_size) - 2*BORDER_WIDTH;
-                            }
-                            if(n == 3)
-                                y += (sh/2) + growth + BORDER_WIDTH;
-                            if((n == x) && (n == 3))
+                            if((n == 4) || (n == 7))
+                                y += (sh/3) + BORDER_WIDTH;
+                            if((n == x) && (n == 7))
                                 wdt = sw - BORDER_WIDTH;
-                        }
-                    XMoveResizeWindow(dis,c->win,xpos,y,wdt,ht);
-                }
+                            if((n == x) && (n == 8))
+                                wdt = 2*sw/3 - BORDER_WIDTH;
+                        } else
+                            if(x >= 5) {
+                                wdt = (sw/3) - BORDER_WIDTH;
+                                ht  = (sh/2) - BORDER_WIDTH;
+                                if((n == 1) || (n == 4))
+                                    xpos = 0;
+                                if((n == 2) || (n == 5))
+                                    xpos = (sw/3) + BORDER_WIDTH;
+                                if((n == 3) || (n == 6))
+                                    xpos = (2*(sw/3)) + BORDER_WIDTH;
+                                if(n == 4)
+                                    y += (sh/2); // + BORDER_WIDTH;
+                                if((n == x) && (n == 5))
+                                    wdt = 2*sw/3 - BORDER_WIDTH;
+                            } else {
+                                if(x > 2) {
+                                    if((n == 1) || (n == 2))
+                                        ht = (sh/2) + growth - BORDER_WIDTH;
+                                    if(n >= 3)
+                                        ht = (sh/2) - growth - 2*BORDER_WIDTH;
+                                }
+                                else
+                                    ht = sh - BORDER_WIDTH;
+                                if((n == 1) || (n == 3)) {
+                                    xpos = 0;
+                                    wdt = master_size - BORDER_WIDTH;
+                                }
+                                if((n == 2) || (n == 4)) {
+                                    xpos = master_size+BORDER_WIDTH;
+                                    wdt = (sw - master_size) - 2*BORDER_WIDTH;
+                                }
+                                if(n == 3)
+                                    y += (sh/2) + growth + BORDER_WIDTH;
+                                if((n == x) && (n == 3))
+                                    wdt = sw - BORDER_WIDTH;
+                            }
+                        XMoveResizeWindow(dis,c->win,xpos,y,wdt,ht);
+                    }
                 }
                 break;
             default:
@@ -544,7 +548,7 @@ void update_current(void) {
     client *c;
 
     for(c=head;c;c=c->next) {
-        if((head->next == NULL) || (mode == 1))
+        if((head->next == NULL) || (mode == MONOCYCLE))
             XSetWindowBorderWidth(dis,c->win,0);
         else
             XSetWindowBorderWidth(dis,c->win,BORDER_WIDTH);
@@ -566,32 +570,13 @@ void update_current(void) {
     XSync(dis, False);
 }
 
-void switch_vertical(const Arg arg) {
-    if(mode == 0) return;
-    mode = 0;
-    master_size = sw * MASTER_SIZE;
-    tile();
-    update_current();
-}
-
-void switch_fullscreen(const Arg arg) {
-    if(mode == 1) return;
-    mode = 1;
-    tile();
-    update_current();
-}
-
-void switch_horizontal(const Arg arg) {
-    if(mode == 2) return;
-    mode = 2;
-    master_size = sh * MASTER_SIZE;
-    tile();
-}
-
-void switch_grid(const Arg arg) {
-    if(mode == 3) return;
-    mode = 3;
-    master_size = sw * MASTER_SIZE;
+void switch_mode(const Arg arg) {
+    if(mode == arg.i) return;
+    mode = arg.i;
+    if(mode == TILE || mode == GRID)
+        master_size = sw * MASTER_SIZE;
+    else if(mode == BSTACK)
+        master_size = sh * MASTER_SIZE;
     tile();
     update_current();
 }
@@ -678,7 +663,7 @@ void maprequest(XEvent *e) {
         }
 
     Window trans = None;
-    if (XGetTransientForHint(dis, ev->window, &trans) && trans != None) {
+    if(XGetTransientForHint(dis, ev->window, &trans) && trans != None) {
         add_window(ev->window);
         XMapWindow(dis, ev->window);
         XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
@@ -905,7 +890,7 @@ void setup(void) {
     current = NULL;
 
     // Master size
-    if(mode == 2)
+    if(mode == BSTACK)
         master_size = sh*MASTER_SIZE;
     else
         master_size = sw*MASTER_SIZE;
@@ -994,7 +979,7 @@ void die(const char *errstr, ...) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc == 2 && strcmp("-v", argv[1]) == 0) {
+    if(argc == 2 && strcmp("-v", argv[1]) == 0) {
         fprintf(stdout, "dminiwm-%s\n", VERSION);
         return EXIT_SUCCESS;
     } else if(argc != 1)

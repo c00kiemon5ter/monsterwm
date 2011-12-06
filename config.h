@@ -26,8 +26,8 @@
 #define MASTER_SIZE     0.52
 #define TOP_PANEL       0         /* Place panel at the 1=bottom or 0=top */
 #define PANEL_HEIGHT	18        /* 0 for no space for a panel */
+#define DEFAULT_MODE    TILE      /* TILE MONOCYCLE BSTACK GRID */
 #define ATTACH_ASIDE    0         /* 0=TRUE, 1=New window is master */
-#define DEFAULT_MODE    0         /* 0=Vertical 1=Fullscreen 2=Horizontal 3=grid */
 #define FOLLOW_MOUSE    1         /* 1=Don't 0=Focus the window the mouse just entered */
 #define FOLLOW_WINDOW   1         /* 1=Don't 0=Follow the window when moved to a different desktop */
 #define CLICK_TO_FOCUS  1         /* 1=Don't 0=Focus an unfocused window when clicked */
@@ -79,10 +79,10 @@ static key keys[] = {
     {  MOD1,             XK_Return,     swap_master,       {NULL}},
     {  MOD1|ShiftMask,   XK_j,          move_down,         {NULL}},
     {  MOD1|ShiftMask,   XK_k,          move_up,           {NULL}},
-    {  MOD1|ShiftMask,   XK_v,          switch_vertical,   {NULL}},
-    {  MOD1|ShiftMask,   XK_h,          switch_horizontal, {NULL}},
-    {  MOD1|ShiftMask,   XK_g,          switch_grid,       {NULL}},
-    {  MOD1|ShiftMask,   XK_m,          switch_fullscreen, {NULL}},
+    {  MOD1|ShiftMask,   XK_t,          switch_mode,       {.i = TILE}},
+    {  MOD1|ShiftMask,   XK_m,          switch_mode,       {.i = MONOCYCLE}},
+    {  MOD1|ShiftMask,   XK_b,          switch_mode,       {.i = BSTACK}},
+    {  MOD1|ShiftMask,   XK_g,          switch_mode,       {.i = GRID}},
     {  MOD1|ShiftMask,   XK_q,          quit,              {NULL}},
     {  MOD1|ShiftMask,   XK_Return,     spawn,             {.com = termcmd}},
     {  MOD4,             XK_v,          spawn,             {.com = dmenucmd}},
