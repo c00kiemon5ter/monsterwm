@@ -377,24 +377,25 @@ void rotate_desktop(const Arg arg) {
 }
 
 void client_to_desktop(const Arg arg) {
-    client *tmp = current;
-    int tmp2 = current_desktop;
-
     if(arg.i == current_desktop || current == NULL)
         return;
 
+    client *cc = current;
+    int cd = current_desktop;
+
     // Add client to desktop
     select_desktop(arg.i);
-    add_window(tmp->win);
+    add_window(cc->win);
     save_desktop(arg.i);
 
     // Remove client from current desktop
-    select_desktop(tmp2);
-    XUnmapWindow(dis,tmp->win);
-    remove_window(tmp->win);
-    save_desktop(tmp2);
+    select_desktop(cd);
+    XUnmapWindow(dis, cc->win);
+    remove_window(cc->win);
+    save_desktop(cd);
     tile();
     update_current();
+
     if(FOLLOW_WINDOW == 0)
         change_desktop(arg);
 }
@@ -612,7 +613,6 @@ void keypress(XEvent *e) {
     }
 }
 
-/* FIXME: what's this for ? */
 void configurenotify(XEvent *e) {
     // Do nothing for the moment
 }
@@ -836,8 +836,7 @@ void setup(void) {
     win_focus = getcolor(FOCUS);
     win_unfocus = getcolor(UNFOCUS);
 
-    XModifierKeymap *modmap;
-    modmap = XGetModifierMapping(dis);
+    XModifierKeymap *modmap = XGetModifierMapping(dis);
     for (int k = 0; k < 8; k++) {
         for (int j = 0; j < modmap->max_keypermod; j++) {
             if(modmap->modifiermap[k * modmap->max_keypermod + j] == XKeysymToKeycode(dis, XK_Num_Lock))
