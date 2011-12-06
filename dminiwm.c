@@ -376,14 +376,11 @@ void change_desktop(const Arg arg) {
 }
 
 void last_desktop(const Arg arg) {
-    Arg a = {.i = previous_desktop};
-    change_desktop(a);
+    change_desktop((Arg){.i = previous_desktop});
 }
 
 void rotate_desktop(const Arg arg) {
-    int ndesktops = TABLENGTH(desktops);
-    Arg a = {.i = (current_desktop + ndesktops + arg.i) % ndesktops};
-    change_desktop(a);
+    change_desktop((Arg){.i = (current_desktop + DESKTOPS + arg.i) % DESKTOPS});
 }
 
 void client_to_desktop(const Arg arg) {
