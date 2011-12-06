@@ -66,7 +66,7 @@ const char *mtogglecmd[] = { "mpc", "toggle", NULL };
 /** Shortcuts **/
 static key keys[] = {
 /*     modifier          key            function           argument */
-    {  MOD1|ShiftMask,   XK_c,          kill_client,       {NULL}},
+    {  MOD1|ShiftMask,   XK_c,          killclient,       {NULL}},
     {  MOD1,             XK_j,          next_win,          {NULL}},
     {  MOD1,             XK_k,          prev_win,          {NULL}},
     {  MOD1,             XK_h,          resize_master,     {.i = -10}}, /* decrease */
@@ -83,7 +83,8 @@ static key keys[] = {
     {  MOD1|ShiftMask,   XK_m,          switch_mode,       {.i = MONOCYCLE}},
     {  MOD1|ShiftMask,   XK_b,          switch_mode,       {.i = BSTACK}},
     {  MOD1|ShiftMask,   XK_g,          switch_mode,       {.i = GRID}},
-    {  MOD1|ShiftMask,   XK_q,          quit,              {NULL}},
+    {  MOD1|ShiftMask,   XK_r,          quit,              {.i = 0}}, /* restart */
+    {  MOD1|ShiftMask,   XK_q,          quit,              {.i = 1}}, /* quit    */
     {  MOD1|ShiftMask,   XK_Return,     spawn,             {.com = termcmd}},
     {  MOD4,             XK_v,          spawn,             {.com = dmenucmd}},
     {  MOD4,             XK_grave,      spawn,             {.com = urxvtcmd}},

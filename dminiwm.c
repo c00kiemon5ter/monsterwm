@@ -112,20 +112,21 @@ static void checkotherwm(void);
 static unsigned long getcolor(const char* color);
 static void grabkeys(void);
 static void keypress(XEvent *e);
-static void kill_client(const Arg arg);
+static void killclient(const Arg arg);
 static void maprequest(XEvent *e);
 static void move_down(const Arg arg);
 static void move_up(const Arg arg);
 static void rotate_desktop(const Arg arg);
 static void next_win(const Arg arg);
 static void prev_win(const Arg arg);
+static void cleanup(void);
 static void quit(const Arg arg);
 static void remove_window(Window w);
 static void resize_master(const Arg arg);
 static void resize_stack(const Arg arg);
 static void save_desktop(int i);
 static void select_desktop(int i);
-static void send_kill_signal(Window w);
+static void deletewindow(Window w);
 static void setup(void);
 static void sigchld(int unused);
 static void spawn(const Arg arg);
@@ -141,6 +142,7 @@ static void update_current(void);
 /* variables */
 static Display *dis;
 static Bool running = True;
+static int retval = 0;
 static int current_desktop = 0;
 static int previous_desktop = 0;
 static int growth = 0;
@@ -254,18 +256,9 @@ void remove_window(Window w) {
     }
 }
 
-void kill_client(const Arg arg) {
+void killclient(const Arg arg) {
     if(current == NULL) return;
-    //send delete signal to window
-    XEvent ke;
-    ke.type = ClientMessage;
-    ke.xclient.window = current->win;
-    ke.xclient.message_type = XInternAtom(dis, "WM_PROTOCOLS", True);
-    ke.xclient.format = 32;
-    ke.xclient.data.l[0] = XInternAtom(dis, "WM_DELETE_WINDOW", True);
-    ke.xclient.data.l[1] = CurrentTime;
-    XSendEvent(dis, current->win, False, NoEventMask, &ke);
-    send_kill_signal(current->win);
+    deletewindow(current->win);
     remove_window(current->win);
 }
 
@@ -784,15 +777,15 @@ void buttonpressed(XEvent *e) {
             }
 }
 
-void send_kill_signal(Window w) {
-    XEvent ke;
-    ke.type = ClientMessage;
-    ke.xclient.window = w;
-    ke.xclient.message_type = XInternAtom(dis, "WM_PROTOCOLS", True);
-    ke.xclient.format = 32;
-    ke.xclient.data.l[0] = XInternAtom(dis, "WM_DELETE_WINDOW", True);
-    ke.xclient.data.l[1] = CurrentTime;
-    XSendEvent(dis, w, False, NoEventMask, &ke);
+void deletewindow(Window w) {
+    XEvent ev;
+    ev.type = ClientMessage;
+    ev.xclient.window = w;
+    ev.xclient.message_type = XInternAtom(dis, "WM_PROTOCOLS", False);
+    ev.xclient.format = 32;
+    ev.xclient.data.l[0] = XInternAtom(dis, "WM_DELETE_WINDOW", False);
+    ev.xclient.data.l[1] = CurrentTime;
+    XSendEvent(dis, w, False, NoEventMask, &ev);
 }
 
 unsigned long getcolor(const char* color) {
@@ -804,42 +797,26 @@ unsigned long getcolor(const char* color) {
     return c.pixel;
 }
 
-/* FIXME: fix segfaults */
 void quit(const Arg arg) {
-    Window root_return, parent;
-    Window *children;
-    int i;
-    unsigned int nchildren;
-    XEvent ev;
-
-    /*
-     * if a client refuses to terminate itself,
-     * we kill every window remaining the brutal way.
-     * Since we're stuck in the while(nchildren > 0) { ... } loop
-     * we can't exit through the main method.
-     * This all happens if MOD+q is pushed a second time.
-     */
-    if(!running) {
-        XUngrabKey(dis, AnyKey, AnyModifier, root);
-        XDestroySubwindows(dis, root);
-        XCloseDisplay(dis);
-        die("error: forced shutdown\n");
-    }
-
+    retval = arg.i;
     running = False;
-    XQueryTree(dis, root, &root_return, &parent, &children, &nchildren);
-    for(i = 0; i < nchildren; i++) {
-        send_kill_signal(children[i]);
-    }
-    //keep alive until all windows are killed
-    while(nchildren > 0) {
-        XQueryTree(dis, root, &root_return, &parent, &children, &nchildren);
-        XNextEvent(dis,&ev);
-        if(events[ev.type])
-            events[ev.type](&ev);
-    }
+}
 
-    XUngrabKey(dis,AnyKey,AnyModifier,root);
+void cleanup(void) {
+    Window root_return;
+    Window parent_return;
+    Window *children;
+    unsigned int nchildren;
+
+    XUngrabKey(dis, AnyKey, AnyModifier, root);
+
+    XQueryTree(dis, root, &root_return, &parent_return, &children, &nchildren);
+    for(int i = 0; i < nchildren; i++)
+        deletewindow(children[i]);
+    free(children);
+
+    XSync(dis, False);
+    XSetInputFocus(dis, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
 
 void setup(void) {
@@ -950,7 +927,8 @@ int main(int argc, char *argv[]) {
     checkotherwm();
     setup();
     run();
+    cleanup();
     XCloseDisplay(dis);
-    return EXIT_SUCCESS;
+    return retval;
 }
 
