@@ -140,23 +140,23 @@ static void update_current(void);
 
 /* variables */
 static Display *dis;
-static Bool running;
-static int current_desktop;
-static int previous_desktop;
-static int growth;
+static Bool running = True;
+static int current_desktop = 0;
+static int previous_desktop = 0;
+static int growth = 0;
+static int mode = DEFAULT_MODE;
 static int master_size;
-static int mode;
 static int sh;
 static int sw;
 static int screen;
+static Window root;
 static int xerror(Display *dis, XErrorEvent *ee);
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int win_focus;
 static unsigned int win_unfocus;
-static unsigned int numlockmask; /* dynamic key lock mask */
-static Window root;
-static client *head;
-static client *current;
+static unsigned int numlockmask = 0; /* dynamic key lock mask */
+static client *head    = NULL;
+static client *current = NULL;
 
 /* events array */
 static void (*events[LASTEvent])(XEvent *e) = {
@@ -843,75 +843,39 @@ void quit(const Arg arg) {
 }
 
 void setup(void) {
-    // Install a signal
     sigchld(0);
 
-    // Screen and root window
     screen = DefaultScreen(dis);
     root = RootWindow(dis,screen);
 
-    // Screen width and height
-    sw = XDisplayWidth(dis,screen) - BORDER_WIDTH;
-    sh = (XDisplayHeight(dis,screen) - PANEL_HEIGHT) - BORDER_WIDTH;
+    sw = XDisplayWidth(dis,screen)  - BORDER_WIDTH;
+    sh = XDisplayHeight(dis,screen) - PANEL_HEIGHT - BORDER_WIDTH;
 
-    // Colors
+    master_size = ((mode == BSTACK) ? sh : sw) * MASTER_SIZE;
+    for(int i=0; i < DESKTOPS; i++)
+        save_desktop(i);
+    change_desktop((Arg){.i = 0});
+
     win_focus = getcolor(FOCUS);
     win_unfocus = getcolor(UNFOCUS);
 
-    // numlock workaround
-    int j, k;
     XModifierKeymap *modmap;
-    numlockmask = 0;
     modmap = XGetModifierMapping(dis);
-    for (k = 0; k < 8; k++) {
-        for (j = 0; j < modmap->max_keypermod; j++) {
+    for (int k = 0; k < 8; k++) {
+        for (int j = 0; j < modmap->max_keypermod; j++) {
             if(modmap->modifiermap[k * modmap->max_keypermod + j] == XKeysymToKeycode(dis, XK_Num_Lock))
                 numlockmask = (1 << k);
         }
     }
     XFreeModifiermap(modmap);
 
-    // Shortcuts
-    grabkeys();
-
-    /* FIXME: move defaults to declerations */
-    // Default stack
-    mode = DEFAULT_MODE;
-    growth = 0;
-
-    // For exiting
-    running = True;
-
-    // List of client
-    head = NULL;
-    current = NULL;
-
-    // Master size
-    if(mode == BSTACK)
-        master_size = sh*MASTER_SIZE;
-    else
-        master_size = sw*MASTER_SIZE;
-
-    // Set up all desktop
-    int i;
-    for(i=0;i<TABLENGTH(desktops);++i) {
-        desktops[i].master_size = master_size;
-        desktops[i].mode = mode;
-        desktops[i].growth = growth;
-        desktops[i].head = head;
-        desktops[i].current = current;
-    }
-
-    // Select first dekstop by default
-    const Arg arg = {.i = 0};
-    current_desktop = arg.i;
-    change_desktop(arg);
     // Set up atoms for dialog/notification windows
-    int x;
-    for(x = 0; x < ATOM_COUNT; x++)
+    for(int x = 0; x < ATOM_COUNT; x++)
         *atomList[x].atom = XInternAtom(dis, atomList[x].name, False);
     // To catch maprequest and destroynotify (if other wm running)
     XSelectInput(dis, root, SubstructureNotifyMask|SubstructureRedirectMask);
+
+    grabkeys();
 }
 
 int xerrorstart(Display *dis, XErrorEvent *ee) {
