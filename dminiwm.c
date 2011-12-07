@@ -121,7 +121,7 @@ static void next_win(const Arg arg);
 static void prev_win(const Arg arg);
 static void cleanup(void);
 static void quit(const Arg arg);
-static void remove_window(Window w);
+static void removeclient(client *c);
 static void resize_master(const Arg arg);
 static void resize_stack(const Arg arg);
 static void save_desktop(int i);
@@ -217,49 +217,35 @@ void add_window(Window w) {
         XSelectInput(dis, c->win, EnterWindowMask);
 }
 
-void remove_window(Window w) {
-    client *c;
-
-    /* FIXME: change this ugly code */
-    for(c=head;c;c=c->next) {
-
-        if(c->win == w) {
-            if(c->prev == NULL && c->next == NULL) {
-                free(head);
-                head = NULL;
-                current = NULL;
-                save_desktop(current_desktop);
-                return;
-            }
-
-            if(c->prev == NULL) {
-                head = c->next;
-                c->next->prev = NULL;
-                current = c->next;
-            }
-            else if(c->next == NULL) {
-                c->prev->next = NULL;
-                current = c->prev;
-            }
-            else {
-                c->prev->next = c->next;
-                c->next->prev = c->prev;
-                current = c->prev;
-            }
-
-            free(c);
-            save_desktop(current_desktop);
-            tile();
-            update_current();
-            return;
+void removeclient(client *c) {
+    if(c->prev == NULL) {       /* w is head */
+        if(c->next == NULL) {   /* head is only window on screen */
+            free(head);
+            head = NULL;
+        } else {                /* more windows on screen */
+            head->next->prev = NULL;
+            head = head->next;
         }
+        current = head;
+    } else {                    /* w is on stack */
+        if(c->next == NULL) {   /* w is last window on screen */
+            c->prev->next = NULL;
+        } else {                /* w is somewhere in the middle */
+            c->next->prev = c->prev;
+            c->prev->next = c->next;
+        }
+        current = c->prev;
     }
+
+    save_desktop(current_desktop);
+    tile();
+    update_current();
 }
 
 void killclient(const Arg arg) {
     if(current == NULL) return;
     deletewindow(current->win);
-    remove_window(current->win);
+    removeclient(current);
 }
 
 void next_win(const Arg arg) {
@@ -391,7 +377,7 @@ void client_to_desktop(const Arg arg) {
     // Remove client from current desktop
     select_desktop(cd);
     XUnmapWindow(dis, cc->win);
-    remove_window(cc->win);
+    removeclient(cc);
     save_desktop(cd);
     tile();
     update_current();
@@ -733,11 +719,14 @@ void destroynotify(XEvent *e) {
     for(j=0;j<TABLENGTH(desktops);++j) {
         select_desktop(j);
         for(c=head;c;c=c->next)
-            if(ev->window == c->win)
+            if(ev->window == c->win) {
                 i++;
+                break;
+            }
 
         if(i != 0) {
-            remove_window(ev->window);
+            //remove_window(ev->window);
+            removeclient(c);
             select_desktop(tmp);
             return;
         }
