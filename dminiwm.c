@@ -294,23 +294,16 @@ void move_up(const Arg arg) {
 }
 
 void swap_master(const Arg arg) {
-    Window tmp;
-
-    if(head->next != NULL && current != NULL && mode != MONOCYCLE) {
-        if(current == head) {
-            tmp = head->next->win;
-            head->next->win = head->win;
-            head->win = tmp;
-        } else {
-            tmp = head->win;
-            head->win = current->win;
-            current->win = tmp;
-            current = head;
-        }
-        save_desktop(current_desktop);
-        tile();
-        update_current();
-    }
+    if(head->next == NULL || current == NULL || mode == MONOCYCLE)
+        return;
+    Window tmpwin = head->win;
+    current = (current == head) ? head->next : current;
+    head->win = current->win;
+    current->win = tmpwin;
+    current = head;
+    save_desktop(current_desktop);
+    tile();
+    update_current();
 }
 
 /* **************************** Desktop Management ************************************* */
