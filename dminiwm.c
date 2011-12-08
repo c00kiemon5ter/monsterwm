@@ -709,31 +709,19 @@ void maprequest(XEvent *e) {
 }
 
 void destroynotify(XEvent *e) {
-    int i = 0;
-    int j = 0;
-    int tmp = current_desktop;
     client *c;
     XDestroyWindowEvent *ev = &e->xdestroywindow;
+    int cd = current_desktop;
+    Bool found = False;
 
-    save_desktop(tmp);
-    for(j=0;j<TABLENGTH(desktops);++j) {
-        select_desktop(j);
-        for(c=head;c;c=c->next)
-            if(ev->window == c->win) {
-                i++;
+    save_desktop(cd);
+    for(int d=0; d<DESKTOPS && !found; select_desktop(d++))
+        for(c=head; c; c=c->next)
+            if((found = ev->window == c->win)) {
+                removeclient(c);
                 break;
             }
-
-        if(i != 0) {
-            //remove_window(ev->window);
-            removeclient(c);
-            select_desktop(tmp);
-            return;
-        }
-
-        i = 0;
-    }
-    select_desktop(tmp);
+    select_desktop(cd);
 }
 
 void enternotify(XEvent *e) {
