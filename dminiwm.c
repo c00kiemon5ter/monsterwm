@@ -249,35 +249,22 @@ void killclient(const Arg arg) {
 }
 
 void next_win(const Arg arg) {
-    client *c;
-
-    if(current != NULL && head != NULL) {
-        if(current->next == NULL)
-            c = head;
-        else
-            c = current->next;
-
-        current = c;
-        if(mode == MONOCYCLE)
-            tile();
-        update_current();
-    }
+    if(current == NULL || head == NULL) return;
+    current = (current->next == NULL) ? head : current->next;
+    if(mode == MONOCYCLE)
+        tile();
+    update_current();
 }
 
 void prev_win(const Arg arg) {
-    client *c;
-
-    if(current != NULL && head != NULL) {
-        if(current->prev == NULL)
-            for(c=head;c->next;c=c->next);
-        else
-            c = current->prev;
-
-        current = c;
-        if(mode == MONOCYCLE)
-            tile();
-        update_current();
-    }
+    if(current == NULL || head == NULL) return;
+    if(current->prev == NULL) /* if(current == head) */
+        for(current=head; current->next; current=current->next);
+    else
+        current = current->prev;
+    if(mode == MONOCYCLE)
+        tile();
+    update_current();
 }
 
 void move_down(const Arg arg) {
@@ -330,25 +317,19 @@ void swap_master(const Arg arg) {
 void change_desktop(const Arg arg) {
     client *c;
 
-    if(arg.i == current_desktop)
-        return;
+    if(arg.i == current_desktop) return;
 
-    // Save current "properties"
+    /* save current desktop settings and unmap windows */
     save_desktop(current_desktop);
+    if(head != NULL)
+        for(c=head; c; c=c->next)
+            XUnmapWindow(dis, c->win);
     previous_desktop = current_desktop;
-
-    // Unmap all window
-    if(head != NULL)
-        for(c=head;c;c=c->next)
-            XUnmapWindow(dis,c->win);
-
-    // Take "properties" from the new desktop
+    /* read new desktop properties and map new windows */
     select_desktop(arg.i);
-
-    // Map all windows
     if(head != NULL)
-        for(c=head;c;c=c->next)
-            XMapWindow(dis,c->win);
+        for(c=head; c; c=c->next)
+            XMapWindow(dis, c->win);
 
     tile();
     update_current();
