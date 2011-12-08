@@ -404,121 +404,117 @@ void select_desktop(int i) {
 }
 
 void tile(void) {
+    if(head == NULL) return; /* no need to arange anything */
+
     client *c;
     int n = 0;
     int x = 0;
-    int y = 0;
+    int y = (TOP_PANEL) ? 0 : PANEL_HEIGHT;
 
-    // For a top panel
-    if(TOP_PANEL == 0)
-        y = PANEL_HEIGHT;
-
-    // If only one window
-    if(head != NULL && head->next == NULL) {
-        XMoveResizeWindow(dis,head->win,0,y,sw+2*BORDER_WIDTH,sh+2*BORDER_WIDTH);
+    if(head->next == NULL) {
+        XMoveResizeWindow(dis, head->win, 0, y, sw + 2*BORDER_WIDTH, sh + 2*BORDER_WIDTH);
+        return;
     }
-    else if(head != NULL) {
-        switch(mode) {
-            case TILE:
-                // Master window
-                XMoveResizeWindow(dis,head->win,0,y,master_size - BORDER_WIDTH,sh - BORDER_WIDTH);
-                // Stack
-                for(c=head->next;c;c=c->next) ++n;
-                if(n == 1) growth = 0;
-                XMoveResizeWindow(dis,head->next->win,master_size + BORDER_WIDTH,y,sw-master_size-(2*BORDER_WIDTH),(sh/n)+growth - BORDER_WIDTH);
-                y += (sh/n)+growth;
-                for(c=head->next->next;c;c=c->next) {
-                    XMoveResizeWindow(dis,c->win,master_size + BORDER_WIDTH,y,sw-master_size-(2*BORDER_WIDTH),(sh/n)-(growth/(n-1)) - BORDER_WIDTH);
-                    y += (sh/n)-(growth/(n-1));
-                }
-                break;
-            case MONOCYCLE:
-                for(c=head;c;c=c->next) {
-                    XMoveResizeWindow(dis,c->win,0,y,sw+2*BORDER_WIDTH,sh+2*BORDER_WIDTH);
-                }
-                break;
-            case BSTACK:
-                // Master window
-                XMoveResizeWindow(dis,head->win,0,y,sw-BORDER_WIDTH,master_size - BORDER_WIDTH);
-                // Stack
-                for(c=head->next;c;c=c->next) ++n;
-                if(n == 1) growth = 0;
-                XMoveResizeWindow(dis,head->next->win,0,y+master_size + BORDER_WIDTH,(sw/n)+growth-BORDER_WIDTH,sh-master_size-(2*BORDER_WIDTH));
-                x = (sw/n)+growth;
-                for(c=head->next->next;c;c=c->next) {
-                    XMoveResizeWindow(dis,c->win,x,y+master_size + BORDER_WIDTH,(sw/n)-(growth/(n-1)) - BORDER_WIDTH,sh-master_size-(2*BORDER_WIDTH));
-                    x += (sw/n)-(growth/(n-1));
-                }
-                break;
-            case GRID:
-                {
-                    int xpos = 0;
-                    int wdt = 0;
-                    int ht = 0;
 
-                    for(c=head;c;c=c->next) ++x;
+    switch(mode) {
+        case TILE:
+            /* master window */
+            XMoveResizeWindow(dis, head->win, 0, y, master_size - BORDER_WIDTH, sh - BORDER_WIDTH);
+            /* stack */
+            for(n=0, c=head->next; c; c=c->next, ++n);  /* count windows */
+            growth = (n == 1) ? 0 : growth;             /* if only one window don't care about growth */
+            XMoveResizeWindow(dis, head->next->win, master_size + BORDER_WIDTH, y, sw - master_size - 2*BORDER_WIDTH, sh/n + growth - BORDER_WIDTH);
+            y += sh/n + growth;
+            for(c=head->next->next; c; c=c->next) {
+                XMoveResizeWindow(dis, c->win, master_size + BORDER_WIDTH, y, sw - master_size - 2*BORDER_WIDTH, sh/n - growth/(n-1) - BORDER_WIDTH);
+                y += sh/n - growth / (n-1);
+            }
+            break;
+        case MONOCYCLE:
+            for(c=head; c; c=c->next) {
+                XMoveResizeWindow(dis, c->win, 0, y, sw + 2*BORDER_WIDTH, sh + 2*BORDER_WIDTH);
+            }
+            break;
+        case BSTACK:
+            /* master window */
+            XMoveResizeWindow(dis, head->win, 0, y, sw - BORDER_WIDTH, master_size - BORDER_WIDTH);
+            /* stack */
+            for(n=0, c=head->next; c; c=c->next, ++n);  /* count windows */
+            growth = (n == 1) ? 0 : growth;             /* if only one window don't care about growth */
+            XMoveResizeWindow(dis, head->next->win, 0, y + master_size + BORDER_WIDTH, sw/n + growth - BORDER_WIDTH, sh - master_size - 2*BORDER_WIDTH);
+            x = sw/n + growth;
+            for(c=head->next->next; c; c=c->next) {
+                XMoveResizeWindow(dis, c->win, x, y + master_size + BORDER_WIDTH, sw/n - growth/(n-1) - BORDER_WIDTH, sh-master_size - 2*BORDER_WIDTH);
+                x += sw/n - growth/(n-1);
+            }
+            break;
+        case GRID:
+            {
+                int xpos = 0;
+                int wdt = 0;
+                int ht = 0;
 
-                    for(c=head;c;c=c->next) {
-                        ++n;
-                        if(x >= 7) {
-                            wdt = (sw/3) - BORDER_WIDTH;
-                            ht  = (sh/3) - BORDER_WIDTH;
-                            if((n == 1) || (n == 4) || (n == 7))
+                for(c=head; c; c=c->next) ++x;
+
+                for(c=head; c; c=c->next) {
+                    ++n;
+                    if(x >= 7) {
+                        wdt = sw/3 - BORDER_WIDTH;
+                        ht  = sh/3 - BORDER_WIDTH;
+                        if(n == 1 || n == 4 || n == 7)
+                            xpos = 0;
+                        if(n == 2 || n == 5 || n == 8)
+                            xpos = sw/3 + BORDER_WIDTH;
+                        if(n == 3 || n == 6 || n == 9)
+                            xpos = 2*(sw/3) + BORDER_WIDTH;
+                        if(n == 4 || n == 7)
+                            y += sh/3 + BORDER_WIDTH;
+                        if(n == x && n == 7)
+                            wdt = sw - BORDER_WIDTH;
+                        if(n == x && n == 8)
+                            wdt = 2*(sw/3) - BORDER_WIDTH;
+                    } else
+                        if(x >= 5) {
+                            wdt = sw/3 - BORDER_WIDTH;
+                            ht  = sh/2 - BORDER_WIDTH;
+                            if(n == 1 || n == 4)
                                 xpos = 0;
-                            if((n == 2) || (n == 5) || (n == 8))
-                                xpos = (sw/3) + BORDER_WIDTH;
-                            if((n == 3) || (n == 6) || (n == 9))
-                                xpos = (2*(sw/3)) + BORDER_WIDTH;
-                            if((n == 4) || (n == 7))
-                                y += (sh/3) + BORDER_WIDTH;
-                            if((n == x) && (n == 7))
-                                wdt = sw - BORDER_WIDTH;
-                            if((n == x) && (n == 8))
-                                wdt = 2*sw/3 - BORDER_WIDTH;
-                        } else
-                            if(x >= 5) {
-                                wdt = (sw/3) - BORDER_WIDTH;
-                                ht  = (sh/2) - BORDER_WIDTH;
-                                if((n == 1) || (n == 4))
-                                    xpos = 0;
-                                if((n == 2) || (n == 5))
-                                    xpos = (sw/3) + BORDER_WIDTH;
-                                if((n == 3) || (n == 6))
-                                    xpos = (2*(sw/3)) + BORDER_WIDTH;
-                                if(n == 4)
-                                    y += (sh/2); // + BORDER_WIDTH;
-                                if((n == x) && (n == 5))
-                                    wdt = 2*sw/3 - BORDER_WIDTH;
-                            } else {
-                                if(x > 2) {
-                                    if((n == 1) || (n == 2))
-                                        ht = (sh/2) + growth - BORDER_WIDTH;
-                                    if(n >= 3)
-                                        ht = (sh/2) - growth - 2*BORDER_WIDTH;
-                                }
-                                else
-                                    ht = sh - BORDER_WIDTH;
-                                if((n == 1) || (n == 3)) {
-                                    xpos = 0;
-                                    wdt = master_size - BORDER_WIDTH;
-                                }
-                                if((n == 2) || (n == 4)) {
-                                    xpos = master_size+BORDER_WIDTH;
-                                    wdt = (sw - master_size) - 2*BORDER_WIDTH;
-                                }
-                                if(n == 3)
-                                    y += (sh/2) + growth + BORDER_WIDTH;
-                                if((n == x) && (n == 3))
-                                    wdt = sw - BORDER_WIDTH;
+                            if(n == 2 || n == 5)
+                                xpos = sw/3 + BORDER_WIDTH;
+                            if(n == 3 || n == 6)
+                                xpos = 2*(sw/3) + BORDER_WIDTH;
+                            if(n == 4)
+                                y += sh/2; // + BORDER_WIDTH;
+                            if(n == x && n == 5)
+                                wdt = 2*(sw/3) - BORDER_WIDTH;
+                        } else {
+                            if(x > 2) {
+                                if(n == 1 || n == 2)
+                                    ht = sh/2 + growth - BORDER_WIDTH;
+                                if(n >= 3)
+                                    ht = sh/2 - growth - 2*BORDER_WIDTH;
                             }
-                        XMoveResizeWindow(dis,c->win,xpos,y,wdt,ht);
-                    }
+                            else
+                                ht = sh - BORDER_WIDTH;
+                            if(n == 1 || n == 3) {
+                                xpos = 0;
+                                wdt = master_size - BORDER_WIDTH;
+                            }
+                            if(n == 2 || n == 4) {
+                                xpos = master_size+BORDER_WIDTH;
+                                wdt = sw - master_size - 2*BORDER_WIDTH;
+                            }
+                            if(n == 3)
+                                y += sh/2 + growth + BORDER_WIDTH;
+                            if(n == x && n == 3)
+                                wdt = sw - BORDER_WIDTH;
+                        }
+                    XMoveResizeWindow(dis, c->win, xpos, y, wdt, ht);
                 }
-                break;
-            default:
-                break;
-        }
+            }
+            break;
     }
+    free(c);
 }
 
 void update_current(void) {
@@ -907,4 +903,3 @@ int main(int argc, char *argv[]) {
     XCloseDisplay(dis);
     return retval;
 }
-
