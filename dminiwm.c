@@ -251,8 +251,6 @@ void killclient(const Arg arg) {
 void next_win(const Arg arg) {
     if(current == NULL || head == NULL) return;
     current = (current->next == NULL) ? head : current->next;
-    if(mode == MONOCYCLE)
-        tile();
     update_current();
 }
 
@@ -262,8 +260,6 @@ void prev_win(const Arg arg) {
         for(current=head; current->next; current=current->next);
     else
         current = current->prev;
-    if(mode == MONOCYCLE)
-        tile();
     update_current();
 }
 
