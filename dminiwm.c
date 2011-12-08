@@ -268,29 +268,27 @@ void prev_win(const Arg arg) {
 }
 
 void move_down(const Arg arg) {
-    Window tmp;
-    if(current == NULL || current->next == NULL || current->win == head->win || current->prev == NULL)
+    if(current == NULL || current == head || current->next == NULL)
         return;
-
-    tmp = current->win;
+    Window tmpwin = current->win;
     current->win = current->next->win;
-    current->next->win = tmp;
-    next_win((Arg){NULL});
+    current->next->win = tmpwin;
+    current = current->next;
     save_desktop(current_desktop);
     tile();
+    update_current();
 }
 
 void move_up(const Arg arg) {
-    Window tmp;
-    if(current == NULL || current->prev == head || current->win == head->win) {
+    if(current == NULL || current == head || current->prev == head)
         return;
-    }
-    tmp = current->win;
+    Window tmpwin = current->win;
     current->win = current->prev->win;
-    current->prev->win = tmp;
-    prev_win((Arg){NULL});
+    current->prev->win = tmpwin;
+    current = current->prev;
     save_desktop(current_desktop);
     tile();
+    update_current();
 }
 
 void swap_master(const Arg arg) {
