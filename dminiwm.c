@@ -520,26 +520,25 @@ void tile(void) {
 void update_current(void) {
     client *c;
 
-    for(c=head;c;c=c->next) {
-        if((head->next == NULL) || (mode == MONOCYCLE))
-            XSetWindowBorderWidth(dis,c->win,0);
+    for(c=head; c; c=c->next) {
+        if(head->next == NULL || mode == MONOCYCLE)
+            XSetWindowBorderWidth(dis, c->win, 0);
         else
-            XSetWindowBorderWidth(dis,c->win,BORDER_WIDTH);
+            XSetWindowBorderWidth(dis, c->win, BORDER_WIDTH);
 
-        if(current == c) {
-            // "Enable" current window
-            XSetWindowBorder(dis,c->win,win_focus);
-            XSetInputFocus(dis,c->win,RevertToParent,CurrentTime);
-            XRaiseWindow(dis,c->win);
+        if(current == c) { /* highlight current window */
+            XSetWindowBorder(dis, c->win, win_focus);
+            XSetInputFocus(dis, c->win, RevertToParent, CurrentTime);
+            XRaiseWindow(dis, c->win);
             if(CLICK_TO_FOCUS == 0)
                 XUngrabButton(dis, AnyButton, AnyModifier, c->win);
-        }
-        else {
-            XSetWindowBorder(dis,c->win,win_unfocus);
+        } else {
+            XSetWindowBorder(dis, c->win, win_unfocus);
             if(CLICK_TO_FOCUS == 0)
                 XGrabButton(dis, AnyButton, AnyModifier, c->win, True, ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
         }
     }
+    free(c);
     XSync(dis, False);
 }
 
