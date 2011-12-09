@@ -94,7 +94,6 @@ static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
 static void die(const char* errstr, ...);
 static int xerrorstart(Display *dis, XErrorEvent *ee);
-static void checkotherwm(void);
 static unsigned long getcolor(const char* color);
 static void grabkeys(void);
 static void keypress(XEvent *e);
@@ -782,7 +781,13 @@ void setup(void) {
     atoms[_NET_WM_WINDOW_TYPE_SPLASH]  = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_SPLASH",  False);
     atoms[_NET_WM_WINDOW_TYPE_DIALOG]  = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_DIALOG",  False);
     atoms[_NET_WM_WINDOW_TYPE_NOTIFICATION] = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
-    XSelectInput(dis, root, SubstructureNotifyMask|SubstructureRedirectMask);
+
+    /* check if another window manager is running */
+    xerrorxlib = XSetErrorHandler(xerrorstart);
+    XSelectInput(dis, DefaultRootWindow(dis), SubstructureNotifyMask|SubstructureRedirectMask);
+    XSync(dis, False);
+    XSetErrorHandler(xerror);
+    XSync(dis, False);
 
     grabkeys();
 }
@@ -790,15 +795,6 @@ void setup(void) {
 int xerrorstart(Display *dis, XErrorEvent *ee) {
     die("error: another window manager is already running\n");
     return -1;
-}
-
-void checkotherwm(void) {
-    xerrorxlib = XSetErrorHandler(xerrorstart);
-    /* this causes an error if some other window manager is running */
-    XSelectInput(dis, DefaultRootWindow(dis), SubstructureRedirectMask);
-    XSync(dis, False);
-    XSetErrorHandler(xerror);
-    XSync(dis, False);
 }
 
 /* There's no way to check accesses to destroyed windows, thus those cases are
@@ -856,7 +852,6 @@ int main(int argc, char *argv[]) {
         die("usage: dminiwm [-v]\n");
     if(!(dis = XOpenDisplay(NULL)))
         die("error: cannot open display\n");
-    checkotherwm();
     setup();
     run();
     cleanup();
