@@ -28,7 +28,27 @@
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
 
-#define TABLENGTH(X)    (sizeof(X)/sizeof(*X))
+#define LENGTH(x) (sizeof(x)/sizeof(*x))
+
+enum {
+    WM_PROTOCOLS,
+    WM_DELETE_WINDOW,
+    _NET_WM_WINDOW_TYPE,
+    _NET_WM_WINDOW_TYPE_UTILITY,
+    _NET_WM_WINDOW_TYPE_DOCK,
+    _NET_WM_WINDOW_TYPE_SPLASH,
+    _NET_WM_WINDOW_TYPE_DIALOG,
+    _NET_WM_WINDOW_TYPE_NOTIFICATION,
+    ATOM_COUNT
+};
+
+/* layout modes */
+enum {
+    TILE,
+    MONOCYCLE,
+    BSTACK,
+    GRID,
+};
 
 /* structs */
 typedef union {
@@ -62,40 +82,6 @@ typedef struct {
     int preferredd;
     int followwin;
 } Convenience;
-
-typedef enum {
-    ATOM_NET_WM_WINDOW_TYPE,
-    ATOM_NET_WM_WINDOW_TYPE_UTILITY,
-    ATOM_NET_WM_WINDOW_TYPE_DOCK,
-    ATOM_NET_WM_WINDOW_TYPE_SPLASH,
-    ATOM_NET_WM_WINDOW_TYPE_DIALOG,
-    ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION,
-    ATOM_COUNT
-} AtomType;
-
-typedef struct {
-    Atom *atom;
-    const char *name;
-} AtomNode;
-
-Atom atoms[ATOM_COUNT];
-
-static const AtomNode atomList[] = {
-    { &atoms[ATOM_NET_WM_WINDOW_TYPE],              "_NET_WM_WINDOW_TYPE"             },
-    { &atoms[ATOM_NET_WM_WINDOW_TYPE_UTILITY],      "_NET_WM_WINDOW_TYPE_UTILITY"     },
-    { &atoms[ATOM_NET_WM_WINDOW_TYPE_DOCK],         "_NET_WM_WINDOW_TYPE_DOCK"        },
-    { &atoms[ATOM_NET_WM_WINDOW_TYPE_SPLASH],       "_NET_WM_WINDOW_TYPE_SPLASH"      },
-    { &atoms[ATOM_NET_WM_WINDOW_TYPE_DIALOG],       "_NET_WM_WINDOW_TYPE_DIALOG"      },
-    { &atoms[ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION], "_NET_WM_WINDOW_TYPE_NOTIFICATION"},
-};
-
-/* layout modes */
-enum mode {
-    TILE,
-    MONOCYCLE,
-    BSTACK,
-    GRID,
-};
 
 /* Functions */
 static void add_window(Window w);
@@ -159,6 +145,7 @@ static unsigned int win_unfocus;
 static unsigned int numlockmask = 0; /* dynamic key lock mask */
 static client *head    = NULL;
 static client *current = NULL;
+static Atom atoms[ATOM_COUNT];
 
 /* events array */
 static void (*events[LASTEvent])(XEvent *e) = {
@@ -538,8 +525,8 @@ void grabkeys(void) {
 
     XUngrabKey(dis, AnyKey, AnyModifier, root);
     // For each shortcuts
-    for(i=0;i<TABLENGTH(keys);++i) {
-        code = XKeysymToKeycode(dis,keys[i].keysym);
+    for(i=0; i<LENGTH(keys); i++) {
+        code = XKeysymToKeycode(dis, keys[i].keysym);
         XGrabKey(dis, code, keys[i].mod, root, True, GrabModeAsync, GrabModeAsync);
         XGrabKey(dis, code, keys[i].mod | LockMask, root, True, GrabModeAsync, GrabModeAsync);
         XGrabKey(dis, code, keys[i].mod | numlockmask, root, True, GrabModeAsync, GrabModeAsync);
@@ -616,25 +603,26 @@ void maprequest(XEvent *e) {
     unsigned char *temp;
     Atom *type;
 
-    if(XGetWindowProperty(dis, ev->window, atoms[ATOM_NET_WM_WINDOW_TYPE], 0, 32, False, XA_ATOM, &realType, &realFormat, &count, &extra, &temp) == Success) {
+    if(XGetWindowProperty(dis, ev->window, atoms[_NET_WM_WINDOW_TYPE], 0, 32, False,
+                 XA_ATOM, &realType, &realFormat, &count, &extra, &temp) == Success) {
         if(count > 0) {
             type = (unsigned long*)temp;
             for(j=0; j<count; j++) {
-                if((type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_UTILITY]) ||
-                        (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_NOTIFICATION]) ||
-                        (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_SPLASH]) ||
-                        (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_DIALOG]) ||
-                        (type[j] == atoms[ATOM_NET_WM_WINDOW_TYPE_DOCK])) {
+                if( type[j] == atoms[_NET_WM_WINDOW_TYPE_UTILITY]      ||
+                    type[j] == atoms[_NET_WM_WINDOW_TYPE_NOTIFICATION] ||
+                    type[j] == atoms[_NET_WM_WINDOW_TYPE_SPLASH]       ||
+                    type[j] == atoms[_NET_WM_WINDOW_TYPE_DIALOG]       ||
+                    type[j] == atoms[_NET_WM_WINDOW_TYPE_DOCK]         ){
                     add_window(ev->window);
                     XMapWindow(dis, ev->window);
-                    XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
-                    XRaiseWindow(dis,ev->window);
+                    XSetInputFocus(dis, ev->window, RevertToParent, CurrentTime);
+                    XRaiseWindow(dis, ev->window);
+                    if(temp)
+                        XFree(temp);
                     return;
                 }
             }
         }
-        if(temp)
-            XFree(temp);
     }
 
     XClassHint ch = {0};
@@ -721,9 +709,9 @@ void deletewindow(Window w) {
     XEvent ev;
     ev.type = ClientMessage;
     ev.xclient.window = w;
-    ev.xclient.message_type = XInternAtom(dis, "WM_PROTOCOLS", False);
+    ev.xclient.message_type = atoms[WM_PROTOCOLS];
     ev.xclient.format = 32;
-    ev.xclient.data.l[0] = XInternAtom(dis, "WM_DELETE_WINDOW", False);
+    ev.xclient.data.l[0] = atoms[WM_DELETE_WINDOW];
     ev.xclient.data.l[1] = CurrentTime;
     XSendEvent(dis, w, False, NoEventMask, &ev);
 }
@@ -785,10 +773,15 @@ void setup(void) {
     }
     XFreeModifiermap(modmap);
 
-    // Set up atoms for dialog/notification windows
-    for(int x = 0; x < ATOM_COUNT; x++)
-        *atomList[x].atom = XInternAtom(dis, atomList[x].name, False);
-    // To catch maprequest and destroynotify (if other wm running)
+    /* set up atoms for dialog/notification windows */
+    atoms[WM_PROTOCOLS]     = XInternAtom(dis, "WM_PROTOCOLS",     False);
+    atoms[WM_DELETE_WINDOW] = XInternAtom(dis, "WM_DELETE_WINDOW", False);
+    atoms[_NET_WM_WINDOW_TYPE]         = XInternAtom(dis, "_NET_WM_WINDOW_TYPE",         False);
+    atoms[_NET_WM_WINDOW_TYPE_UTILITY] = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_UTILITY", False);
+    atoms[_NET_WM_WINDOW_TYPE_DOCK]    = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_DOCK",    False);
+    atoms[_NET_WM_WINDOW_TYPE_SPLASH]  = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_SPLASH",  False);
+    atoms[_NET_WM_WINDOW_TYPE_DIALOG]  = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_DIALOG",  False);
+    atoms[_NET_WM_WINDOW_TYPE_NOTIFICATION] = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
     XSelectInput(dis, root, SubstructureNotifyMask|SubstructureRedirectMask);
 
     grabkeys();
