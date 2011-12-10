@@ -145,6 +145,7 @@ static unsigned int nrules = LENGTH(rules);
 static client *head    = NULL;
 static client *current = NULL;
 static Atom atoms[ATOM_COUNT];
+static desktop desktops[DESKTOPS];
 
 /* events array */
 static void (*events[LASTEvent])(XEvent *e) = {
@@ -156,10 +157,7 @@ static void (*events[LASTEvent])(XEvent *e) = {
     [ConfigureRequest] = configurerequest
 };
 
-/* desktops array */
-static desktop desktops[DESKTOPS];
-
-/* ***************************** Window Management ******************************* */
+/* ~~~ Window Management ~~~ */
 void add_window(Window w) {
     client *c, *t;
 
@@ -272,7 +270,7 @@ void swap_master() {
     update_current();
 }
 
-/* **************************** Desktop Management ************************************* */
+/* ~~~ Desktop Management ~~~ */
 void change_desktop(const Arg arg) {
     if(arg.i == current_desktop) return;
     previous_desktop = current_desktop;
@@ -302,19 +300,18 @@ void client_to_desktop(const Arg arg) {
     if(arg.i == current_desktop || current == NULL)
         return;
 
-    client *cc = current;
+    client *c = current;
     int cd = current_desktop;
 
-    // Add client to desktop
     select_desktop(arg.i);
-    add_window(cc->win);
+    add_window(c->win);
     save_desktop(arg.i);
 
-    // Remove client from current desktop
     select_desktop(cd);
-    XUnmapWindow(dis, cc->win);
-    removeclient(cc);
+    XUnmapWindow(dis, c->win);
+    removeclient(c);
     save_desktop(cd);
+
     tile();
     update_current();
 
@@ -498,7 +495,7 @@ void resize_stack(const Arg arg) {
     tile();
 }
 
-/* ********************** Keyboard Management ********************** */
+/* ~~~ Keyboard Management ~~~ */
 void grabkeys(void) {
     KeyCode code;
 
@@ -519,29 +516,26 @@ void keypress(XEvent *e) {
     XKeyEvent *ev = &e->xkey;
 
     keysym = XKeycodeToKeysym(dis, (KeyCode)ev->keycode, 0);
-    for(i = 0; i < len; i++) {
-        if(keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)) {
-            if(keys[i].function)
+    for(i = 0; i < len; i++)
+        if(keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(ev->state) && keys[i].function)
                 keys[i].function(keys[i].arg);
-        }
-    }
 }
 
-/* ********************** Signal Management ************************** */
+/* ~~~ Signal Management ~~~ */
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     XWindowChanges wc;
 
     wc.x = ev->x;
     wc.y = ev->y;
-    if(ev->width < sw-BORDER_WIDTH)
+    if(ev->width < sw - BORDER_WIDTH)
         wc.width = ev->width;
     else
-        wc.width = sw-BORDER_WIDTH;
-    if(ev->height < sh-BORDER_WIDTH)
+        wc.width = sw - BORDER_WIDTH;
+    if(ev->height < sh - BORDER_WIDTH)
         wc.height = ev->height;
     else
-        wc.height = sh-BORDER_WIDTH;
+        wc.height = sh - BORDER_WIDTH;
     wc.border_width = ev->border_width;
     wc.sibling = ev->above;
     wc.stack_mode = ev->detail;
@@ -635,7 +629,7 @@ void enternotify(XEvent *e) {
     if(FOLLOW_MOUSE == 0) {
         if((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
             return;
-        for(c=head;c;c=c->next)
+        for(c=head; c; c=c->next)
             if(ev->window == c->win) {
                 current = c;
                 update_current();
@@ -648,9 +642,8 @@ void buttonpressed(XEvent *e) {
     client *c;
     XButtonPressedEvent *ev = &e->xbutton;
 
-    // change focus with LMB
     if(CLICK_TO_FOCUS == 0 && ev->window != current->win && ev->button == Button1)
-        for(c=head;c;c=c->next)
+        for(c=head; c; c=c->next)
             if(ev->window == c->win) {
                 current = c;
                 update_current();
@@ -670,10 +663,10 @@ void deletewindow(Window w) {
 }
 
 unsigned long getcolor(const char* color) {
-    Colormap map = DefaultColormap(dis,screen);
+    Colormap map = DefaultColormap(dis, screen);
     XColor c;
 
-    if(!XAllocNamedColor(dis,map,color,&c,&c))
+    if(!XAllocNamedColor(dis, map, color, &c, &c))
         die("error: cannot allocate color '%s'\n", c);
     return c.pixel;
 }
@@ -704,10 +697,10 @@ void setup(void) {
     sigchld();
 
     screen = DefaultScreen(dis);
-    root = RootWindow(dis,screen);
+    root = RootWindow(dis, screen);
 
-    sw = XDisplayWidth(dis,screen)  - BORDER_WIDTH;
-    sh = XDisplayHeight(dis,screen) - PANEL_HEIGHT - BORDER_WIDTH;
+    sw = XDisplayWidth(dis,  screen) - BORDER_WIDTH;
+    sh = XDisplayHeight(dis, screen) - PANEL_HEIGHT - BORDER_WIDTH;
 
     master_size = ((mode == BSTACK) ? sh : sw) * MASTER_SIZE;
     for(int i=0; i < DESKTOPS; i++)
@@ -718,12 +711,10 @@ void setup(void) {
     win_unfocus = getcolor(UNFOCUS);
 
     XModifierKeymap *modmap = XGetModifierMapping(dis);
-    for (int k = 0; k < 8; k++) {
-        for (int j = 0; j < modmap->max_keypermod; j++) {
-            if(modmap->modifiermap[k * modmap->max_keypermod + j] == XKeysymToKeycode(dis, XK_Num_Lock))
+    for (int k=0; k<8; k++)
+        for (int j=0; j<modmap->max_keypermod; j++)
+            if(modmap->modifiermap[k*modmap->max_keypermod + j] == XKeysymToKeycode(dis, XK_Num_Lock))
                 numlockmask = (1 << k);
-        }
-    }
     XFreeModifiermap(modmap);
 
     /* set up atoms for dialog/notification windows */
@@ -756,10 +747,10 @@ int xerrorstart() {
  * default error handler, which may call exit.  */
 int xerror(Display *dis, XErrorEvent *ee) {
     if(ee->error_code == BadWindow
-            || (ee->error_code == BadMatch && (ee->request_code == X_SetInputFocus || ee->request_code ==  X_ConfigureWindow))
-            || (ee->error_code == BadDrawable && (ee->request_code == X_PolyText8 || ee->request_code == X_PolyFillRectangle
-                 || ee->request_code == X_PolySegment || ee->request_code == X_CopyArea))
-            || (ee->error_code == BadAccess && ee->request_code == X_GrabKey))
+            || (ee->error_code == BadMatch    && (ee->request_code == X_SetInputFocus || ee->request_code ==  X_ConfigureWindow))
+            || (ee->error_code == BadDrawable && (ee->request_code == X_PolyText8     || ee->request_code == X_PolyFillRectangle
+                                               || ee->request_code == X_PolySegment   || ee->request_code == X_CopyArea))
+            || (ee->error_code == BadAccess   &&  ee->request_code == X_GrabKey))
         return 0;
     fprintf(stderr, "error: xerror: request code: %d, error code: %d\n", ee->request_code, ee->error_code);
     return xerrorxlib(dis, ee); /* may call exit */
@@ -785,7 +776,7 @@ void spawn(const Arg arg) {
 
 void run(void) {
     XEvent ev;
-    while(running && !XNextEvent(dis,&ev))
+    while(running && !XNextEvent(dis, &ev))
         if(events[ev.type])
             events[ev.type](&ev);
 }
