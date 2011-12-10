@@ -93,17 +93,17 @@ static void configurerequest(XEvent *e);
 static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
 static void die(const char* errstr, ...);
-static int xerrorstart(Display *dis, XErrorEvent *ee);
+static int xerrorstart();
 static unsigned long getcolor(const char* color);
 static void grabkeys(void);
 static void keypress(XEvent *e);
-static void killclient(const Arg arg);
+static void killclient();
 static void maprequest(XEvent *e);
-static void move_down(const Arg arg);
-static void move_up(const Arg arg);
+static void move_down();
+static void move_up();
 static void rotate_desktop(const Arg arg);
-static void next_win(const Arg arg);
-static void prev_win(const Arg arg);
+static void next_win();
+static void prev_win();
 static void cleanup(void);
 static void quit(const Arg arg);
 static void removeclient(client *c);
@@ -113,13 +113,13 @@ static void save_desktop(int i);
 static void select_desktop(int i);
 static void deletewindow(Window w);
 static void setup(void);
-static void sigchld(int unused);
+static void sigchld();
 static void spawn(const Arg arg);
 static void run(void);
-static void swap_master(const Arg arg);
-static void tile(void);
-static void last_desktop(const Arg arg);
+static void swap_master();
+static void last_desktop();
 static void switch_mode(const Arg arg);
+static void tile(void);
 static void update_current(void);
 
 #include "config.h"
@@ -216,19 +216,19 @@ void removeclient(client *c) {
     update_current();
 }
 
-void killclient(const Arg arg) {
+void killclient() {
     if(current == NULL) return;
     deletewindow(current->win);
     removeclient(current);
 }
 
-void next_win(const Arg arg) {
+void next_win() {
     if(current == NULL || head == NULL) return;
     current = (current->next == NULL) ? head : current->next;
     update_current();
 }
 
-void prev_win(const Arg arg) {
+void prev_win() {
     if(current == NULL || head == NULL) return;
     if(current->prev == NULL) /* if(current == head) */
         for(current=head; current->next; current=current->next);
@@ -237,7 +237,7 @@ void prev_win(const Arg arg) {
     update_current();
 }
 
-void move_down(const Arg arg) {
+void move_down() {
     if(current == NULL || current == head || current->next == NULL)
         return;
     Window tmpwin = current->win;
@@ -249,7 +249,7 @@ void move_down(const Arg arg) {
     update_current();
 }
 
-void move_up(const Arg arg) {
+void move_up() {
     if(current == NULL || current == head || current->prev == head)
         return;
     Window tmpwin = current->win;
@@ -261,7 +261,7 @@ void move_up(const Arg arg) {
     update_current();
 }
 
-void swap_master(const Arg arg) {
+void swap_master() {
     if(head->next == NULL || current == NULL || mode == MONOCYCLE)
         return;
     Window tmpwin = head->win;
@@ -292,7 +292,7 @@ void change_desktop(const Arg arg) {
     update_current();
 }
 
-void last_desktop(const Arg arg) {
+void last_desktop() {
     change_desktop((Arg){.i = previous_desktop});
 }
 
@@ -502,12 +502,10 @@ void resize_stack(const Arg arg) {
 
 /* ********************** Keyboard Management ********************** */
 void grabkeys(void) {
-    int i;
     KeyCode code;
 
     XUngrabKey(dis, AnyKey, AnyModifier, root);
-    // For each shortcuts
-    for(i=0; i<LENGTH(keys); i++) {
+    for(unsigned int i=0; i<LENGTH(keys); i++) {
         code = XKeysymToKeycode(dis, keys[i].keysym);
         XGrabKey(dis, code, keys[i].mod, root, True, GrabModeAsync, GrabModeAsync);
         XGrabKey(dis, code, keys[i].mod | LockMask, root, True, GrabModeAsync, GrabModeAsync);
@@ -580,7 +578,7 @@ void maprequest(XEvent *e) {
         if(realType == XA_ATOM && count) {
             wintype = (unsigned long *)data;
             if(data) XFree(data);
-            for(int i=0; i<count; i++)
+            for(unsigned int i=0; i<count; i++)
                 if(wintype[i] == atoms[_NET_WM_WINDOW_TYPE_UTILITY]      ||
                    wintype[i] == atoms[_NET_WM_WINDOW_TYPE_NOTIFICATION] ||
                    wintype[i] == atoms[_NET_WM_WINDOW_TYPE_SPLASH]       ||
@@ -595,10 +593,10 @@ void maprequest(XEvent *e) {
         }
 
     /* window is normal and has a rule set */
-    XClassHint ch = {0};
+    XClassHint ch = {0, 0};
     int cd = current_desktop;
     if(XGetClassHint(dis, ev->window, &ch))
-        for(int i=0; i<nrules; i++)
+        for(unsigned int i=0; i<nrules; i++)
             if(strcmp(ch.res_class, rules[i].class) == 0) {
                 save_desktop(cd);
                 select_desktop(rules[i].desktop);
@@ -700,7 +698,7 @@ void cleanup(void) {
     XUngrabKey(dis, AnyKey, AnyModifier, root);
 
     XQueryTree(dis, root, &root_return, &parent_return, &children, &nchildren);
-    for(int i = 0; i < nchildren; i++)
+    for(unsigned int i = 0; i < nchildren; i++)
         deletewindow(children[i]);
     free(children);
 
@@ -709,7 +707,7 @@ void cleanup(void) {
 }
 
 void setup(void) {
-    sigchld(0);
+    sigchld();
 
     screen = DefaultScreen(dis);
     root = RootWindow(dis,screen);
@@ -754,7 +752,7 @@ void setup(void) {
     grabkeys();
 }
 
-int xerrorstart(Display *dis, XErrorEvent *ee) {
+int xerrorstart() {
     die("error: another window manager is already running\n");
     return -1;
 }
@@ -773,7 +771,7 @@ int xerror(Display *dis, XErrorEvent *ee) {
     return xerrorxlib(dis, ee); /* may call exit */
 }
 
-void sigchld(int unused) {
+void sigchld() {
     if(signal(SIGCHLD, sigchld) == SIG_ERR)
         die("error: can't install SIGCHLD handler\n");
     while(0 < waitpid(-1, NULL, WNOHANG));
