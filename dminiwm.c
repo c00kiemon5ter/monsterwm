@@ -571,33 +571,30 @@ void maprequest(XEvent *e) {
     }
 
     /* window type is not normal (_NET_WM_WINDOW_TYPE_NORMAL) */
-    unsigned long count, j, extra;
+    Atom realType, *wintype;
     int realFormat;
-    unsigned char *temp;
-    Atom realType, *type;
+    unsigned long count, extra;
+    unsigned char *data;
     if(XGetWindowProperty(dis, ev->window, atoms[_NET_WM_WINDOW_TYPE], 0, 32, False,
-                 XA_ATOM, &realType, &realFormat, &count, &extra, &temp) == Success) {
-        if(count > 0) {
-            type = (unsigned long*)temp;
-            for(j=0; j<count; j++) {
-                if( type[j] == atoms[_NET_WM_WINDOW_TYPE_UTILITY]      ||
-                    type[j] == atoms[_NET_WM_WINDOW_TYPE_NOTIFICATION] ||
-                    type[j] == atoms[_NET_WM_WINDOW_TYPE_SPLASH]       ||
-                    type[j] == atoms[_NET_WM_WINDOW_TYPE_DIALOG]       ||
-                    type[j] == atoms[_NET_WM_WINDOW_TYPE_DOCK]         ){
+                 XA_ATOM, &realType, &realFormat, &count, &extra, &data) == Success)
+        if(realType == XA_ATOM && count) {
+            wintype = (unsigned long *)data;
+            if(data) XFree(data);
+            for(int i=0; i<count; i++)
+                if(wintype[i] == atoms[_NET_WM_WINDOW_TYPE_UTILITY]      ||
+                   wintype[i] == atoms[_NET_WM_WINDOW_TYPE_NOTIFICATION] ||
+                   wintype[i] == atoms[_NET_WM_WINDOW_TYPE_SPLASH]       ||
+                   wintype[i] == atoms[_NET_WM_WINDOW_TYPE_DIALOG]       ||
+                   wintype[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]         ){
                     add_window(ev->window);
                     XMapWindow(dis, ev->window);
                     XSetInputFocus(dis, ev->window, RevertToParent, CurrentTime);
                     XRaiseWindow(dis, ev->window);
-                    if(temp)
-                        XFree(temp);
                     return;
                 }
-            }
         }
-    }
 
-    /* rule has been set for window */
+    /* window is normal and has a rule set */
     XClassHint ch = {0};
     int cd = current_desktop;
     if(XGetClassHint(dis, ev->window, &ch))
@@ -616,6 +613,7 @@ void maprequest(XEvent *e) {
                 return;
             }
 
+    /* window is normal and has no rule set */
     add_window(ev->window);
     XMapWindow(dis, ev->window);
     tile();
