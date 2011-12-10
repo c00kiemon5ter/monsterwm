@@ -162,38 +162,25 @@ static desktop desktops[DESKTOPS];
 
 /* ***************************** Window Management ******************************* */
 void add_window(Window w) {
-    client *c,*t;
+    client *c, *t;
 
-    if(!(c = (client *)calloc(1,sizeof(client))))
+    if(!(c = (client *)calloc(1, sizeof(client))))
         die("error: could not calloc() %u bytes\n", sizeof(client));
 
     if(head == NULL) {
-        c->next = NULL;
-        c->prev = NULL;
         c->win = w;
         head = c;
-    }
-    else {
-        if(ATTACH_ASIDE == 0) {
-            for(t=head;t->next;t=t->next);
-
-            c->next = NULL;
-            c->prev = t;
-            c->win = w;
-
-            t->next = c;
-        }
-        else {
-            for(t=head;t->prev;t=t->prev);
-
-            c->prev = NULL;
-            c->next = t;
-            c->win = w;
-
-            t->prev = c;
-
-            head = c;
-        }
+    } else if(ATTACH_ASIDE == 0) {
+        for(t=head; t->next; t=t->next);
+        c->prev = t;
+        c->win = w;
+        t->next = c;
+    } else {
+        t = head;
+        c->next = t;
+        t->prev = c;
+        c->win = w;
+        head = c;
     }
 
     current = c;
