@@ -288,21 +288,17 @@ void swap_master(const Arg arg) {
 
 /* **************************** Desktop Management ************************************* */
 void change_desktop(const Arg arg) {
-    client *c;
-
     if(arg.i == current_desktop) return;
+    previous_desktop = current_desktop;
 
     /* save current desktop settings and unmap windows */
     save_desktop(current_desktop);
-    if(head != NULL)
-        for(c=head; c; c=c->next)
-            XUnmapWindow(dis, c->win);
-    previous_desktop = current_desktop;
+    for(client *c=head; c; c=c->next)
+        XUnmapWindow(dis, c->win);
     /* read new desktop properties and map new windows */
     select_desktop(arg.i);
-    if(head != NULL)
-        for(c=head; c; c=c->next)
-            XMapWindow(dis, c->win);
+    for(client *c=head; c; c=c->next)
+        XMapWindow(dis, c->win);
 
     tile();
     update_current();
