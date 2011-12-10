@@ -88,7 +88,6 @@ static void add_window(Window w);
 static void buttonpressed(XEvent *e);
 static void change_desktop(const Arg arg);
 static void client_to_desktop(const Arg arg);
-static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
 static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
@@ -154,7 +153,6 @@ static void (*events[LASTEvent])(XEvent *e) = {
     [EnterNotify] = enternotify,
     [ButtonPress] = buttonpressed,
     [DestroyNotify] = destroynotify,
-    [ConfigureNotify] = configurenotify,
     [ConfigureRequest] = configurerequest
 };
 
@@ -527,10 +525,6 @@ void keypress(XEvent *e) {
                 keys[i].function(keys[i].arg);
         }
     }
-}
-
-void configurenotify(XEvent *e) {
-    // Do nothing for the moment
 }
 
 /* ********************** Signal Management ************************** */
