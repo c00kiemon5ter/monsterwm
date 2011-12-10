@@ -16,7 +16,7 @@ INCS = -I. -I/usr/include -I${X11INC}
 LIBS = -L/usr/lib -lc -L${X11LIB} -lX11
 
 CPPFLAGS = -DVERSION=\"${VERSION}\"
-CFLAGS   = -g -std=c99 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}
+CFLAGS   = -g -std=c99 -pedantic -Wall -Wextra -Os ${INCS} ${CPPFLAGS}
 LDFLAGS  = -g ${LIBS}
 #$(CC) $(LDFLAGS) -s -Os -o $@ $+ $(LDADD)
 
