@@ -36,10 +36,10 @@
 #define FOCUS           "#ff950e" /* focused window border color   */
 #define UNFOCUS         "#444444" /* unfocused window border color */
 
-/** Applications to a specific desktop **/
-static const Convenience convenience[] = { \
-    /*  class      desktop follow */
-    { "MPlayer",      3,      1 },
+/** open applications to specified desktop **/
+static const AppRule rules[] = { \
+    /*  class      desktop    follow */
+    { "MPlayer",      3,       True  },
 };
 
 /** commands **/
@@ -58,7 +58,6 @@ const char *mnextcmd[]   = { "mpc", "next",   NULL };
 const char *mprevcmd[]   = { "mpc", "prev",   NULL };
 const char *mtogglecmd[] = { "mpc", "toggle", NULL };
 
-/* Avoid multiple paste */
 #define DESKTOPCHANGE(K,N) \
     {  MOD1,             K,              change_desktop, {.i = N}}, \
     {  MOD1|ShiftMask,   K,              client_to_desktop, {.i = N}},
@@ -66,7 +65,7 @@ const char *mtogglecmd[] = { "mpc", "toggle", NULL };
 /** Shortcuts **/
 static key keys[] = {
 /*     modifier          key            function           argument */
-    {  MOD1|ShiftMask,   XK_c,          killclient,       {NULL}},
+    {  MOD1|ShiftMask,   XK_c,          killclient,        {NULL}},
     {  MOD1,             XK_j,          next_win,          {NULL}},
     {  MOD1,             XK_k,          prev_win,          {NULL}},
     {  MOD1,             XK_h,          resize_master,     {.i = -10}}, /* decrease */

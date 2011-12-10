@@ -79,9 +79,9 @@ typedef struct {
 
 typedef struct {
     const char *class;
-    int preferredd;
-    int followwin;
-} Convenience;
+    const int desktop;
+    const Bool follow;
+} AppRule;
 
 /* Functions */
 static void add_window(Window w);
@@ -142,6 +142,7 @@ static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int win_focus;
 static unsigned int win_unfocus;
 static unsigned int numlockmask = 0; /* dynamic key lock mask */
+static unsigned int nrules = LENGTH(rules);
 static client *head    = NULL;
 static client *current = NULL;
 static Atom atoms[ATOM_COUNT];
@@ -368,9 +369,8 @@ void tile(void) {
             }
             break;
         case MONOCYCLE:
-            for(c=head; c; c=c->next) {
+            for(c=head; c; c=c->next)
                 XMoveResizeWindow(dis, c->win, 0, y, sw + 2*BORDER_WIDTH, sh + 2*BORDER_WIDTH);
-            }
             break;
         case BSTACK:
             /* master window */
@@ -560,31 +560,21 @@ void configurerequest(XEvent *e) {
 void maprequest(XEvent *e) {
     XMapRequestEvent *ev = &e->xmaprequest;
 
-    // For fullscreen mplayer (and maybe some other program)
-    client *c;
-
-    for(c=head;c;c=c->next)
-        if(ev->window == c->win) {
-            XMapWindow(dis,ev->window);
-            XMoveResizeWindow(dis,c->win,-BORDER_WIDTH,-BORDER_WIDTH,sw+BORDER_WIDTH,sh+BORDER_WIDTH);
-            return;
-        }
-
-    Window trans = None;
-    if(XGetTransientForHint(dis, ev->window, &trans) && trans != None) {
+    /* window is transient */
+    Window trans;
+    if(XGetTransientForHint(dis, ev->window, &trans) && trans) {
         add_window(ev->window);
         XMapWindow(dis, ev->window);
-        XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
-        XRaiseWindow(dis,ev->window);
+        XSetInputFocus(dis, ev->window, RevertToParent, CurrentTime);
+        XRaiseWindow(dis, ev->window);
         return;
     }
 
+    /* window type is not normal (_NET_WM_WINDOW_TYPE_NORMAL) */
     unsigned long count, j, extra;
-    Atom realType;
     int realFormat;
     unsigned char *temp;
-    Atom *type;
-
+    Atom realType, *type;
     if(XGetWindowProperty(dis, ev->window, atoms[_NET_WM_WINDOW_TYPE], 0, 32, False,
                  XA_ATOM, &realType, &realFormat, &count, &extra, &temp) == Success) {
         if(count > 0) {
@@ -607,27 +597,18 @@ void maprequest(XEvent *e) {
         }
     }
 
+    /* rule has been set for window */
     XClassHint ch = {0};
-    static unsigned int len = sizeof convenience / sizeof convenience[0];
-    int i = 0;
-    int tmp = current_desktop;
+    int cd = current_desktop;
     if(XGetClassHint(dis, ev->window, &ch))
-        for(i=0;i<len;i++)
-            if(strcmp(ch.res_class, convenience[i].class) == 0) {
-                save_desktop(tmp);
-                select_desktop(convenience[i].preferredd-1);
+        for(int i=0; i<nrules; i++)
+            if(strcmp(ch.res_class, rules[i].class) == 0) {
+                save_desktop(cd);
+                select_desktop(rules[i].desktop);
                 add_window(ev->window);
-                if(tmp == convenience[i].preferredd-1) {
-                    XMapWindow(dis, ev->window);
-                    tile();
-                    update_current();
-                } else {
-                    select_desktop(tmp);
-                }
-                if(convenience[i].followwin != 0) {
-                    Arg a = {.i = convenience[i].preferredd-1};
-                    change_desktop(a);
-                }
+                select_desktop(cd);
+                if(rules[i].follow)
+                    change_desktop((Arg){.i = rules[i].desktop});
                 if(ch.res_class)
                     XFree(ch.res_class);
                 if(ch.res_name)
@@ -636,7 +617,7 @@ void maprequest(XEvent *e) {
             }
 
     add_window(ev->window);
-    XMapWindow(dis,ev->window);
+    XMapWindow(dis, ev->window);
     tile();
     update_current();
 }
