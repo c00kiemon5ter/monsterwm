@@ -165,7 +165,7 @@ void add_window(Window w) {
     if(head == NULL) {
         c->win = w;
         head = c;
-    } else if(ATTACH_ASIDE == 0) {
+    } else if(ATTACH_ASIDE) {
         for(t=head; t->next; t=t->next);
         c->prev = t;
         c->win = w;
@@ -181,7 +181,7 @@ void add_window(Window w) {
     current = c;
     save_desktop(current_desktop);
 
-    if(FOLLOW_MOUSE == 0)
+    if(FOLLOW_MOUSE)
         XSelectInput(dis, c->win, EnterWindowMask);
 }
 
@@ -313,7 +313,7 @@ void client_to_desktop(const Arg arg) {
     tile();
     update_current();
 
-    if(FOLLOW_WINDOW == 0)
+    if(FOLLOW_WINDOW)
         change_desktop(arg);
 }
 
@@ -341,7 +341,7 @@ void tile(void) {
     client *c;
     int n = 0;
     int x = 0;
-    int y = (TOP_PANEL) ? 0 : PANEL_HEIGHT;
+    int y = (TOP_PANEL) ? PANEL_HEIGHT : 0;
 
     if(head->next == NULL) {
         XMoveResizeWindow(dis, head->win, 0, y, sw + 2*BORDER_WIDTH, sh + 2*BORDER_WIDTH);
@@ -461,11 +461,11 @@ void update_current(void) {
             XSetWindowBorder(dis, c->win, win_focus);
             XSetInputFocus(dis, c->win, RevertToParent, CurrentTime);
             XRaiseWindow(dis, c->win);
-            if(CLICK_TO_FOCUS == 0)
+            if(CLICK_TO_FOCUS)
                 XUngrabButton(dis, AnyButton, AnyModifier, c->win);
         } else {
             XSetWindowBorder(dis, c->win, win_unfocus);
-            if(CLICK_TO_FOCUS == 0)
+            if(CLICK_TO_FOCUS)
                 XGrabButton(dis, AnyButton, AnyModifier, c->win, True, ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
         }
     }
@@ -608,7 +608,7 @@ void enternotify(XEvent *e) {
     client *c;
     XCrossingEvent *ev = &e->xcrossing;
 
-    if(FOLLOW_MOUSE == 0) {
+    if(FOLLOW_MOUSE) {
         if((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
             return;
         for(c=head; c; c=c->next)
@@ -624,7 +624,7 @@ void buttonpressed(XEvent *e) {
     client *c;
     XButtonPressedEvent *ev = &e->xbutton;
 
-    if(CLICK_TO_FOCUS == 0 && ev->window != current->win && ev->button == Button1)
+    if(CLICK_TO_FOCUS && ev->window != current->win && ev->button == Button1)
         for(c=head; c; c=c->next)
             if(ev->window == c->win) {
                 current = c;

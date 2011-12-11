@@ -24,17 +24,17 @@
 #define MOD1            Mod1Mask  /* ALT key */
 #define MOD4            Mod4Mask  /* Super/Windows key */
 #define MASTER_SIZE     0.52
-#define TOP_PANEL       0         /* Place panel at the 1=bottom or 0=top */
-#define PANEL_HEIGHT	18        /* 0 for no space for a panel */
+#define TOP_PANEL       True      /* False mean panel is on bottom */
+#define PANEL_HEIGHT    18        /* 0 for no space for panel, thus no panel */
 #define DEFAULT_MODE    TILE      /* TILE MONOCYCLE BSTACK GRID */
-#define ATTACH_ASIDE    0         /* 0=TRUE, 1=New window is master */
-#define FOLLOW_MOUSE    1         /* 1=Don't 0=Focus the window the mouse just entered */
-#define FOLLOW_WINDOW   1         /* 1=Don't 0=Follow the window when moved to a different desktop */
-#define CLICK_TO_FOCUS  1         /* 1=Don't 0=Focus an unfocused window when clicked */
-#define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
+#define ATTACH_ASIDE    True      /* False means new window is master */
+#define FOLLOW_MOUSE    False     /* Focus the window the mouse just entered */
+#define FOLLOW_WINDOW   False     /* Follow the window when moved to a different desktop */
+#define CLICK_TO_FOCUS  False     /* Focus an unfocused window when clicked */
 #define BORDER_WIDTH    2         /* window border width */
 #define FOCUS           "#ff950e" /* focused window border color   */
 #define UNFOCUS         "#444444" /* unfocused window border color */
+#define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
 
 /** open applications to specified desktop **/
 static const AppRule rules[] = { \
@@ -64,7 +64,7 @@ const char *mtogglecmd[] = { "mpc", "toggle", NULL };
 
 /** Shortcuts **/
 static key keys[] = {
-/*     modifier          key            function           argument */
+    /* modifier          key            function           argument */
     {  MOD1|ShiftMask,   XK_c,          killclient,        {NULL}},
     {  MOD1,             XK_j,          next_win,          {NULL}},
     {  MOD1,             XK_k,          prev_win,          {NULL}},
@@ -72,8 +72,8 @@ static key keys[] = {
     {  MOD1,             XK_l,          resize_master,     {.i = +10}}, /* increase */
     {  MOD1,             XK_o,          resize_stack,      {.i = -10}}, /* shrink */
     {  MOD1,             XK_p,          resize_stack,      {.i = +10}}, /* grow   */
-    {  MOD1|ShiftMask,   XK_Left,       rotate_desktop,    {.i = -1}}, /* prev */
-    {  MOD1|ShiftMask,   XK_Right,      rotate_desktop,    {.i = +1}}, /* next */
+    {  MOD1|ShiftMask,   XK_Left,       rotate_desktop,    {.i = -1}},  /* prev */
+    {  MOD1|ShiftMask,   XK_Right,      rotate_desktop,    {.i = +1}},  /* next */
     {  MOD1,             XK_Tab,        last_desktop,      {NULL}},
     {  MOD1,             XK_Return,     swap_master,       {NULL}},
     {  MOD1|ShiftMask,   XK_j,          move_down,         {NULL}},
