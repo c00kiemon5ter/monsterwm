@@ -2,3 +2,4 @@ dminiwm
 *.o
 *.swp
 *~
+*.diff
