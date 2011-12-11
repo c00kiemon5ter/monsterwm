@@ -165,7 +165,7 @@ void add_window(Window w) {
     if(!(c = (client *)calloc(1, sizeof(client))))
         die("error: could not calloc() %u bytes\n", sizeof(client));
 
-    if(head == NULL) {
+    if(!head) {
         c->win = w;
         head = c;
     } else if(ATTACH_ASIDE) {
@@ -184,13 +184,12 @@ void add_window(Window w) {
     current = c;
     save_desktop(current_desktop);
 
-    if(FOLLOW_MOUSE)
-        XSelectInput(dis, c->win, EnterWindowMask);
+    if(FOLLOW_MOUSE) XSelectInput(dis, c->win, EnterWindowMask);
 }
 
 void removeclient(client *c) {
-    if(c->prev == NULL) {       /* w is head */
-        if(c->next == NULL) {   /* head is only window on screen */
+    if(!c->prev) {              /* w is head */
+        if(!c->next) {          /* head is only window on screen */
             free(head);
             head = NULL;
         } else {                /* more windows on screen */
@@ -199,7 +198,7 @@ void removeclient(client *c) {
         }
         current = head;
     } else {                    /* w is on stack */
-        if(c->next == NULL) {   /* w is last window on screen */
+        if(!c->next) {          /* w is last window on screen */
             c->prev->next = NULL;
         } else {                /* w is somewhere in the middle */
             c->next->prev = c->prev;
@@ -214,29 +213,26 @@ void removeclient(client *c) {
 }
 
 void killclient() {
-    if(current == NULL) return;
+    if(!current) return;
     deletewindow(current->win);
     removeclient(current);
 }
 
 void next_win() {
-    if(current == NULL || head == NULL || (current == head && current->next == NULL)) return;
-    current = (current->next == NULL) ? head : current->next;
+    if(!current || (!current->next && !current->prev)) return;
+    current = (current->next) ? current->next : head;
     update_current();
 }
 
 void prev_win() {
-    if(current == NULL || head == NULL || (current == head && current->next == NULL)) return;
-    if(current->prev == NULL) /* if(current == head) */
-        for(current=head; current->next; current=current->next);
-    else
-        current = current->prev;
+    if(!current || (!current->next && !current->prev)) return;
+    if(current->prev) current = current->prev;
+    else while(current->next) current=current->next;
     update_current();
 }
 
 void move_down() {
-    if(current == NULL || current == head || current->next == NULL)
-        return;
+    if(!current || current == head || !current->next) return;
     Window tmpwin = current->win;
     current->win = current->next->win;
     current->next->win = tmpwin;
@@ -247,8 +243,7 @@ void move_down() {
 }
 
 void move_up() {
-    if(current == NULL || current == head || current->prev == head)
-        return;
+    if(!current || current == head || !current->prev) return;
     Window tmpwin = current->win;
     current->win = current->prev->win;
     current->prev->win = tmpwin;
@@ -259,8 +254,7 @@ void move_up() {
 }
 
 void swap_master() {
-    if(head->next == NULL || current == NULL || mode == MONOCYCLE)
-        return;
+    if(!current || !head->next || mode == MONOCYCLE) return;
     Window tmpwin = head->win;
     current = (current == head) ? head->next : current;
     head->win = current->win;
@@ -298,8 +292,7 @@ void rotate_desktop(const Arg arg) {
 }
 
 void client_to_desktop(const Arg arg) {
-    if(arg.i == current_desktop || current == NULL)
-        return;
+    if(arg.i == current_desktop || !current) return;
 
     client *c = current;
     int cd = current_desktop;
@@ -316,8 +309,7 @@ void client_to_desktop(const Arg arg) {
     tile();
     update_current();
 
-    if(FOLLOW_WINDOW)
-        change_desktop(arg);
+    if(FOLLOW_WINDOW) change_desktop(arg);
 }
 
 void save_desktop(int i) {
@@ -347,7 +339,7 @@ void togglepanel() {
 }
 
 void tile(void) {
-    if(head == NULL) return; /* no need to arange anything */
+    if(!head) return; /* no need to arange anything */
 
     client *c;
     int n = 0;
@@ -356,12 +348,9 @@ void tile(void) {
     int y = (TOP_PANEL) ? panel_height : 0;
     sh = XDisplayHeight(dis, screen) - panel_height - BORDER_WIDTH;
 
-    if(head->next == NULL) {
+    if(!head->next)
         XMoveResizeWindow(dis, head->win, 0, y, sw + 2*BORDER_WIDTH, sh + 2*BORDER_WIDTH);
-        return;
-    }
-
-    switch(mode) {
+    else switch(mode) {
         case TILE:
             /* master window */
             XMoveResizeWindow(dis, head->win, 0, y, master_size - BORDER_WIDTH, sh - BORDER_WIDTH);
@@ -465,7 +454,7 @@ void update_current(void) {
     client *c;
 
     for(c=head; c; c=c->next) {
-        if(head->next == NULL || mode == MONOCYCLE)
+        if(!head->next || mode == MONOCYCLE)
             XSetWindowBorderWidth(dis, c->win, 0);
         else
             XSetWindowBorderWidth(dis, c->win, BORDER_WIDTH);
@@ -474,12 +463,11 @@ void update_current(void) {
             XSetWindowBorder(dis, c->win, win_focus);
             XSetInputFocus(dis, c->win, RevertToParent, CurrentTime);
             XRaiseWindow(dis, c->win);
-            if(CLICK_TO_FOCUS)
-                XUngrabButton(dis, AnyButton, AnyModifier, c->win);
+            if(CLICK_TO_FOCUS) XUngrabButton(dis, AnyButton, AnyModifier, c->win);
         } else {
             XSetWindowBorder(dis, c->win, win_unfocus);
-            if(CLICK_TO_FOCUS)
-                XGrabButton(dis, AnyButton, AnyModifier, c->win, True, ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
+            if(CLICK_TO_FOCUS) XGrabButton(dis, AnyButton, AnyModifier, c->win, True,
+                ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
         }
     }
     free(c);
@@ -489,10 +477,8 @@ void update_current(void) {
 void switch_mode(const Arg arg) {
     if(mode == arg.i) return;
     mode = arg.i;
-    if(mode == TILE || mode == GRID)
-        master_size = sw * MASTER_SIZE;
-    else if(mode == BSTACK)
-        master_size = sh * MASTER_SIZE;
+    if(mode == TILE || mode == GRID) master_size = sw * MASTER_SIZE;
+    else if(mode == BSTACK)          master_size = sh * MASTER_SIZE;
     tile();
     update_current();
 }
@@ -588,7 +574,7 @@ void maprequest(XEvent *e) {
                 } else if(rules[i].follow)
                     change_desktop((Arg){.i = rules[i].desktop});
                 if(ch.res_class) XFree(ch.res_class);
-                if(ch.res_name) XFree(ch.res_name);
+                if(ch.res_name)  XFree(ch.res_name);
                 return;
             }
 
@@ -620,8 +606,7 @@ void enternotify(XEvent *e) {
     XCrossingEvent *ev = &e->xcrossing;
 
     if(FOLLOW_MOUSE) {
-        if((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
-            return;
+        if((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root) return;
         for(c=head; c; c=c->next)
             if(ev->window == c->win) {
                 current = c;
@@ -756,8 +741,7 @@ void sigchld() {
 
 void spawn(const Arg arg) {
     if(fork() == 0) {
-        if(dis)
-            close(ConnectionNumber(dis));
+        if(dis) close(ConnectionNumber(dis));
         setsid();
         execvp((char*)arg.com[0], (char**)arg.com);
         fprintf(stderr, "error: execvp %s", (char *)arg.com[0]);
