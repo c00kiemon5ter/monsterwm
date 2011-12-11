@@ -209,6 +209,8 @@ void removeclient(client *c) {
 
     save_desktop(current_desktop);
     tile();
+    if(mode == MONOCYCLE && current)
+        XMapWindow(dis, current->win);
     update_current();
 }
 
@@ -220,14 +222,18 @@ void killclient() {
 
 void next_win() {
     if(!current || (!current->next && !current->prev)) return;
+    if(mode == MONOCYCLE) XUnmapWindow(dis, current->win);
     current = (current->next) ? current->next : head;
+    if(mode == MONOCYCLE) XMapWindow(dis, current->win);
     update_current();
 }
 
 void prev_win() {
     if(!current || (!current->next && !current->prev)) return;
+    if(mode == MONOCYCLE) XUnmapWindow(dis, current->win);
     if(current->prev) current = current->prev;
     else while(current->next) current=current->next;
+    if(mode == MONOCYCLE) XMapWindow(dis, current->win);
     update_current();
 }
 
@@ -274,12 +280,13 @@ void change_desktop(const Arg arg) {
     save_desktop(current_desktop);
     for(client *c=head; c; c=c->next)
         XUnmapWindow(dis, c->win);
-    /* read new desktop properties and map new windows */
-    select_desktop(arg.i);
-    for(client *c=head; c; c=c->next)
-        XMapWindow(dis, c->win);
 
+    /* read new desktop properties, tile and map new windows */
+    select_desktop(arg.i);
     tile();
+    if(mode == MONOCYCLE && current) XMapWindow(dis, current->win);
+    else for(client *c=head; c; c=c->next) XMapWindow(dis, c->win);
+
     update_current();
 }
 
@@ -476,6 +483,7 @@ void update_current(void) {
 
 void switch_mode(const Arg arg) {
     if(mode == arg.i) return;
+    if(mode == MONOCYCLE) for(client *c=head; c; c=c->next) XMapWindow(dis, c->win);
     mode = arg.i;
     if(mode == TILE || mode == GRID) master_size = sw * MASTER_SIZE;
     else if(mode == BSTACK)          master_size = sh * MASTER_SIZE;
