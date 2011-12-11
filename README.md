@@ -4,7 +4,7 @@ dminiwm
 ### ~ it's minimal and dynamic
 
 [moetunes][] started this from [catwm][] 31/12/10 ([ArchLinux forums][catf])
-Credits and licensing included in `dminiwm.c` and/or `config.h.def`.
+Credits and licensing included in `dminiwm.c` and/or `config.def.h`.
 For screenshots and ramblings/updates check [the topic on ArchLinux forums][dminif]
 
   [moetunes]: https://github.com/moetunes
@@ -17,8 +17,8 @@ Summary
 -------
 
 **dminiwm** is a very minimal and lightweight dynamic tiling window manager.
-I will try to stay under 1000 SLOC.
-Currently under 950 lines with the config file included.
+It will try to stay under 1000 SLOC.
+Currently under 800 lines with the config file included.
 
 
 Modes
@@ -84,21 +84,18 @@ Installation
 ------------
 
 You need Xlib, then,
-copy the `config.h.deh` file as `config.h`
+copy the `config.def.h` file as `config.h`
 and edit to suit your needs.
-Build and install the project.
+Build and install.
 
-    $ cp config.h.def config.h
-    $ $EDITOR config.h   # optional
-
+    $ cp config.def.h config.h
+    $ $EDITOR config.h
     $ make
     # make clean install
 
 
 Bugs
 ----
-
-No bugs for the moment ;) (I mean, no importants bugs)
 
 For any issues report at [the topic on ArchLinux forums][dminif],
 or [fill an issue][bug] on [GitHub][ghp]
