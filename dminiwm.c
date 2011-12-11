@@ -220,13 +220,13 @@ void killclient() {
 }
 
 void next_win() {
-    if(current == NULL || head == NULL) return;
+    if(current == NULL || head == NULL || (current == head && current->next == NULL)) return;
     current = (current->next == NULL) ? head : current->next;
     update_current();
 }
 
 void prev_win() {
-    if(current == NULL || head == NULL) return;
+    if(current == NULL || head == NULL || (current == head && current->next == NULL)) return;
     if(current->prev == NULL) /* if(current == head) */
         for(current=head; current->next; current=current->next);
     else
