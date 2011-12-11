@@ -559,15 +559,19 @@ void maprequest(XEvent *e) {
 
     /* window is normal and has a rule set */
     XClassHint ch = {0, 0};
-    int cd = current_desktop;
     if(XGetClassHint(dis, ev->window, &ch))
         for(unsigned int i=0; i<nrules; i++)
             if(strcmp(ch.res_class, rules[i].class) == 0) {
+                int cd = current_desktop;
                 save_desktop(cd);
                 select_desktop(rules[i].desktop);
                 add_window(ev->window);
                 select_desktop(cd);
-                if(rules[i].follow)
+                if(cd == rules[i].desktop) {
+                    XMapWindow(dis, ev->window);
+                    tile();
+                    update_current();
+                } else if(rules[i].follow)
                     change_desktop((Arg){.i = rules[i].desktop});
                 if(ch.res_class)
                     XFree(ch.res_class);
