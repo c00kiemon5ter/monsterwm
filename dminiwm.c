@@ -88,7 +88,6 @@ static void add_window(Window w);
 static void buttonpressed(XEvent *e);
 static void change_desktop(const Arg arg);
 static void client_to_desktop(const Arg arg);
-static void configurerequest(XEvent *e);
 static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
 static void die(const char* errstr, ...);
@@ -154,7 +153,6 @@ static void (*events[LASTEvent])(XEvent *e) = {
     [EnterNotify] = enternotify,
     [ButtonPress] = buttonpressed,
     [DestroyNotify] = destroynotify,
-    [ConfigureRequest] = configurerequest
 };
 
 /* ~~~ Window Management ~~~ */
@@ -522,27 +520,6 @@ void keypress(XEvent *e) {
 }
 
 /* ~~~ Signal Management ~~~ */
-void configurerequest(XEvent *e) {
-    XConfigureRequestEvent *ev = &e->xconfigurerequest;
-    XWindowChanges wc;
-
-    wc.x = ev->x;
-    wc.y = ev->y;
-    if(ev->width < sw - BORDER_WIDTH)
-        wc.width = ev->width;
-    else
-        wc.width = sw - BORDER_WIDTH;
-    if(ev->height < sh - BORDER_WIDTH)
-        wc.height = ev->height;
-    else
-        wc.height = sh - BORDER_WIDTH;
-    wc.border_width = ev->border_width;
-    wc.sibling = ev->above;
-    wc.stack_mode = ev->detail;
-    XConfigureWindow(dis, ev->window, ev->value_mask, &wc);
-    XSync(dis, False);
-}
-
 void maprequest(XEvent *e) {
     XMapRequestEvent *ev = &e->xmaprequest;
 
