@@ -326,6 +326,7 @@ void save_desktop(int i) {
 }
 
 void select_desktop(int i) {
+    if(current_desktop == i) return;
     master_size = desktops[i].master_size;
     mode = desktops[i].mode;
     growth = desktops[i].growth;
