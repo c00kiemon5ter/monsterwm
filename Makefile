@@ -1,4 +1,4 @@
-VERSION = 0.3-cookies
+VERSION = cookies-git
 
 CFLAGS += -Wall
 LDADD  += -lX11
