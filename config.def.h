@@ -24,6 +24,7 @@
 #define MOD1            Mod1Mask  /* ALT key */
 #define MOD4            Mod4Mask  /* Super/Windows key */
 #define MASTER_SIZE     0.52
+#define SHOW_PANEL      True      /* show panel by default on exec */
 #define TOP_PANEL       True      /* False mean panel is on bottom */
 #define PANEL_HEIGHT    18        /* 0 for no space for panel, thus no panel */
 #define DEFAULT_MODE    TILE      /* TILE MONOCYCLE BSTACK GRID */
@@ -35,6 +36,7 @@
 #define FOCUS           "#ff950e" /* focused window border color   */
 #define UNFOCUS         "#444444" /* unfocused window border color */
 #define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
+#define DEFAULT_DESKTOP 0         /* the desktop to focus on exec */
 
 /** open applications to specified desktop **/
 static const AppRule rules[] = { \

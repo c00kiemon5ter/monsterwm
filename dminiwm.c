@@ -125,8 +125,8 @@ static void update_current(void);
 #include "config.h"
 
 /* variables */
-static Display *dis;
 static Bool running = True;
+static Bool showpanel = SHOW_PANEL;
 static int retval = 0;
 static int current_desktop = 0;
 static int previous_desktop = 0;
@@ -136,18 +136,18 @@ static int master_size;
 static int sh;
 static int sw;
 static int screen;
-static Window root;
 static int xerror(Display *dis, XErrorEvent *ee);
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int win_focus;
 static unsigned int win_unfocus;
 static unsigned int numlockmask = 0; /* dynamic key lock mask */
 static unsigned int nrules = LENGTH(rules);
+static Display *dis;
+static Window root;
 static client *head    = NULL;
 static client *current = NULL;
 static Atom atoms[ATOM_COUNT];
 static desktop desktops[DESKTOPS];
-static Bool showpanel = True;
 
 /* events array */
 static void (*events[LASTEvent])(XEvent *e) = {
@@ -695,12 +695,11 @@ void setup(void) {
     root = RootWindow(dis, screen);
 
     sw = XDisplayWidth(dis,  screen) - BORDER_WIDTH;
-    sh = XDisplayHeight(dis, screen) - PANEL_HEIGHT - BORDER_WIDTH;
-
+    sh = XDisplayHeight(dis, screen) - ((showpanel) ? PANEL_HEIGHT : 0) - BORDER_WIDTH;
     master_size = ((mode == BSTACK) ? sh : sw) * MASTER_SIZE;
-    for(int i=0; i < DESKTOPS; i++)
+    for(int i=0; i<DESKTOPS; i++)
         save_desktop(i);
-    change_desktop((Arg){.i = 0});
+    change_desktop((Arg){.i = DEFAULT_DESKTOP});
 
     win_focus = getcolor(FOCUS);
     win_unfocus = getcolor(UNFOCUS);
@@ -708,7 +707,7 @@ void setup(void) {
     XModifierKeymap *modmap = XGetModifierMapping(dis);
     for (int k=0; k<8; k++)
         for (int j=0; j<modmap->max_keypermod; j++)
-            if(modmap->modifiermap[k*modmap->max_keypermod + j] == XKeysymToKeycode(dis, XK_Num_Lock))
+            if(modmap->modifiermap[modmap->max_keypermod*k + j] == XKeysymToKeycode(dis, XK_Num_Lock))
                 numlockmask = (1 << k);
     XFreeModifiermap(modmap);
 
