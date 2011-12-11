@@ -75,6 +75,7 @@ typedef struct {
     int growth;
     client *head;
     client *current;
+    Bool showpanel;
 } desktop;
 
 typedef struct {
@@ -109,6 +110,7 @@ static void resize_master(const Arg arg);
 static void resize_stack(const Arg arg);
 static void save_desktop(int i);
 static void select_desktop(int i);
+static void togglepanel();
 static void deletewindow(Window w);
 static void setup(void);
 static void sigchld();
@@ -145,6 +147,7 @@ static client *head    = NULL;
 static client *current = NULL;
 static Atom atoms[ATOM_COUNT];
 static desktop desktops[DESKTOPS];
+static Bool showpanel = True;
 
 /* events array */
 static void (*events[LASTEvent])(XEvent *e) = {
@@ -323,6 +326,7 @@ void save_desktop(int i) {
     desktops[i].growth = growth;
     desktops[i].head = head;
     desktops[i].current = current;
+    desktops[i].showpanel = showpanel;
 }
 
 void select_desktop(int i) {
@@ -332,7 +336,14 @@ void select_desktop(int i) {
     growth = desktops[i].growth;
     head = desktops[i].head;
     current = desktops[i].current;
+    showpanel = desktops[i].showpanel;
     current_desktop = i;
+}
+
+void togglepanel() {
+    showpanel = !showpanel;
+    save_desktop(current_desktop);
+    tile();
 }
 
 void tile(void) {
@@ -341,7 +352,9 @@ void tile(void) {
     client *c;
     int n = 0;
     int x = 0;
-    int y = (TOP_PANEL) ? PANEL_HEIGHT : 0;
+    int panel_height = (showpanel) ? PANEL_HEIGHT : 0;
+    int y = (TOP_PANEL) ? panel_height : 0;
+    sh = XDisplayHeight(dis, screen) - panel_height - BORDER_WIDTH;
 
     if(head->next == NULL) {
         XMoveResizeWindow(dis, head->win, 0, y, sw + 2*BORDER_WIDTH, sh + 2*BORDER_WIDTH);
