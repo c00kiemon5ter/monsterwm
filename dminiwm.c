@@ -587,10 +587,8 @@ void maprequest(XEvent *e) {
                     update_current();
                 } else if(rules[i].follow)
                     change_desktop((Arg){.i = rules[i].desktop});
-                if(ch.res_class)
-                    XFree(ch.res_class);
-                if(ch.res_name)
-                    XFree(ch.res_name);
+                if(ch.res_class) XFree(ch.res_class);
+                if(ch.res_name) XFree(ch.res_name);
                 return;
             }
 
@@ -682,7 +680,7 @@ void cleanup(void) {
     XQueryTree(dis, root, &root_return, &parent_return, &children, &nchildren);
     for(unsigned int i = 0; i < nchildren; i++)
         deletewindow(children[i]);
-    free(children);
+    if(children) XFree(children);
 
     XSync(dis, False);
     XSetInputFocus(dis, PointerRoot, RevertToPointerRoot, CurrentTime);
