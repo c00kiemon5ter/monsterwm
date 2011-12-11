@@ -29,7 +29,7 @@ and with the new window opened at the bottom of the stack (like dwm's attach\_as
 
 ---
 
-*There's vertical tiling mode:*
+*Common tiling mode:*
 
     --------------
     |        | W |
@@ -41,7 +41,7 @@ and with the new window opened at the bottom of the stack (like dwm's attach\_as
 
 ---
 
-*Horizontal tiling mode:*
+*Bottom Stack (bstack) tiling mode:*
 
     -------------
     |           |
@@ -63,7 +63,7 @@ and with the new window opened at the bottom of the stack (like dwm's attach\_as
 
 ---
 
- *Fullscreen mode* (you'll know when you see it)
+ *Monocycle mode* (aka fullscreen - you'll know when you see it)
 
     -------------
     |           |
@@ -92,8 +92,7 @@ Build and install the project.
     $ $EDITOR config.h   # optional
 
     $ make
-    # make install
-    $ make clean
+    # make clean install
 
 
 Bugs
