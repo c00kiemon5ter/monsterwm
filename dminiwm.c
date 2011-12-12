@@ -529,6 +529,10 @@ void keypress(XEvent *e) {
 /* ~~~ Signal Management ~~~ */
 void maprequest(XEvent *e) {
     XMapRequestEvent *ev = &e->xmaprequest;
+    static XWindowAttributes wa;
+
+    if(!XGetWindowAttributes(dis, ev->window, &wa)) return;
+    if(wa.override_redirect) return;
 
     /* window is transient */
     Window trans;
