@@ -46,8 +46,8 @@ static const AppRule rules[] = { \
 };
 
 /** commands **/
-const char *termcmd[]  = { "xterm", NULL };
-const char *dmenucmd[] = { "dmenu", NULL };
+static const char *termcmd[]  = { "xterm", NULL };
+static const char *dmenucmd[] = { "dmenu", NULL };
 
 #define DESKTOPCHANGE(K,N) \
     {  MOD1,             K,              change_desktop, {.i = N}}, \

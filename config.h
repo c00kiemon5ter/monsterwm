@@ -45,20 +45,20 @@ static const AppRule rules[] = { \
 };
 
 /** commands **/
-const char *termcmd[]     = { "urxvt",    NULL };
-const char *dmenucmd[]    = { "dmn",      NULL };
-const char *urxvtcmd[]    = { "urxvtdc",  NULL };
-const char *chromiumcmd[] = { "chromium", NULL };
+static const char *termcmd[]     = { "urxvt",    NULL };
+static const char *dmenucmd[]    = { "dmn",      NULL };
+static const char *urxvtcmd[]    = { "urxvtdc",  NULL };
+static const char *chromiumcmd[] = { "chromium", NULL };
 /* audio volume */
 static const char *volupcmd[]     = { "volctrl", "+2",     NULL };
 static const char *voldowncmd[]   = { "volctrl", "-2",     NULL };
 static const char *voltogglecmd[] = { "volctrl", "toggle", NULL };
 /* audio playback [mpd/mpc] */
-const char *mplaycmd[]   = { "mpc", "play",   NULL };
-const char *mstopcmd[]   = { "mpc", "stop",   NULL };
-const char *mnextcmd[]   = { "mpc", "next",   NULL };
-const char *mprevcmd[]   = { "mpc", "prev",   NULL };
-const char *mtogglecmd[] = { "mpc", "toggle", NULL };
+static const char *mplaycmd[]   = { "mpc", "play",   NULL };
+static const char *mstopcmd[]   = { "mpc", "stop",   NULL };
+static const char *mnextcmd[]   = { "mpc", "next",   NULL };
+static const char *mprevcmd[]   = { "mpc", "prev",   NULL };
+static const char *mtogglecmd[] = { "mpc", "toggle", NULL };
 
 #define DESKTOPCHANGE(K,N) \
     {  MOD1,             K,              change_desktop, {.i = N}}, \
