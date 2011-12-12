@@ -141,7 +141,6 @@ static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int win_focus;
 static unsigned int win_unfocus;
 static unsigned int numlockmask = 0; /* dynamic key lock mask */
-static unsigned int nrules = LENGTH(rules);
 static Display *dis;
 static Window root;
 static client *head    = NULL;
@@ -568,7 +567,7 @@ void maprequest(XEvent *e) {
     /* window is normal and has a rule set */
     XClassHint ch = {0, 0};
     if(XGetClassHint(dis, ev->window, &ch))
-        for(unsigned int i=0; i<nrules; i++)
+        for(unsigned int i=0; i<LENGTH(rules); i++)
             if(strcmp(ch.res_class, rules[i].class) == 0) {
                 int cd = current_desktop;
                 save_desktop(cd);
