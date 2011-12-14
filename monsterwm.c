@@ -779,10 +779,10 @@ void die(const char *errstr, ...) {
 
 int main(int argc, char *argv[]) {
     if(argc == 2 && strcmp("-v", argv[1]) == 0) {
-        fprintf(stdout, "monsterwm-%s\n", VERSION);
+        fprintf(stdout, "%s-%s\n", WMNAME, VERSION);
         return EXIT_SUCCESS;
     } else if(argc != 1)
-        die("usage: monsterwm [-v]\n");
+        die("usage: %s [-v]\n", WMNAME);
     if(!(dis = XOpenDisplay(NULL)))
         die("error: cannot open display\n");
     setup();
