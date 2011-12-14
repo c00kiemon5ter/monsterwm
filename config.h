@@ -30,7 +30,7 @@
 #define DEFAULT_MODE    TILE      /* TILE MONOCLE BSTACK GRID */
 #define ATTACH_ASIDE    True      /* False means new window is master */
 #define FOLLOW_MOUSE    False     /* Focus the window the mouse just entered */
-#define FOLLOW_WINDOW   False     /* Follow the window when moved to a different desktop */
+#define FOLLOW_WINDOW   True      /* Follow the window when moved to a different desktop */
 #define CLICK_TO_FOCUS  False     /* Focus an unfocused window when clicked */
 #define BORDER_WIDTH    2         /* window border width */
 #define FOCUS           "#ff950e" /* focused window border color   */
