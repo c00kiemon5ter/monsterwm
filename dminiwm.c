@@ -45,7 +45,7 @@ enum {
 /* layout modes */
 enum {
     TILE,
-    MONOCYCLE,
+    MONOCLE,
     BSTACK,
     GRID,
 };
@@ -208,7 +208,7 @@ void removeclient(client *c) {
 
     save_desktop(current_desktop);
     tile();
-    if(mode == MONOCYCLE && current)
+    if(mode == MONOCLE && current)
         XMapWindow(dis, current->win);
     update_current();
 }
@@ -221,18 +221,18 @@ void killclient() {
 
 void next_win() {
     if(!current || (!current->next && !current->prev)) return;
-    if(mode == MONOCYCLE) XUnmapWindow(dis, current->win);
+    if(mode == MONOCLE) XUnmapWindow(dis, current->win);
     current = (current->next) ? current->next : head;
-    if(mode == MONOCYCLE) XMapWindow(dis, current->win);
+    if(mode == MONOCLE) XMapWindow(dis, current->win);
     update_current();
 }
 
 void prev_win() {
     if(!current || (!current->next && !current->prev)) return;
-    if(mode == MONOCYCLE) XUnmapWindow(dis, current->win);
+    if(mode == MONOCLE) XUnmapWindow(dis, current->win);
     if(current->prev) current = current->prev;
     else while(current->next) current=current->next;
-    if(mode == MONOCYCLE) XMapWindow(dis, current->win);
+    if(mode == MONOCLE) XMapWindow(dis, current->win);
     update_current();
 }
 
@@ -259,7 +259,7 @@ void move_up() {
 }
 
 void swap_master() {
-    if(!current || !head->next || mode == MONOCYCLE) return;
+    if(!current || !head->next || mode == MONOCLE) return;
     Window tmpwin = head->win;
     current = (current == head) ? head->next : current;
     head->win = current->win;
@@ -283,7 +283,7 @@ void change_desktop(const Arg arg) {
     /* read new desktop properties, tile and map new windows */
     select_desktop(arg.i);
     tile();
-    if(mode == MONOCYCLE && current) XMapWindow(dis, current->win);
+    if(mode == MONOCLE && current) XMapWindow(dis, current->win);
     else for(client *c=head; c; c=c->next) XMapWindow(dis, c->win);
 
     update_current();
@@ -370,7 +370,7 @@ void tile(void) {
                 y += sh/n - growth / (n-1);
             }
             break;
-        case MONOCYCLE:
+        case MONOCLE:
             for(c=head; c; c=c->next)
                 XMoveResizeWindow(dis, c->win, 0, y, sw + 2*BORDER_WIDTH, sh + 2*BORDER_WIDTH);
             break;
@@ -460,7 +460,7 @@ void update_current(void) {
     client *c;
 
     for(c=head; c; c=c->next) {
-        if(!head->next || mode == MONOCYCLE)
+        if(!head->next || mode == MONOCLE)
             XSetWindowBorderWidth(dis, c->win, 0);
         else
             XSetWindowBorderWidth(dis, c->win, BORDER_WIDTH);
@@ -482,7 +482,7 @@ void update_current(void) {
 
 void switch_mode(const Arg arg) {
     if(mode == arg.i) return;
-    if(mode == MONOCYCLE) for(client *c=head; c; c=c->next) XMapWindow(dis, c->win);
+    if(mode == MONOCLE) for(client *c=head; c; c=c->next) XMapWindow(dis, c->win);
     mode = arg.i;
     if(mode == TILE || mode == GRID) master_size = sw * MASTER_SIZE;
     else if(mode == BSTACK)          master_size = sh * MASTER_SIZE;

@@ -27,7 +27,7 @@
 #define SHOW_PANEL      True      /* show panel by default on exec */
 #define TOP_PANEL       True      /* False mean panel is on bottom */
 #define PANEL_HEIGHT    18        /* 0 for no space for panel, thus no panel */
-#define DEFAULT_MODE    TILE      /* TILE MONOCYCLE BSTACK GRID */
+#define DEFAULT_MODE    TILE      /* TILE MONOCLE BSTACK GRID */
 #define ATTACH_ASIDE    True      /* False means new window is master */
 #define FOLLOW_MOUSE    False     /* Focus the window the mouse just entered */
 #define FOLLOW_WINDOW   False     /* Follow the window when moved to a different desktop */
@@ -82,7 +82,7 @@ static key keys[] = {
     {  MOD1|ShiftMask,   XK_j,          move_down,         {NULL}},
     {  MOD1|ShiftMask,   XK_k,          move_up,           {NULL}},
     {  MOD1|ShiftMask,   XK_t,          switch_mode,       {.i = TILE}},
-    {  MOD1|ShiftMask,   XK_m,          switch_mode,       {.i = MONOCYCLE}},
+    {  MOD1|ShiftMask,   XK_m,          switch_mode,       {.i = MONOCLE}},
     {  MOD1|ShiftMask,   XK_b,          switch_mode,       {.i = BSTACK}},
     {  MOD1|ShiftMask,   XK_g,          switch_mode,       {.i = GRID}},
     {  MOD1|ShiftMask,   XK_r,          quit,              {.i = 0}}, /* restart */
