@@ -1,31 +1,30 @@
-dminiwm
-=======
+monsterwm
+=========
 
 ### ~ it's minimal and dynamic
 
-[moetunes][] started this from [catwm][] 31/12/10 ([ArchLinux forums][catf])
-Credits and licensing included in `dminiwm.c` and/or `config.def.h`.
+[moetunes][] started this based on [catwm][] 31/12/10 ([ArchLinux forums][catf]) creating [dminiwm][]
+Credits and licensing included in `monsterwm.c` and/or `config.def.h`.
 For screenshots and ramblings/updates check [the topic on ArchLinux forums][dminif]
 
   [moetunes]: https://github.com/moetunes
   [catwm]: https://github.com/pyknite/catwm
   [catf]: https://bbs.archlinux.org/viewtopic.php?id=100215&p=1
+  [dminiwm]: https://github.com/moetunes/dminiwm
   [dminif]: https://bbs.archlinux.org/viewtopic.php?id=126463
 
 
 Summary
 -------
 
-**dminiwm** is a very minimal and lightweight dynamic tiling window manager.
-It will try to stay under 1000 SLOC.
-Currently under 800 lines with the config file included.
-
+**monsterwm** is a very minimal, lightweight, monsterous, dynamic tiling window manager.
+It will try to stay as small as possible. Currently under 750 lines with the config file included.
 
 Modes
 -----
 
 It allows the "normal" method of tiling window managers (with the new window as the master)
-and with the new window opened at the bottom of the stack (like dwm's attach\_aside)
+and with the new window opened at the bottom of the stack (like `dwm`'s attach\_aside)
 
 ---
 
@@ -97,9 +96,8 @@ Build and install.
 Bugs
 ----
 
-For any issues report at [the topic on ArchLinux forums][dminif],
-or [fill an issue][bug] on [GitHub][ghp]
+For any bug or request [fill an issue][bug] on [GitHub][ghp]
 
-  [bug]: https://github.com/c00kiemon5ter/dminiwm/issues
-  [ghp]: https://github.com/c00kiemon5ter/dminiwm
+  [bug]: https://github.com/c00kiemon5ter/monsterwm/issues
+  [ghp]: https://github.com/c00kiemon5ter/monsterwm
 

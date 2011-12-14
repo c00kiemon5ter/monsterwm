@@ -1,9 +1,5 @@
 VERSION = cookies-git
-
-CFLAGS += -Wall
-LDADD  += -lX11
-LDFLAGS =
-EXEC    = dminiwm
+WMNAME  = monsterwm
 
 PREFIX ?= /usr/local
 BINDIR ?= ${PREFIX}/bin
@@ -18,17 +14,17 @@ LIBS = -L/usr/lib -lc -L${X11LIB} -lX11
 CPPFLAGS = -DVERSION=\"${VERSION}\"
 CFLAGS   = -g -std=c99 -pedantic -Wall -Wextra -Os ${INCS} ${CPPFLAGS}
 LDFLAGS  = -g ${LIBS}
-#$(CC) $(LDFLAGS) -s -Os -o $@ $+ $(LDADD)
 
-CC = cc
+CC 	 = cc
+EXEC = ${WMNAME}
 
-SRC = dminiwm.c
+SRC = ${WMNAME}.c
 OBJ = ${SRC:.c=.o}
 
-all: options dminiwm
+all: options ${WMNAME}
 
 options:
-	@echo dminiwm build options:
+	@echo ${WMNAME} build options:
 	@echo "CFLAGS   = ${CFLAGS}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
@@ -43,22 +39,22 @@ config.h:
 	@echo creating $@ from config.def.h
 	@cp config.def.h $@
 
-dminiwm: ${OBJ}
+monsterwm: ${OBJ}
 	@echo CC -o $@
 	@${CC} -o $@ ${OBJ} ${LDFLAGS}
 
 clean:
 	@echo cleaning
-	@rm -fv dminiwm ${OBJ} dminiwm-${VERSION}.tar.gz
+	@rm -fv ${WMNAME} ${OBJ} ${WMNAME}-${VERSION}.tar.gz
 
 install: all
 	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
 	@mkdir -p ${DESTDIR}${PREFIX}/bin
-	@cp -f dminiwm ${DESTDIR}${PREFIX}/bin
-	@chmod 755 ${DESTDIR}${PREFIX}/bin/dminiwm
+	@cp -f ${WMNAME} ${DESTDIR}${PREFIX}/bin
+	@chmod 755 ${DESTDIR}${PREFIX}/bin/${WMNAME}
 
 uninstall:
 	@echo removing executable file from ${DESTDIR}${PREFIX}/bin
-	@rm -f ${DESTDIR}${PREFIX}/bin/dminiwm
+	@rm -f ${DESTDIR}${PREFIX}/bin/${WMNAME}
 
 .PHONY: all options clean install uninstall

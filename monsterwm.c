@@ -1,6 +1,6 @@
 /* Based on:
  * - catwm at https://github.com/pyknite/catwm
- * - 2wm at http://hg.suckless.org/2wm/
+ * - dminiwm at https://github.com/moetunes/dminiwm
  * - dwm at http://dwm.suckless.org/
  *
  * This program is free software: you can redistribute it and/or modify
@@ -779,10 +779,10 @@ void die(const char *errstr, ...) {
 
 int main(int argc, char *argv[]) {
     if(argc == 2 && strcmp("-v", argv[1]) == 0) {
-        fprintf(stdout, "dminiwm-%s\n", VERSION);
+        fprintf(stdout, "monsterwm-%s\n", VERSION);
         return EXIT_SUCCESS;
     } else if(argc != 1)
-        die("usage: dminiwm [-v]\n");
+        die("usage: monsterwm [-v]\n");
     if(!(dis = XOpenDisplay(NULL)))
         die("error: cannot open display\n");
     setup();

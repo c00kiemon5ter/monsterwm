@@ -1,6 +1,6 @@
 /* Based on:
  * - catwm at https://github.com/pyknite/catwm
- * - 2wm at http://hg.suckless.org/2wm/
+ * - dminiwm at https://github.com/moetunes/dminiwm
  * - dwm at http://dwm.suckless.org/
  *
  * This program is free software: you can redistribute it and/or modify
