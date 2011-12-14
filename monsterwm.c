@@ -59,7 +59,7 @@ typedef union {
 typedef struct {
     unsigned int mod;
     KeySym keysym;
-    void (*function)(const Arg arg);
+    void (*function)(const Arg *);
     const Arg arg;
 } key;
 
@@ -87,8 +87,8 @@ typedef struct {
 /* Functions */
 static void add_window(Window w);
 static void buttonpressed(XEvent *e);
-static void change_desktop(const Arg arg);
-static void client_to_desktop(const Arg arg);
+static void change_desktop(const Arg *arg);
+static void client_to_desktop(const Arg *arg);
 static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
 static void die(const char* errstr, ...);
@@ -100,25 +100,25 @@ static void killclient();
 static void maprequest(XEvent *e);
 static void move_down();
 static void move_up();
-static void rotate_desktop(const Arg arg);
+static void rotate_desktop(const Arg *arg);
 static void next_win();
 static void prev_win();
 static void cleanup(void);
-static void quit(const Arg arg);
+static void quit(const Arg *arg);
 static void removeclient(client *c);
-static void resize_master(const Arg arg);
-static void resize_stack(const Arg arg);
+static void resize_master(const Arg *arg);
+static void resize_stack(const Arg *arg);
 static void save_desktop(int i);
 static void select_desktop(int i);
 static void togglepanel();
 static void deletewindow(Window w);
 static void setup(void);
 static void sigchld();
-static void spawn(const Arg arg);
+static void spawn(const Arg *arg);
 static void run(void);
 static void swap_master();
 static void last_desktop();
-static void switch_mode(const Arg arg);
+static void switch_mode(const Arg *arg);
 static void tile(void);
 static void update_current(void);
 
@@ -271,8 +271,8 @@ void swap_master() {
 }
 
 /* ~~~ Desktop Management ~~~ */
-void change_desktop(const Arg arg) {
-    if(arg.i == current_desktop) return;
+void change_desktop(const Arg *arg) {
+    if(arg->i == current_desktop) return;
     previous_desktop = current_desktop;
 
     /* save current desktop settings and unmap windows */
@@ -281,7 +281,7 @@ void change_desktop(const Arg arg) {
         XUnmapWindow(dis, c->win);
 
     /* read new desktop properties, tile and map new windows */
-    select_desktop(arg.i);
+    select_desktop(arg->i);
     tile();
     if(mode == MONOCLE && current) XMapWindow(dis, current->win);
     else for(client *c=head; c; c=c->next) XMapWindow(dis, c->win);
@@ -290,22 +290,22 @@ void change_desktop(const Arg arg) {
 }
 
 void last_desktop() {
-    change_desktop((Arg){.i = previous_desktop});
+    change_desktop(&(Arg){.i = previous_desktop});
 }
 
-void rotate_desktop(const Arg arg) {
-    change_desktop((Arg){.i = (current_desktop + DESKTOPS + arg.i) % DESKTOPS});
+void rotate_desktop(const Arg *arg) {
+    change_desktop(&(Arg){.i = (current_desktop + DESKTOPS + arg->i) % DESKTOPS});
 }
 
-void client_to_desktop(const Arg arg) {
-    if(arg.i == current_desktop || !current) return;
+void client_to_desktop(const Arg *arg) {
+    if(arg->i == current_desktop || !current) return;
 
     client *c = current;
     int cd = current_desktop;
 
-    select_desktop(arg.i);
+    select_desktop(arg->i);
     add_window(c->win);
-    save_desktop(arg.i);
+    save_desktop(arg->i);
 
     select_desktop(cd);
     XUnmapWindow(dis, c->win);
@@ -480,23 +480,23 @@ void update_current(void) {
     XSync(dis, False);
 }
 
-void switch_mode(const Arg arg) {
-    if(mode == arg.i) return;
+void switch_mode(const Arg *arg) {
+    if(mode == arg->i) return;
     if(mode == MONOCLE) for(client *c=head; c; c=c->next) XMapWindow(dis, c->win);
-    mode = arg.i;
+    mode = arg->i;
     if(mode == TILE || mode == GRID) master_size = sw * MASTER_SIZE;
     else if(mode == BSTACK)          master_size = sh * MASTER_SIZE;
     tile();
     update_current();
 }
 
-void resize_master(const Arg arg) {
-    master_size += arg.i;
+void resize_master(const Arg *arg) {
+    master_size += arg->i;
     tile();
 }
 
-void resize_stack(const Arg arg) {
-    growth += arg.i;
+void resize_stack(const Arg *arg) {
+    growth += arg->i;
     tile();
 }
 
@@ -523,7 +523,7 @@ void keypress(XEvent *e) {
     keysym = XKeycodeToKeysym(dis, (KeyCode)ev->keycode, 0);
     for(i = 0; i < len; i++)
         if(keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(ev->state) && keys[i].function)
-                keys[i].function(keys[i].arg);
+                keys[i].function(&keys[i].arg);
 }
 
 /* ~~~ Signal Management ~~~ */
@@ -583,7 +583,7 @@ void maprequest(XEvent *e) {
                     tile();
                     update_current();
                 } else if(rules[i].follow)
-                    change_desktop((Arg){.i = rules[i].desktop});
+                    change_desktop(&(Arg){.i = rules[i].desktop});
                 if(ch.res_class) XFree(ch.res_class);
                 if(ch.res_name)  XFree(ch.res_name);
                 return;
@@ -660,8 +660,8 @@ unsigned long getcolor(const char* color) {
     return c.pixel;
 }
 
-void quit(const Arg arg) {
-    retval = arg.i;
+void quit(const Arg *arg) {
+    retval = arg->i;
     running = False;
 }
 
@@ -693,7 +693,7 @@ void setup(void) {
     master_size = ((mode == BSTACK) ? sh : sw) * MASTER_SIZE;
     for(int i=0; i<DESKTOPS; i++)
         save_desktop(i);
-    change_desktop((Arg){.i = DEFAULT_DESKTOP});
+    change_desktop(&(Arg){.i = DEFAULT_DESKTOP});
 
     win_focus = getcolor(FOCUS);
     win_unfocus = getcolor(UNFOCUS);
@@ -750,12 +750,12 @@ void sigchld() {
     while(0 < waitpid(-1, NULL, WNOHANG));
 }
 
-void spawn(const Arg arg) {
+void spawn(const Arg *arg) {
     if(fork() == 0) {
         if(dis) close(ConnectionNumber(dis));
         setsid();
-        execvp((char*)arg.com[0], (char**)arg.com);
-        fprintf(stderr, "error: execvp %s", (char *)arg.com[0]);
+        execvp((char*)arg->com[0], (char**)arg->com);
+        fprintf(stderr, "error: execvp %s", (char *)arg->com[0]);
         perror(" failed"); /* also prints the err msg */
         exit(EXIT_SUCCESS);
     }
