@@ -157,7 +157,7 @@ static void (*events[LASTEvent])(XEvent *e) = {
     [DestroyNotify] = destroynotify,
 };
 
-/* ~~~ Window Management ~~~ */
+/* -------- Window Management -------- */
 void add_window(Window w) {
     client *c, *t;
 
@@ -270,7 +270,7 @@ void swap_master() {
     update_current();
 }
 
-/* ~~~ Desktop Management ~~~ */
+/* -------- Desktop Management -------- */
 void change_desktop(const Arg *arg) {
     if(arg->i == current_desktop) return;
     previous_desktop = current_desktop;
@@ -500,7 +500,7 @@ void resize_stack(const Arg *arg) {
     tile();
 }
 
-/* ~~~ Keyboard Management ~~~ */
+/* -------- Keyboard Management -------- */
 void grabkeys(void) {
     KeyCode code;
 
@@ -526,13 +526,11 @@ void keypress(XEvent *e) {
                 keys[i].function(&keys[i].arg);
 }
 
-/* ~~~ Signal Management ~~~ */
+/* -------- Signal Management -------- */
 void maprequest(XEvent *e) {
     XMapRequestEvent *ev = &e->xmaprequest;
     static XWindowAttributes wa;
-
-    if(!XGetWindowAttributes(dis, ev->window, &wa)) return;
-    if(wa.override_redirect) return;
+    if(XGetWindowAttributes(dis, ev->window, &wa) && wa.override_redirect) return;
 
     /* window is transient */
     Window trans;
@@ -571,23 +569,23 @@ void maprequest(XEvent *e) {
     /* window is normal and has a rule set */
     XClassHint ch = {0, 0};
     if(XGetClassHint(dis, ev->window, &ch))
-        for(unsigned int i=0; i<LENGTH(rules); i++)
-            if(strcmp(ch.res_class, rules[i].class) == 0) {
-                int cd = current_desktop;
-                save_desktop(cd);
-                select_desktop(rules[i].desktop);
-                add_window(ev->window);
-                select_desktop(cd);
-                if(cd == rules[i].desktop) {
-                    XMapWindow(dis, ev->window);
-                    tile();
-                    update_current();
-                } else if(rules[i].follow)
-                    change_desktop(&(Arg){.i = rules[i].desktop});
-                if(ch.res_class) XFree(ch.res_class);
-                if(ch.res_name)  XFree(ch.res_name);
-                return;
-            }
+        for(unsigned int i=0; i<LENGTH(rules); i++) {
+            if(strcmp(ch.res_class, rules[i].class)) continue;
+            int cd = current_desktop;
+            save_desktop(cd);
+            select_desktop(rules[i].desktop);
+            add_window(ev->window);
+            select_desktop(cd);
+            if(cd == rules[i].desktop) {
+                XMapWindow(dis, ev->window);
+                tile();
+                update_current();
+            } else if(rules[i].follow)
+                change_desktop(&(Arg){.i = rules[i].desktop});
+            if(ch.res_class) XFree(ch.res_class);
+            if(ch.res_name)  XFree(ch.res_name);
+            return;
+        }
 
     /* window is normal and has no rule set */
     add_window(ev->window);
