@@ -30,17 +30,7 @@
 
 #define LENGTH(x) (sizeof(x)/sizeof(*x))
 
-enum {
-    WM_PROTOCOLS,
-    WM_DELETE_WINDOW,
-    _NET_WM_WINDOW_TYPE,
-    _NET_WM_WINDOW_TYPE_UTILITY,
-    _NET_WM_WINDOW_TYPE_DOCK,
-    _NET_WM_WINDOW_TYPE_SPLASH,
-    _NET_WM_WINDOW_TYPE_DIALOG,
-    _NET_WM_WINDOW_TYPE_NOTIFICATION,
-    ATOM_COUNT
-};
+enum { WM_PROTOCOLS, WM_DELETE_WINDOW, ATOM_COUNT };
 
 /* layout modes */
 enum {
@@ -542,30 +532,6 @@ void maprequest(XEvent *e) {
         return;
     }
 
-    /* window type is not normal (_NET_WM_WINDOW_TYPE_NORMAL) */
-    Atom realType, *wintype;
-    int realFormat;
-    unsigned long count, extra;
-    unsigned char *data;
-    if(XGetWindowProperty(dis, ev->window, atoms[_NET_WM_WINDOW_TYPE], 0, 32, False,
-                 XA_ATOM, &realType, &realFormat, &count, &extra, &data) == Success)
-        if(realType == XA_ATOM && count) {
-            wintype = (unsigned long *)data;
-            if(data) XFree(data);
-            for(unsigned int i=0; i<count; i++)
-                if(wintype[i] == atoms[_NET_WM_WINDOW_TYPE_UTILITY]      ||
-                   wintype[i] == atoms[_NET_WM_WINDOW_TYPE_NOTIFICATION] ||
-                   wintype[i] == atoms[_NET_WM_WINDOW_TYPE_SPLASH]       ||
-                   wintype[i] == atoms[_NET_WM_WINDOW_TYPE_DIALOG]       ||
-                   wintype[i] == atoms[_NET_WM_WINDOW_TYPE_DOCK]         ){
-                    add_window(ev->window);
-                    XMapWindow(dis, ev->window);
-                    XSetInputFocus(dis, ev->window, RevertToParent, CurrentTime);
-                    XRaiseWindow(dis, ev->window);
-                    return;
-                }
-        }
-
     /* window is normal and has a rule set */
     XClassHint ch = {0, 0};
     if(XGetClassHint(dis, ev->window, &ch))
@@ -706,12 +672,6 @@ void setup(void) {
     /* set up atoms for dialog/notification windows */
     atoms[WM_PROTOCOLS]     = XInternAtom(dis, "WM_PROTOCOLS",     False);
     atoms[WM_DELETE_WINDOW] = XInternAtom(dis, "WM_DELETE_WINDOW", False);
-    atoms[_NET_WM_WINDOW_TYPE]         = XInternAtom(dis, "_NET_WM_WINDOW_TYPE",         False);
-    atoms[_NET_WM_WINDOW_TYPE_UTILITY] = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_UTILITY", False);
-    atoms[_NET_WM_WINDOW_TYPE_DOCK]    = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_DOCK",    False);
-    atoms[_NET_WM_WINDOW_TYPE_SPLASH]  = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_SPLASH",  False);
-    atoms[_NET_WM_WINDOW_TYPE_DIALOG]  = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_DIALOG",  False);
-    atoms[_NET_WM_WINDOW_TYPE_NOTIFICATION] = XInternAtom(dis, "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
 
     /* check if another window manager is running */
     xerrorxlib = XSetErrorHandler(xerrorstart);
