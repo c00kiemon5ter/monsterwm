@@ -116,8 +116,8 @@ static int previous_desktop = 0;
 static int growth = 0;
 static int mode = DEFAULT_MODE;
 static int master_size;
-static int sh;
-static int sw;
+static int sh; /* screen height minus the panel height */
+static int sw; /* screen width */
 static int screen;
 static int xerror(Display *dis, XErrorEvent *ee);
 static int (*xerrorxlib)(Display *, XErrorEvent *);
@@ -615,7 +615,7 @@ void tile(void) {
                 for(c=head; c; c=c->next, i++) {
                     if(i/rows + 1 > cols - n%cols)
                         rows = n/cols + 1;
-                    ch = rows ? (sh-y)/rows : sh;
+                    ch = sh/rows;
                     cx = 0 + cn*cw;
                     cy = y + rn*ch;
                     XMoveResizeWindow(dis, c->win, cx, cy, cw - 2*BORDER_WIDTH, ch - 2*BORDER_WIDTH);
