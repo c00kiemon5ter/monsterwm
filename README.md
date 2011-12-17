@@ -18,7 +18,7 @@ Summary
 -------
 
 **monsterwm** is a very minimal, lightweight, monsterous, dynamic tiling window manager.
-It will try to stay as small as possible. Currently under 750 lines with the config file included.
+It will try to stay as small as possible. Currently under 700 lines with the config file included.
 
 Modes
 -----
