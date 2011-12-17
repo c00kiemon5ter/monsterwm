@@ -618,7 +618,7 @@ void tile(void) {
                     ch = rows ? (sh-y)/rows : sh;
                     cx = 0 + cn*cw;
                     cy = y + rn*ch;
-                    XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
+                    XMoveResizeWindow(dis, c->win, cx, cy, cw - 2*BORDER_WIDTH, ch - 2*BORDER_WIDTH);
                     rn++;
                     if(rn >= rows) {
                         rn = 0;
