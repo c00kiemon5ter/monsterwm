@@ -54,15 +54,16 @@ and with the new window opened at the bottom of the stack (like `dwm`'s attach\_
  *Grid tiling mode:*
 
     -------------
-    |      | W  |
-    |      |    |
-    |------|----|
-    |      |    |
+    |   |   |   |
+    |---|---|---|
+    |   |   |   |
+    |---|---|---|
+    |   |   |   |
     -------------
 
 ---
 
- *Monocycle mode* (aka fullscreen - you'll know when you see it)
+ *Monocle mode* (aka fullscreen)
 
     -------------
     |           |
