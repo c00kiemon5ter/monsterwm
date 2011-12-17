@@ -561,24 +561,26 @@ void switch_mode(const Arg *arg) {
 }
 
 void tile(void) {
-    if(!head) return; /* no need to arange anything */
+    if(!head) return;                           /* nothing to arange */
 
-    client *c;
-    int n = 0;
-    int x = 0;
     int panel_height = (showpanel) ? PANEL_HEIGHT : 0;
     int y = (TOP_PANEL) ? panel_height : 0;
     sh = XDisplayHeight(dis, screen) - panel_height - BORDER_WIDTH;
 
-    if(!head->next)
+    if(!head->next) {                           /* if only one window make it fullscreen */
         XMoveResizeWindow(dis, head->win, 0, y, sw + 2*BORDER_WIDTH, sh + 2*BORDER_WIDTH);
-    else switch(mode) {
+        return;
+    }
+
+    client *c;
+    int n = 0;
+    int x = 0;
+    for(n=0, c=head->next; c; c=c->next, ++n);  /* count windows on stack */
+    growth = (n == 1) ? 0 : growth;             /* if only one window don't care about growth */
+
+    switch(mode) {
         case TILE:
-            /* master window */
             XMoveResizeWindow(dis, head->win, 0, y, master_size - BORDER_WIDTH, sh - BORDER_WIDTH);
-            /* stack */
-            for(n=0, c=head->next; c; c=c->next, ++n);  /* count windows */
-            growth = (n == 1) ? 0 : growth;             /* if only one window don't care about growth */
             XMoveResizeWindow(dis, head->next->win, master_size + BORDER_WIDTH, y, sw - master_size - 2*BORDER_WIDTH, sh/n + growth - BORDER_WIDTH);
             y += sh/n + growth;
             for(c=head->next->next; c; c=c->next) {
@@ -591,11 +593,7 @@ void tile(void) {
                 XMoveResizeWindow(dis, c->win, 0, y, sw + 2*BORDER_WIDTH, sh + 2*BORDER_WIDTH);
             break;
         case BSTACK:
-            /* master window */
             XMoveResizeWindow(dis, head->win, 0, y, sw - BORDER_WIDTH, master_size - BORDER_WIDTH);
-            /* stack */
-            for(n=0, c=head->next; c; c=c->next, ++n);  /* count windows */
-            growth = (n == 1) ? 0 : growth;             /* if only one window don't care about growth */
             XMoveResizeWindow(dis, head->next->win, 0, y + master_size + BORDER_WIDTH, sw/n + growth - BORDER_WIDTH, sh - master_size - 2*BORDER_WIDTH);
             x = sw/n + growth;
             for(c=head->next->next; c; c=c->next) {
@@ -605,66 +603,27 @@ void tile(void) {
             break;
         case GRID:
             {
-                int xpos = 0;
-                int wdt = 0;
-                int ht = 0;
-
-                for(c=head; c; c=c->next) ++x;
-
-                for(c=head; c; c=c->next) {
-                    ++n;
-                    if(x >= 7) {
-                        wdt = sw/3 - BORDER_WIDTH;
-                        ht  = sh/3 - BORDER_WIDTH;
-                        if(n == 1 || n == 4 || n == 7)
-                            xpos = 0;
-                        if(n == 2 || n == 5 || n == 8)
-                            xpos = sw/3 + BORDER_WIDTH;
-                        if(n == 3 || n == 6 || n == 9)
-                            xpos = 2*(sw/3) + BORDER_WIDTH;
-                        if(n == 4 || n == 7)
-                            y += sh/3 + BORDER_WIDTH;
-                        if(n == x && n == 7)
-                            wdt = sw - BORDER_WIDTH;
-                        if(n == x && n == 8)
-                            wdt = 2*(sw/3) - BORDER_WIDTH;
-                    } else
-                        if(x >= 5) {
-                            wdt = sw/3 - BORDER_WIDTH;
-                            ht  = sh/2 - BORDER_WIDTH;
-                            if(n == 1 || n == 4)
-                                xpos = 0;
-                            if(n == 2 || n == 5)
-                                xpos = sw/3 + BORDER_WIDTH;
-                            if(n == 3 || n == 6)
-                                xpos = 2*(sw/3) + BORDER_WIDTH;
-                            if(n == 4)
-                                y += sh/2; // + BORDER_WIDTH;
-                            if(n == x && n == 5)
-                                wdt = 2*(sw/3) - BORDER_WIDTH;
-                        } else {
-                            if(x > 2) {
-                                if(n == 1 || n == 2)
-                                    ht = sh/2 + growth - BORDER_WIDTH;
-                                if(n >= 3)
-                                    ht = sh/2 - growth - 2*BORDER_WIDTH;
-                            }
-                            else
-                                ht = sh - BORDER_WIDTH;
-                            if(n == 1 || n == 3) {
-                                xpos = 0;
-                                wdt = master_size - BORDER_WIDTH;
-                            }
-                            if(n == 2 || n == 4) {
-                                xpos = master_size+BORDER_WIDTH;
-                                wdt = sw - master_size - 2*BORDER_WIDTH;
-                            }
-                            if(n == 3)
-                                y += sh/2 + growth + BORDER_WIDTH;
-                            if(n == x && n == 3)
-                                wdt = sw - BORDER_WIDTH;
-                        }
-                    XMoveResizeWindow(dis, c->win, xpos, y, wdt, ht);
+                int cols, rows, cn=0, rn=0; /* columns, rows, and current column and row number */
+                int cx, cy, cw, ch, i=0;    /* client x y coordinates, width and height */
+                ++n;                        /* include head on window count */
+                for(cols=0; cols <= n/2; cols++)
+                    if(cols*cols >= n)
+                        break;
+                if(n == 5) cols = 2;
+                rows = n/cols;
+                cw = cols ? sw/cols : sw;
+                for(c=head; c; c=c->next, i++) {
+                    if(i/rows + 1 > cols - n%cols)
+                        rows = n/cols + 1;
+                    ch = rows ? (sh-y)/rows : sh;
+                    cx = 0 + cn*cw;
+                    cy = y + rn*ch;
+                    XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
+                    rn++;
+                    if(rn >= rows) {
+                        rn = 0;
+                        cn++;
+                    }
                 }
             }
             break;
