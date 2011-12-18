@@ -663,7 +663,7 @@ void update_current(void) {
 
 /* There's no way to check accesses to destroyed windows, thus those cases are
  * ignored (especially on UnmapNotify's). Other types of errors call Xlibs
- * default error handler, which may call exit.  */
+ * default error handler, which may call exit through xerrorlib.  */
 int xerror(Display *dis, XErrorEvent *ee) {
     if(ee->error_code == BadWindow
             || (ee->error_code == BadMatch    && (ee->request_code == X_SetInputFocus || ee->request_code ==  X_ConfigureWindow))
@@ -672,7 +672,7 @@ int xerror(Display *dis, XErrorEvent *ee) {
             || (ee->error_code == BadAccess   &&  ee->request_code == X_GrabKey))
         return 0;
     fprintf(stderr, "error: xerror: request code: %d, error code: %d\n", ee->request_code, ee->error_code);
-    return xerrorxlib(dis, ee); /* may call exit */
+    return xerrorxlib(dis, ee);
 }
 
 int xerrorstart() {
