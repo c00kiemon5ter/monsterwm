@@ -103,6 +103,7 @@ static void switch_mode(const Arg *arg);
 static void tile(void);
 static void togglepanel();
 static void update_current(void);
+static client* wintoclient(Window w);
 static int xerrorstart();
 
 #include "config.h"
@@ -249,17 +250,10 @@ void deletewindow(Window w) {
 }
 
 void destroynotify(XEvent *e) {
-    client *c;
     XDestroyWindowEvent *ev = &e->xdestroywindow;
-    int cd = current_desktop;
-    Bool found = False;
-
-    save_desktop(cd);
-    for(int d=0; d<DESKTOPS && !found; select_desktop(d++))
-        for(c=head; c && !found; c=c->next)
-            if((found = ev->window == c->win))
-                removeclient(c);
-    select_desktop(cd);
+    client *c;
+    if((c = wintoclient(ev->window)))
+        removeclient(c);
 }
 
 void die(const char *errstr, ...) {
@@ -659,6 +653,19 @@ void update_current(void) {
     }
     free(c);
     XSync(dis, False);
+}
+
+client* wintoclient(Window w) {
+    client *c = NULL;
+    Bool found = False;
+    int cd = current_desktop;
+    save_desktop(cd);
+    for(int d=0; d<DESKTOPS && !found; select_desktop(d++))
+        for(c=head; c; c=c->next)
+            if((found = (w == c->win)))
+                    break;
+    select_desktop(cd);
+    return c;
 }
 
 /* There's no way to check accesses to destroyed windows, thus those cases are
