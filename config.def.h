@@ -49,6 +49,9 @@ static const AppRule rules[] = { \
     { "Chromium",     0,       False },  /* last desktop, 0 is always the fist */
 };
 
+/* helper for spawning shell commands */
+#define SHCMD(cmd) {.com = (const char*[]){"/bin/bash", "-c", cmd, NULL}}
+
 /** commands **/
 static const char *termcmd[]  = { "xterm", NULL };
 static const char *dmenucmd[] = { "dmenu", NULL };

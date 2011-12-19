@@ -48,6 +48,9 @@ static const AppRule rules[] = { \
     { "MPlayer",      3,       True  },
 };
 
+/* helper for spawning shell commands */
+#define SHCMD(cmd) {.com = (const char*[]){"/bin/bash", "-c", cmd, NULL}}
+
 /** commands **/
 static const char *termcmd[]     = { "urxvt",    NULL };
 static const char *dmenucmd[]    = { "dmn",      NULL };
