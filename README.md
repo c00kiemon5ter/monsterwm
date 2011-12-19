@@ -1,24 +1,24 @@
 monsterwm
 =========
 
-### ~ it's minimal and dynamic
+### tiny and monsterous!
 
-[moetunes][] started this based on [catwm][] 31/12/10 ([ArchLinux forums][catf]) creating [dminiwm][]
+This is a branch off of moetunes [dminiwm][], which in turn was based on [catwm][] by [pyknite][].
 Credits and licensing included in `monsterwm.c` and/or `config.def.h`.
-For screenshots and ramblings/updates check [the topic on ArchLinux forums][dminif]
+For screenshots and ramblings/updates check the [topic on ArchLinux forums][monsterwm].
 
-  [moetunes]: https://github.com/moetunes
-  [catwm]: https://github.com/pyknite/catwm
-  [catf]: https://bbs.archlinux.org/viewtopic.php?id=100215&p=1
-  [dminiwm]: https://github.com/moetunes/dminiwm
-  [dminif]: https://bbs.archlinux.org/viewtopic.php?id=126463
+  [pyknite]: https://github.com/pyknite
+  [catwm]: https://bbs.archlinux.org/viewtopic.php?id=100215
+  [dminiwm]: https://bbs.archlinux.org/viewtopic.php?id=126463
+  [monsterwm]: https://bbs.archlinux.org/viewtopic.php?pid=1029955
 
 
 Summary
 -------
 
-**monsterwm** is a very minimal, lightweight, monsterous, dynamic tiling window manager.
+**monsterwm** is a very minimal, lightweight, monsterous, tiny, dynamic tiling window manager.
 It will try to stay as small as possible. Currently under 700 lines with the config file included.
+It's like dwm with gridlayout, bstack, pertag, dwmreturn patches builtin, but without floating mode.
 
 Modes
 -----
@@ -79,6 +79,8 @@ All accessible with keyboard shortcuts defined in the config.h file.
  * The window W at the top of the stack can be resized on a per desktop basis.
  * Changing a tiling mode or window size on one desktop doesn't affect the other desktops.
 
+One can also define an empty space on the bottom or top of the screen, to be used by a panel.
+The panel is toggleable, but will be visible if no windows are on the screen.
 
 Installation
 ------------
@@ -97,7 +99,7 @@ Build and install.
 Bugs
 ----
 
-For any bug or request [fill an issue][bug] on [GitHub][ghp]
+For any bug or request [fill an issue][bug] on [GitHub][ghp] or report on the [ArchLinux topic][monsterwm]
 
   [bug]: https://github.com/c00kiemon5ter/monsterwm/issues
   [ghp]: https://github.com/c00kiemon5ter/monsterwm
