@@ -20,9 +20,13 @@
 
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 
+/** buttons **/
+#define MOD1            Mod1Mask    /* ALT key */
+#define MOD4            Mod4Mask    /* Super/Windows key */
+#define CONTROL         ControlMask /* Cotrol key */
+#define SHIFT           ShiftMask   /* Shift key */
+
 /** generic settings **/
-#define MOD1            Mod1Mask  /* ALT key */
-#define MOD4            Mod4Mask  /* Super/Windows key */
 #define MASTER_SIZE     0.52
 #define SHOW_PANEL      True      /* show panel by default on exec */
 #define TOP_PANEL       True      /* False mean panel is on bottom */
@@ -57,26 +61,26 @@ static const char *dmenucmd[] = { "dmenu", NULL };
 static key keys[] = {
     /* modifier          key            function           argument */
     {  MOD1,             XK_b,          togglepanel,       {NULL}},
-    {  MOD1|ShiftMask,   XK_c,          killclient,        {NULL}},
+    {  MOD1|SHIFT,       XK_c,          killclient,        {NULL}},
     {  MOD1,             XK_j,          next_win,          {NULL}},
     {  MOD1,             XK_k,          prev_win,          {NULL}},
     {  MOD1,             XK_h,          resize_master,     {.i = -10}}, /* decrease */
     {  MOD1,             XK_l,          resize_master,     {.i = +10}}, /* increase */
     {  MOD1,             XK_o,          resize_stack,      {.i = -10}}, /* shrink */
     {  MOD1,             XK_p,          resize_stack,      {.i = +10}}, /* grow   */
-    {  MOD1|ShiftMask,   XK_Left,       rotate_desktop,    {.i = -1}},  /* prev */
-    {  MOD1|ShiftMask,   XK_Right,      rotate_desktop,    {.i = +1}},  /* next */
+    {  MOD1|SHIFT,       XK_Left,       rotate_desktop,    {.i = -1}},  /* prev */
+    {  MOD1|SHIFT,       XK_Right,      rotate_desktop,    {.i = +1}},  /* next */
     {  MOD1,             XK_Tab,        last_desktop,      {NULL}},
     {  MOD1,             XK_Return,     swap_master,       {NULL}},
-    {  MOD1|ShiftMask,   XK_j,          move_down,         {NULL}},
-    {  MOD1|ShiftMask,   XK_k,          move_up,           {NULL}},
-    {  MOD1|ShiftMask,   XK_t,          switch_mode,       {.i = TILE}},
-    {  MOD1|ShiftMask,   XK_m,          switch_mode,       {.i = MONOCLE}},
-    {  MOD1|ShiftMask,   XK_b,          switch_mode,       {.i = BSTACK}},
-    {  MOD1|ShiftMask,   XK_g,          switch_mode,       {.i = GRID}},
-    {  MOD1|ShiftMask,   XK_r,          quit,              {.i = 0}}, /* quit with exit value 0 */
-    {  MOD1|ShiftMask,   XK_q,          quit,              {.i = 1}}, /* quit with exit value 1 */
-    {  MOD1|ShiftMask,   XK_Return,     spawn,             {.com = termcmd}},
+    {  MOD1|SHIFT,       XK_j,          move_down,         {NULL}},
+    {  MOD1|SHIFT,       XK_k,          move_up,           {NULL}},
+    {  MOD1|SHIFT,       XK_t,          switch_mode,       {.i = TILE}},
+    {  MOD1|SHIFT,       XK_m,          switch_mode,       {.i = MONOCLE}},
+    {  MOD1|SHIFT,       XK_b,          switch_mode,       {.i = BSTACK}},
+    {  MOD1|SHIFT,       XK_g,          switch_mode,       {.i = GRID}},
+    {  MOD1|CONTROL,     XK_r,          quit,              {.i = 0}}, /* quit with exit value 0 */
+    {  MOD1|CONTROL,     XK_q,          quit,              {.i = 1}}, /* quit with exit value 1 */
+    {  MOD1|SHIFT,       XK_Return,     spawn,             {.com = termcmd}},
     {  MOD4,             XK_v,          spawn,             {.com = dmenucmd}},
        DESKTOPCHANGE(    XK_F1,                             0)
        DESKTOPCHANGE(    XK_F2,                             1)

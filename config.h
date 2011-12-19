@@ -20,9 +20,13 @@
 
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 
+/** buttons **/
+#define MOD1            Mod1Mask    /* ALT key */
+#define MOD4            Mod4Mask    /* Super/Windows key */
+#define CONTROL         ControlMask /* Cotrol key */
+#define SHIFT           ShiftMask   /* Shift key */
+
 /** generic settings **/
-#define MOD1            Mod1Mask  /* ALT key */
-#define MOD4            Mod4Mask  /* Super/Windows key */
 #define MASTER_SIZE     0.52
 #define SHOW_PANEL      True      /* show panel by default on exec */
 #define TOP_PANEL       True      /* False mean panel is on bottom */
@@ -75,19 +79,19 @@ static key keys[] = {
     {  MOD1,             XK_l,          resize_master,     {.i = +10}}, /* increase */
     {  MOD1,             XK_o,          resize_stack,      {.i = -10}}, /* shrink */
     {  MOD1,             XK_p,          resize_stack,      {.i = +10}}, /* grow   */
-    {  MOD1|ShiftMask,   XK_Left,       rotate_desktop,    {.i = -1}},  /* prev */
-    {  MOD1|ShiftMask,   XK_Right,      rotate_desktop,    {.i = +1}},  /* next */
+    {  MOD1|SHIFT,       XK_Left,       rotate_desktop,    {.i = -1}},  /* prev */
+    {  MOD1|SHIFT,       XK_Right,      rotate_desktop,    {.i = +1}},  /* next */
     {  MOD1,             XK_Tab,        last_desktop,      {NULL}},
     {  MOD1,             XK_Return,     swap_master,       {NULL}},
-    {  MOD1|ShiftMask,   XK_j,          move_down,         {NULL}},
-    {  MOD1|ShiftMask,   XK_k,          move_up,           {NULL}},
-    {  MOD1|ShiftMask,   XK_t,          switch_mode,       {.i = TILE}},
-    {  MOD1|ShiftMask,   XK_m,          switch_mode,       {.i = MONOCLE}},
-    {  MOD1|ShiftMask,   XK_b,          switch_mode,       {.i = BSTACK}},
-    {  MOD1|ShiftMask,   XK_g,          switch_mode,       {.i = GRID}},
-    {  MOD1|ShiftMask,   XK_r,          quit,              {.i = 0}}, /* restart */
-    {  MOD1|ShiftMask,   XK_q,          quit,              {.i = 1}}, /* quit    */
-    {  MOD1|ShiftMask,   XK_Return,     spawn,             {.com = termcmd}},
+    {  MOD1|SHIFT,       XK_j,          move_down,         {NULL}},
+    {  MOD1|SHIFT,       XK_k,          move_up,           {NULL}},
+    {  MOD1|SHIFT,       XK_t,          switch_mode,       {.i = TILE}},
+    {  MOD1|SHIFT,       XK_m,          switch_mode,       {.i = MONOCLE}},
+    {  MOD1|SHIFT,       XK_b,          switch_mode,       {.i = BSTACK}},
+    {  MOD1|SHIFT,       XK_g,          switch_mode,       {.i = GRID}},
+    {  MOD1|CONTROL,     XK_r,          quit,              {.i = 0}}, /* restart */
+    {  MOD1|CONTROL,     XK_q,          quit,              {.i = 1}}, /* quit    */
+    {  MOD1|SHIFT,       XK_Return,     spawn,             {.com = termcmd}},
     {  MOD4,             XK_v,          spawn,             {.com = dmenucmd}},
     {  MOD4,             XK_grave,      spawn,             {.com = urxvtcmd}},
     {  MOD4,             XK_equal,	    spawn,             {.com = volupcmd}},
