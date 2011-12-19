@@ -327,6 +327,7 @@ void maprequest(XEvent *e) {
     XMapRequestEvent *ev = &e->xmaprequest;
     static XWindowAttributes wa;
     if(XGetWindowAttributes(dis, ev->window, &wa) && wa.override_redirect) return;
+    if(wintoclient(ev->window)) return;
 
     /* window is transient */
     Window trans;
