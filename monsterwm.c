@@ -343,7 +343,8 @@ void maprequest(XEvent *e) {
     XClassHint ch = {0, 0};
     if(XGetClassHint(dis, ev->window, &ch))
         for(unsigned int i=0; i<LENGTH(rules); i++) {
-            if(strcmp(ch.res_class, rules[i].class)) continue;
+            if(strcmp(ch.res_class, rules[i].class)
+            && strcmp(ch.res_name, rules[i].class)) continue;
             int cd = current_desktop;
             save_desktop(cd);
             select_desktop(rules[i].desktop);
