@@ -75,7 +75,7 @@ static const char *mtogglecmd[] = { "mpc", "toggle", NULL };
 static key keys[] = {
     /* modifier          key            function           argument */
     {  MOD1,             XK_b,          togglepanel,       {NULL}},
-    {  MOD1|ShiftMask,   XK_c,          killclient,        {NULL}},
+    {  MOD1|SHIFT,       XK_c,          killclient,        {NULL}},
     {  MOD1,             XK_j,          next_win,          {NULL}},
     {  MOD1,             XK_k,          prev_win,          {NULL}},
     {  MOD1,             XK_h,          resize_master,     {.i = -10}}, /* decrease */
