@@ -454,7 +454,9 @@ void removeclient(client *c) {
 }
 
 void resize_master(const Arg *arg) {
-    master_size += arg->i;
+    int msz = master_size + arg->i;
+    if((mode == BSTACK ? sh : sw) - msz <= MINWSZ || msz <= MINWSZ) return;
+    master_size = msz;
     tile();
 }
 

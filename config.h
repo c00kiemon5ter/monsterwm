@@ -41,6 +41,7 @@
 #define UNFOCUS         "#444444" /* unfocused window border color */
 #define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
 #define DEFAULT_DESKTOP 0         /* the desktop to focus on exec */
+#define MINWSZ          50        /* minimum window size in pixels */
 
 /** open applications to specified desktop **/
 static const AppRule rules[] = { \
