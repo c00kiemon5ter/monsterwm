@@ -150,21 +150,18 @@ void add_window(Window w) {
         die("error: could not calloc() %u bytes\n", sizeof(client));
 
     if(!head) {
-        c->win = w;
         head = c;
     } else if(ATTACH_ASIDE) {
         for(t=head; t->next; t=t->next);
         c->prev = t;
-        c->win = w;
         t->next = c;
     } else {
         t = head;
         c->next = t;
         t->prev = c;
-        c->win = w;
         head = c;
     }
-
+    c->win = w;
     current = c;
     save_desktop(current_desktop);
 
