@@ -334,8 +334,7 @@ void maprequest(XEvent *e) {
     if(XGetTransientForHint(dis, ev->window, &trans) && trans) {
         add_window(ev->window);
         XMapWindow(dis, ev->window);
-        XSetInputFocus(dis, ev->window, RevertToParent, CurrentTime);
-        XRaiseWindow(dis, ev->window);
+        update_current();
         return;
     }
 
@@ -634,26 +633,21 @@ void togglepanel() {
 }
 
 void update_current(void) {
-    client *c;
+    if(!head) return;
+    int border_width = (!head->next || mode == MONOCLE) ? 0 : BORDER_WIDTH;
 
-    for(c=head; c; c=c->next) {
-        if(!head->next || mode == MONOCLE)
-            XSetWindowBorderWidth(dis, c->win, 0);
-        else
-            XSetWindowBorderWidth(dis, c->win, BORDER_WIDTH);
-
-        if(current == c) { /* highlight current window */
-            XSetWindowBorder(dis, c->win, win_focus);
-            XSetInputFocus(dis, c->win, RevertToParent, CurrentTime);
-            XRaiseWindow(dis, c->win);
-            if(CLICK_TO_FOCUS) XUngrabButton(dis, AnyButton, AnyModifier, c->win);
-        } else {
-            XSetWindowBorder(dis, c->win, win_unfocus);
-            if(CLICK_TO_FOCUS) XGrabButton(dis, AnyButton, AnyModifier, c->win, True,
-                ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
-        }
+    for(client *c=head; c; c=c->next) {
+        XSetWindowBorderWidth(dis, c->win, border_width);
+        XSetWindowBorder(dis, c->win, win_unfocus);
+        if(CLICK_TO_FOCUS) XGrabButton(dis, AnyButton, AnyModifier, c->win, True,
+            ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
     }
-    free(c);
+    if(current) {
+            XSetWindowBorder(dis, current->win, win_focus);
+            XSetInputFocus(dis, current->win, RevertToParent, CurrentTime);
+            XRaiseWindow(dis, current->win);
+            if(CLICK_TO_FOCUS) XUngrabButton(dis, AnyButton, AnyModifier, current->win);
+    }
     XSync(dis, False);
 }
 
