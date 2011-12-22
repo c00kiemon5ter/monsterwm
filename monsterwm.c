@@ -350,8 +350,8 @@ void maprequest(XEvent *e) {
             add_window(ev->window);
             select_desktop(cd);
             if(cd == rules[i].desktop) {
-                XMapWindow(dis, ev->window);
                 tile();
+                XMapWindow(dis, ev->window);
                 update_current();
             } else if(rules[i].follow)
                 change_desktop(&(Arg){.i = rules[i].desktop});
@@ -362,8 +362,8 @@ void maprequest(XEvent *e) {
 
     /* window is normal and has no rule set */
     add_window(ev->window);
-    XMapWindow(dis, ev->window);
     tile();
+    XMapWindow(dis, ev->window);
     update_current();
 }
 
@@ -433,8 +433,7 @@ void removeclient(client *c) {
 
     save_desktop(current_desktop);
     tile();
-    if(mode == MONOCLE && current)
-        XMapWindow(dis, current->win);
+    if(mode == MONOCLE && current) XMapWindow(dis, current->win);
     update_current();
 }
 
