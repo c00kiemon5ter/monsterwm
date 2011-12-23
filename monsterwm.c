@@ -252,6 +252,7 @@ void configurerequest(XEvent *e) {
 
     XConfigureWindow(dis, ev->window, ev->value_mask, &wc);
     XSync(dis, False);
+    tile();
 }
 
 void deletewindow(Window w) {
@@ -584,9 +585,10 @@ void tile(void) {
     }
 
     client *c;
-    for(n=0, c=head->next; c; c=c->next, ++n);      /* count windows on stack */
-    growth = (n != 1) ? growth + growth%(n-1) : 0;  /* if only one window discard growth else justify */
+    for(n=0, c=head->next; c; c=c->next, ++n);  /* count windows on stack */
+    if (n == 1) growth = 0;                     /* if only one window discard growth else justify */
     int winsize = ((mode == BSTACK ? ww : wh) - growth)/n;
+    growth += ((mode == BSTACK ? ww : wh) - growth)%n;
 
     switch(mode) {
         case TILE:
