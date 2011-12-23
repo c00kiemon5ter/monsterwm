@@ -144,21 +144,22 @@ static void (*events[LASTEvent])(XEvent *e) = {
 };
 
 void add_window(Window w) {
-    client *c, *t;
+    client *c;
 
     if(!(c = (client *)calloc(1, sizeof(client))))
         die("error: could not calloc() %u bytes\n", sizeof(client));
 
     if(!head) {
         head = c;
+        head->prev = head;
     } else if(ATTACH_ASIDE) {
-        for(t=head; t->next; t=t->next);
-        c->prev = t;
-        t->next = c;
+        head->prev->next = c;
+        c->prev = head->prev;
+        head->prev = c;
     } else {
-        t = head;
-        c->next = t;
-        t->prev = c;
+        c->prev = head->prev;
+        head->prev = c;
+        c->next = head;
         head = c;
     }
     c->win = w;
@@ -381,18 +382,19 @@ void maprequest(XEvent *e) {
 }
 
 void move_down() {
-    if(!current || current == head || !current->next) return;
+    if(!current || head->prev == head) return;
+    client *next = (current->next) ? current->next : head;
     Window tmpwin = current->win;
-    current->win = current->next->win;
-    current->next->win = tmpwin;
-    current = current->next;
+    current->win = next->win;
+    next->win = tmpwin;
+    current = next;
     save_desktop(current_desktop);
     tile();
     update_current();
 }
 
 void move_up() {
-    if(!current || current == head || !current->prev) return;
+    if(!current || head->prev == head) return;
     Window tmpwin = current->win;
     current->win = current->prev->win;
     current->prev->win = tmpwin;
@@ -403,7 +405,7 @@ void move_up() {
 }
 
 void next_win() {
-    if(!current || (!current->next && !current->prev)) return;
+    if(!current || head->prev == head) return;
     if(mode == MONOCLE) XUnmapWindow(dis, current->win);
     current = (current->next) ? current->next : head;
     if(mode == MONOCLE) XMapWindow(dis, current->win);
@@ -411,10 +413,9 @@ void next_win() {
 }
 
 void prev_win() {
-    if(!current || (!current->next && !current->prev)) return;
+    if(!current || head->prev == head) return;
     if(mode == MONOCLE) XUnmapWindow(dis, current->win);
-    if(current->prev) current = current->prev;
-    else while(current->next) current=current->next;
+    current = current->prev;
     if(mode == MONOCLE) XMapWindow(dis, current->win);
     update_current();
 }
@@ -425,25 +426,25 @@ void quit(const Arg *arg) {
 }
 
 void removeclient(client *c) {
-    if(!c->prev) {              /* w is head */
-        if(!c->next) {          /* head is only window on screen */
-            free(head);
-            head = NULL;
-        } else {                /* more windows on screen */
-            head->next->prev = NULL;
+    if(c == head) {
+        if(head->next) {            /* more windows on screen */
+            head->next->prev = head->prev;
             head = head->next;
+        } else {                    /* head is only window on screen */
+            free(head);
+            head = head->prev = NULL;
         }
         current = head;
-    } else {                    /* w is on stack */
-        if(!c->next) {          /* w is last window on screen */
-            c->prev->next = NULL;
-        } else {                /* w is somewhere in the middle */
+    } else {
+        if(c->next) {               /* w is somewhere in the middle */
             c->next->prev = c->prev;
             c->prev->next = c->next;
+        } else {                    /* w is last window on screen */
+            head->prev = c->prev;
+            c->prev->next = NULL;
         }
         current = c->prev;
     }
-
     save_desktop(current_desktop);
     tile();
     if(mode == MONOCLE && current) XMapWindow(dis, current->win);
