@@ -638,7 +638,7 @@ void togglepanel() {
 }
 
 void update_current(void) {
-    if(!head) return;
+    if(!current) return;
     int border_width = (!head->next || mode == MONOCLE) ? 0 : BORDER_WIDTH;
 
     for(client *c=head; c; c=c->next) {
@@ -647,12 +647,10 @@ void update_current(void) {
         if(CLICK_TO_FOCUS) XGrabButton(dis, AnyButton, AnyModifier, c->win, True,
             ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
     }
-    if(current) {
-            XSetWindowBorder(dis, current->win, win_focus);
-            XSetInputFocus(dis, current->win, RevertToParent, CurrentTime);
-            XRaiseWindow(dis, current->win);
-            if(CLICK_TO_FOCUS) XUngrabButton(dis, AnyButton, AnyModifier, current->win);
-    }
+    XSetWindowBorder(dis, current->win, win_focus);
+    XSetInputFocus(dis, current->win, RevertToParent, CurrentTime);
+    XRaiseWindow(dis, current->win);
+    if(CLICK_TO_FOCUS) XUngrabButton(dis, AnyButton, AnyModifier, current->win);
     XSync(dis, False);
 }
 
