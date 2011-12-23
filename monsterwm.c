@@ -242,14 +242,16 @@ void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     XWindowChanges wc;
 
-    wc.width  = ev->width;
-    wc.height = ev->height;
+    wc.x = ev->x;
+    wc.y = ev->y + (showpanel && TOP_PANEL) ? PANEL_HEIGHT : 0;
+    wc.width  = (ev->width  < ww - BORDER_WIDTH) ? ev->width  : ww + BORDER_WIDTH;
+    wc.height = (ev->height < wh - BORDER_WIDTH) ? ev->height : wh + BORDER_WIDTH;
+    wc.border_width = ev->border_width;
     wc.sibling    = ev->above;
     wc.stack_mode = ev->detail;
 
     XConfigureWindow(dis, ev->window, ev->value_mask, &wc);
     XSync(dis, False);
-    tile();
 }
 
 void deletewindow(Window w) {
