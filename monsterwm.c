@@ -646,10 +646,10 @@ client* wintoclient(Window w) {
     Bool found = False;
     int cd = current_desktop;
     save_desktop(cd);
-    for(int d=0; d<DESKTOPS && !found; select_desktop(d++))
-        for(c=head; c; c=c->next)
-            if((found = (w == c->win)))
-                    break;
+    for(int d=0; d<DESKTOPS && !found; d++) {
+        select_desktop(d);
+        for(c=head; c; c=c->next) if((found = (w == c->win))) break;
+    }
     select_desktop(cd);
     return c;
 }
