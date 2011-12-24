@@ -574,28 +574,26 @@ void switch_mode(const Arg *arg) {
 
 void tile(void) {
     if(!head) return; /* nothing to arange */
-
     client *c;
     int panel_height = (showpanel) ? PANEL_HEIGHT : 0;
-    int n = 0, winsz = mode == BSTACK ? ww : wh, cx = 0, cy = (TOP_PANEL) ? panel_height : 0, cw = 0, ch = 0;
-    for(n=0, c=head->next; c; c=c->next, ++n);  /* count windows on stack */
-    if(n > 1){
-        winsz = (winsz - growth)/n;
-        growth += (winsz - growth)%n;           /* adjust to match screen height/width */
-    } else growth = 0;                          /* if only one (or no) window on stack discard growth */
-
+    int n = 0, z = mode == BSTACK ? ww : wh, d = 0, cx = 0, cy = TOP_PANEL ? panel_height : 0, cw = 0, ch = 0;
+    for(n=0, c=head->next; c; c=c->next, ++n);      /* count windows on stack */
+    if((mode == TILE || mode == BSTACK) && n > 1) { /* adjust to match screen height/width */
+        d = (z - growth)%n + growth;
+        z = (z - growth)/n;
+    }
     if(!head->next || mode == MONOCLE) {
         for(c=head; c; c=c->next) XMoveResizeWindow(dis, c->win, cx, cy, ww + 2*BORDER_WIDTH, wh + 2*BORDER_WIDTH);
     } else if(mode == TILE) {
         XMoveResizeWindow(dis, head->win, cx, cy, master_size - BORDER_WIDTH, wh - BORDER_WIDTH);
         XMoveResizeWindow(dis, head->next->win, (cx = master_size + BORDER_WIDTH), cy,
-                         (cw = ww - master_size - 2*BORDER_WIDTH), (ch = winsz - BORDER_WIDTH) + growth);
-        for(cy+=winsz+growth, c=head->next->next; c; c=c->next, cy+=winsz) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
+                         (cw = ww - master_size - 2*BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
+        for(cy+=z+d, c=head->next->next; c; c=c->next, cy+=z) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
     } else if(mode == BSTACK) {
         XMoveResizeWindow(dis, head->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH);
         XMoveResizeWindow(dis, head->next->win, cx, (cy += master_size + BORDER_WIDTH),
-                         (cw = winsz - BORDER_WIDTH) + growth, (ch = wh - master_size - 2*BORDER_WIDTH));
-        for(cx+=winsz+growth, c=head->next->next; c; c=c->next, cx+=winsz) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
+                         (cw = z - BORDER_WIDTH) + d, (ch = wh - master_size - 2*BORDER_WIDTH));
+        for(cx+=z+d, c=head->next->next; c; c=c->next, cx+=z) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
     } else if(mode == GRID) {
         ++n;                              /* include head on window count */
         int cols, rows, cn=0, rn=0, i=0;  /* columns, rows, and current column and row number */
@@ -621,8 +619,7 @@ void tile(void) {
 }
 
 void togglepanel() {
-    showpanel = !showpanel;
-    wh += (showpanel) ? -PANEL_HEIGHT : +PANEL_HEIGHT;
+    wh += (showpanel = !showpanel) ? -PANEL_HEIGHT : +PANEL_HEIGHT;
     save_desktop(current_desktop);
     tile();
 }
