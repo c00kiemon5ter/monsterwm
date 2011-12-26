@@ -75,6 +75,7 @@ static void cleanup(void);
 static void client_to_desktop(const Arg *arg);
 static void configurerequest(XEvent *e);
 static void deletewindow(Window w);
+static void desktopinfo(void);
 static void destroynotify(XEvent *e);
 static void die(const char* errstr, ...);
 static void enternotify(XEvent *e);
@@ -145,10 +146,8 @@ static void (*events[LASTEvent])(XEvent *e) = {
 
 void add_window(Window w) {
     client *c;
-
     if(!(c = (client *)calloc(1, sizeof(client))))
         die("error: could not calloc() %u bytes\n", sizeof(client));
-
     if(!head) {
         head = c;
         head->prev = head;
@@ -165,8 +164,8 @@ void add_window(Window w) {
     c->win = w;
     current = c;
     save_desktop(current_desktop);
-
     if(FOLLOW_MOUSE) XSelectInput(dis, c->win, EnterWindowMask);
+    desktopinfo();
 }
 
 void buttonpressed(XEvent *e) {
@@ -207,12 +206,9 @@ void cleanup(void) {
     unsigned int nchildren;
 
     XUngrabKey(dis, AnyKey, AnyModifier, root);
-
     XQueryTree(dis, root, &root_return, &parent_return, &children, &nchildren);
-    for(unsigned int i = 0; i < nchildren; i++)
-        deletewindow(children[i]);
+    for(unsigned int i = 0; i<nchildren; i++) deletewindow(children[i]);
     if(children) XFree(children);
-
     XSync(dis, False);
     XSetInputFocus(dis, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
@@ -266,11 +262,24 @@ void deletewindow(Window w) {
     XSendEvent(dis, w, False, NoEventMask, &ev);
 }
 
+void desktopinfo(void) {
+    int cd = current_desktop;
+    save_desktop(cd);
+    for(int n=0, d=0; d<DESKTOPS; d++, n=0) {
+        select_desktop(d);
+        for(client *c=head; c; c=c->next, ++n);
+        printf("%d:%d%c", d, n, d+1==DESKTOPS?'\n':' ');
+    }
+    fflush(stdout);
+    select_desktop(cd);
+}
+
 void destroynotify(XEvent *e) {
     XDestroyWindowEvent *ev = &e->xdestroywindow;
     client *c;
     if((c = wintoclient(ev->window)))
         removeclient(c);
+    desktopinfo();
 }
 
 void die(const char *errstr, ...) {
@@ -682,6 +691,7 @@ int main(int argc, char *argv[]) {
     if(!(dis = XOpenDisplay(NULL)))
         die("error: cannot open display\n");
     setup();
+    desktopinfo(); /* zero out every desktop on (re)start */
     run();
     cleanup();
     XCloseDisplay(dis);
