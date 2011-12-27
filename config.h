@@ -39,14 +39,14 @@
 #define BORDER_WIDTH    2         /* window border width */
 #define FOCUS           "#ff950e" /* focused window border color   */
 #define UNFOCUS         "#444444" /* unfocused window border color */
-#define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
+#define DESKTOPS        3         /* number of desktops - edit DESKTOPCHANGE keys to suit */
 #define DEFAULT_DESKTOP 0         /* the desktop to focus on exec */
 #define MINWSZ          50        /* minimum window size in pixels */
 
 /** open applications to specified desktop **/
 static const AppRule rules[] = { \
     /*  class      desktop    follow */
-    { "MPlayer",      3,       True   },
+    { "MPlayer",      2,       True   },
 };
 
 /* helper for spawning shell commands */
@@ -112,7 +112,6 @@ static key keys[] = {
        DESKTOPCHANGE(    XK_F1,                             0)
        DESKTOPCHANGE(    XK_F2,                             1)
        DESKTOPCHANGE(    XK_F3,                             2)
-       DESKTOPCHANGE(    XK_F4,                             3)
 };
 
 #endif
