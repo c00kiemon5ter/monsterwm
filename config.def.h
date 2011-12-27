@@ -23,7 +23,7 @@
 /** buttons **/
 #define MOD1            Mod1Mask    /* ALT key */
 #define MOD4            Mod4Mask    /* Super/Windows key */
-#define CONTROL         ControlMask /* Cotrol key */
+#define CONTROL         ControlMask /* Control key */
 #define SHIFT           ShiftMask   /* Shift key */
 
 /** generic settings **/

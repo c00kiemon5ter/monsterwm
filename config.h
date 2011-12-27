@@ -23,7 +23,7 @@
 /** buttons **/
 #define MOD1            Mod1Mask    /* ALT key */
 #define MOD4            Mod4Mask    /* Super/Windows key */
-#define CONTROL         ControlMask /* Cotrol key */
+#define CONTROL         ControlMask /* Control key */
 #define SHIFT           ShiftMask   /* Shift key */
 
 /** generic settings **/
@@ -46,7 +46,7 @@
 /** open applications to specified desktop **/
 static const AppRule rules[] = { \
     /*  class      desktop    follow */
-    { "MPlayer",      3,       True  },
+    { "MPlayer",      3,       True   },
 };
 
 /* helper for spawning shell commands */
