@@ -355,42 +355,32 @@ void maprequest(XEvent *e) {
     if(XGetWindowAttributes(dis, ev->window, &wa) && wa.override_redirect) return;
     if(wintoclient(ev->window)) return;
 
-    /* window is transient */
     Window trans;
-    if(XGetTransientForHint(dis, ev->window, &trans) && trans) {
-        add_window(ev->window);
-        XMapWindow(dis, ev->window);
-        update_current();
-        return;
-    }
+    Bool follow = False, winistrans = XGetTransientForHint(dis, ev->window, &trans) && trans;
+    int cd = current_desktop, nd = current_desktop;
 
-    /* window is normal and has a rule set */
     XClassHint ch = {0, 0};
-    if(XGetClassHint(dis, ev->window, &ch))
+    if(!winistrans && XGetClassHint(dis, ev->window, &ch))
         for(unsigned int i=0; i<LENGTH(rules); i++) {
             if(strcmp(ch.res_class, rules[i].class)
             && strcmp(ch.res_name, rules[i].class)) continue;
-            int cd = current_desktop;
-            save_desktop(cd);
-            select_desktop(rules[i].desktop);
-            add_window(ev->window);
-            select_desktop(cd);
-            if(cd == rules[i].desktop) {
-                tile();
-                XMapWindow(dis, ev->window);
-                update_current();
-            } else if(rules[i].follow)
-                change_desktop(&(Arg){.i = rules[i].desktop});
+            nd = rules[i].desktop;
+            follow = rules[i].follow;
             if(ch.res_class) XFree(ch.res_class);
             if(ch.res_name)  XFree(ch.res_name);
-            return;
+            break;
         }
 
-    /* window is normal and has no rule set */
+    save_desktop(cd);
+    select_desktop(nd);
     add_window(ev->window);
-    tile();
-    XMapWindow(dis, ev->window);
-    update_current();
+    select_desktop(cd);
+    if(cd == nd) {
+        if(!winistrans) tile();
+        XMapWindow(dis, ev->window);
+        update_current();
+    }
+    if(follow) change_desktop(&(Arg){.i = nd});
 }
 
 void move_down() {
