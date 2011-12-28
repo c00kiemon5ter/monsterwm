@@ -165,13 +165,11 @@ void add_window(Window w) {
     current = c;
     save_desktop(current_desktop);
     if(FOLLOW_MOUSE) XSelectInput(dis, c->win, EnterWindowMask);
-    desktopinfo();
 }
 
 void buttonpressed(XEvent *e) {
     client *c;
     XButtonPressedEvent *ev = &e->xbutton;
-
     if(CLICK_TO_FOCUS && ev->window != current->win && ev->button == Button1)
         for(c=head; c; c=c->next)
             if(ev->window == c->win) {
@@ -184,19 +182,17 @@ void buttonpressed(XEvent *e) {
 void change_desktop(const Arg *arg) {
     if(arg->i == current_desktop) return;
     previous_desktop = current_desktop;
-
     /* save current desktop settings and unmap windows */
     save_desktop(current_desktop);
     for(client *c=head; c; c=c->next)
         XUnmapWindow(dis, c->win);
-
     /* read new desktop properties, tile and map new windows */
     select_desktop(arg->i);
     tile();
     if(mode == MONOCLE && current) XMapWindow(dis, current->win);
     else for(client *c=head; c; c=c->next) XMapWindow(dis, c->win);
-
     update_current();
+    desktopinfo();
 }
 
 void cleanup(void) {
@@ -215,7 +211,6 @@ void cleanup(void) {
 
 void client_to_desktop(const Arg *arg) {
     if(arg->i == current_desktop || !current) return;
-
     client *c = current;
     int cd = current_desktop;
 
@@ -230,14 +225,12 @@ void client_to_desktop(const Arg *arg) {
 
     tile();
     update_current();
-
     if(FOLLOW_WINDOW) change_desktop(arg);
 }
 
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     XWindowChanges wc;
-
     wc.x = ev->x;
     wc.y = ev->y + (showpanel && TOP_PANEL) ? PANEL_HEIGHT : 0;
     wc.width  = (ev->width  < ww - BORDER_WIDTH) ? ev->width  : ww + BORDER_WIDTH;
@@ -245,7 +238,6 @@ void configurerequest(XEvent *e) {
     wc.border_width = ev->border_width;
     wc.sibling    = ev->above;
     wc.stack_mode = ev->detail;
-
     XConfigureWindow(dis, ev->window, ev->value_mask, &wc);
     XSync(dis, False);
     tile();
@@ -268,7 +260,7 @@ void desktopinfo(void) {
     for(int n=0, d=0; d<DESKTOPS; d++, n=0) {
         select_desktop(d);
         for(client *c=head; c; c=c->next, ++n);
-        printf("%d:%d%c", d, n, d+1==DESKTOPS?'\n':' ');
+        printf("%d:%d:%d:%d%c", d, n, mode, current_desktop==cd?1:0, d+1==DESKTOPS?'\n':' ');
     }
     fflush(stdout);
     select_desktop(cd);
@@ -381,6 +373,7 @@ void maprequest(XEvent *e) {
         update_current();
     }
     if(follow) change_desktop(&(Arg){.i = nd});
+    desktopinfo();
 }
 
 void move_down() {
@@ -569,6 +562,7 @@ void switch_mode(const Arg *arg) {
     master_size = (mode == BSTACK ? wh : ww) * MASTER_SIZE;
     tile();
     update_current();
+    desktopinfo();
 }
 
 void tile(void) {
