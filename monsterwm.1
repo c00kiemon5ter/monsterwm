@@ -1,0 +1,120 @@
+.TH MONSTERWM 1 monsterwm
+.SH NAME
+monsterwm \- minimal and dynamic tiling window manager
+.SH SYNOPSIS
+.B monsterwm
+.RB [ \-v ]
+.SH DESCRIPTION
+monsterwm is a very minimal, lightweight, monsterous, tiny, dynamic tiling
+window manager. It will try to stay as small as possible. It looks a lot like
+.I dwm
+with gridlayout, bstack, pertag, dwmreturn patches builtin, but without
+floating mode(currently).
+.P
+.SH MODES
+It allows the "normal" method of tiling window managers (with the new window as
+the master) and with the new window opened at the bottom of the stack (like
+.I dwm's
+attach_aside).
+.P
+.B monsterwm
+three other modes available:
+.I Bottom stack
+where the slave clients (the smaller "windows") are tiled beneath the master.
+.I Grid mode
+where, once there are four or more cliens in a workspace, they are all
+equally divided into a grid.
+.I Monocle mode
+or fullscreen mode, where the clients take up the entire workspace, and additional
+clients are hidden behind the current shown window.
+.SH OPTIONS
+.TP
+.B \-v
+prints version information to standard output, then exits.
+.SH USAGE
+.SS Status bar
+monsterwm does not provide a status bar. Consistent with the Unix philosophy,
+monsterwm provides information to the status bar or panel of choice via text.
+.SS Keyboard commands
+All of
+.I monsterwm's
+commands can be customized by editing
+.I config.h
+and recompiling. The default key-bindings include:
+.TP
+.B Mod1\-Shift\-Return
+Start
+.BR xterm (1).
+.TP
+.B Mod4\-v
+Start
+.BR dmenu (1).
+.TP
+.B Mod1\-b
+Toggles the panel on and off.
+.TP
+.B Mod1\-Shift\-t
+Sets tiled layout.
+.TP
+.B Mod1\-Shift\-m
+Sets monocle layout.
+.TP
+.B Mod1\-Shift\-b
+Sets bottom stack layout
+.TP
+.B Mod1\-Shift\-g
+Sets grid layout
+.TP
+.B Mod1\-j
+Focus next window.
+.TP
+.B Mod1\-k
+Focus previous window.
+.TP
+.B Mod1\-Shift\-j
+Move the focussed window down the stack
+.TP
+.B Mod1\-Shift\-k
+Move the focussed window up the stack
+.TP
+.B Mod1\-l
+Increase master area size.
+.TP
+.B Mod1\-h
+Decrease master area size.
+.TP
+.B Mod1\-Return
+Swaps the focused window to/from master area (tiled layouts only).
+.TP
+.B Mod1\-Shift\-{Left,Right}
+Rotate to the next/previous desktop
+.TP
+.B Mod1\-Shift\-c
+Close focused window.
+.TP
+.B Mod1\-Tab
+Toggles to the last selected desktop.
+.TP
+.B Mod1\-Shift\-q
+Quit monsterwm.
+.TP
+.B F{1..n}
+Move to the nth workspace. By default,
+.I monsterwm
+is configured with four workspaces.
+.SH CUSTOMIZATION
+.I monsterwm
+is customized by copying
+.I config.def.h
+to
+.I config.h
+and (re)compiling the source code.
+.SH SEE ALSO
+.BR dmenu (1)
+.SH BUGS
+.I monsterwm
+is under active development. Please report all bugs to the author.
+.SH AUTHOR
+Ivan Kanakarakis <ivan.kanak at gmail.com>
+
+
