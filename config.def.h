@@ -51,7 +51,7 @@ static const AppRule rules[] = { \
 };
 
 /* helper for spawning shell commands */
-#define SHCMD(cmd) {.com = (const char*[]){"/bin/bash", "-c", cmd, NULL}}
+#define SHCMD(cmd) {.com = (const char*[]){"/bin/sh", "-c", cmd, NULL}}
 
 /** commands **/
 static const char *termcmd[]  = { "xterm", NULL };
