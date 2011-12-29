@@ -49,6 +49,7 @@ typedef struct {
 typedef struct client {
     struct client *next;
     struct client *prev;
+    Bool isurgent;
     Window win;
 } client;
 
@@ -79,6 +80,7 @@ static void desktopinfo(void);
 static void destroynotify(XEvent *e);
 static void die(const char* errstr, ...);
 static void enternotify(XEvent *e);
+static void focusurgent();
 static unsigned long getcolor(const char* color);
 static void grabkeys(void);
 static void keypress(XEvent *e);
@@ -89,6 +91,7 @@ static void move_down();
 static void move_up();
 static void next_win();
 static void prev_win();
+static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
 static void removeclient(client *c);
 static void resize_master(const Arg *arg);
@@ -142,6 +145,7 @@ static void (*events[LASTEvent])(XEvent *e) = {
     [EnterNotify] = enternotify,
     [KeyPress] = keypress,
     [MapRequest] = maprequest,
+    [PropertyNotify] = propertynotify,
 };
 
 void add_window(Window w) {
@@ -164,6 +168,7 @@ void add_window(Window w) {
     c->win = w;
     current = c;
     save_desktop(current_desktop);
+    XSelectInput(dis, c->win, PropertyChangeMask);
     if (FOLLOW_MOUSE) XSelectInput(dis, c->win, EnterWindowMask);
 }
 
@@ -255,12 +260,13 @@ void deletewindow(Window w) {
 }
 
 void desktopinfo(void) {
+    Bool urgent = False;
     int cd = current_desktop;
     save_desktop(cd);
-    for (int n=0, d=0; d<DESKTOPS; d++, n=0) {
+    for (int n=0, d=0; d<DESKTOPS; d++, n=0, urgent = False) {
         select_desktop(d);
-        for (client *c=head; c; c=c->next, ++n);
-        printf("%d:%d:%d:%d%c", d, n, mode, current_desktop==cd?1:0, d+1==DESKTOPS?'\n':' ');
+        for (client *c=head; c; c=c->next, ++n) if (c->isurgent) urgent = True;
+        fprintf(stdout, "%d:%d:%d:%d:%d%c", d, n, mode, current_desktop == cd, urgent, d+1==DESKTOPS?'\n':' ');
     }
     fflush(stdout);
     select_desktop(cd);
@@ -269,8 +275,7 @@ void desktopinfo(void) {
 void destroynotify(XEvent *e) {
     XDestroyWindowEvent *ev = &e->xdestroywindow;
     client *c;
-    if ((c = wintoclient(ev->window)))
-        removeclient(c);
+    if ((c = wintoclient(ev->window))) removeclient(c);
     desktopinfo();
 }
 
@@ -297,6 +302,11 @@ void enternotify(XEvent *e) {
     }
 }
 
+void focusurgent() {
+    for (client *c=head; c; c=c->next) if (c->isurgent) current = c;
+    update_current();
+}
+
 unsigned long getcolor(const char* color) {
     Colormap map = DefaultColormap(dis, screen);
     XColor c;
@@ -308,13 +318,12 @@ unsigned long getcolor(const char* color) {
 
 void grabkeys(void) {
     KeyCode code;
-
     XUngrabKey(dis, AnyKey, AnyModifier, root);
     for (unsigned int i=0; i<LENGTH(keys); i++) {
         code = XKeysymToKeycode(dis, keys[i].keysym);
-        XGrabKey(dis, code, keys[i].mod, root, True, GrabModeAsync, GrabModeAsync);
-        XGrabKey(dis, code, keys[i].mod | LockMask, root, True, GrabModeAsync, GrabModeAsync);
-        XGrabKey(dis, code, keys[i].mod | numlockmask, root, True, GrabModeAsync, GrabModeAsync);
+        XGrabKey(dis, code, keys[i].mod,                          root, True, GrabModeAsync, GrabModeAsync);
+        XGrabKey(dis, code, keys[i].mod |               LockMask, root, True, GrabModeAsync, GrabModeAsync);
+        XGrabKey(dis, code, keys[i].mod | numlockmask,            root, True, GrabModeAsync, GrabModeAsync);
         XGrabKey(dis, code, keys[i].mod | numlockmask | LockMask, root, True, GrabModeAsync, GrabModeAsync);
     }
 }
@@ -413,6 +422,18 @@ void prev_win() {
     current = current->prev;
     if (mode == MONOCLE) XMapWindow(dis, current->win);
     update_current();
+}
+
+void propertynotify(XEvent *e) {
+    XPropertyEvent *ev = &e->xproperty;
+    client *c;
+    if ((c = wintoclient(ev->window)))
+        if (ev->atom == XA_WM_HINTS) {
+            XWMHints *wmh = XGetWMHints(dis, ev->window);
+            c->isurgent = wmh && (wmh->flags & XUrgencyHint);
+            XFree(wmh);
+            desktopinfo();
+        }
 }
 
 void quit(const Arg *arg) {
@@ -518,7 +539,7 @@ void setup(void) {
 
     /* check if another window manager is running */
     xerrorxlib = XSetErrorHandler(xerrorstart);
-    XSelectInput(dis, DefaultRootWindow(dis), SubstructureNotifyMask|SubstructureRedirectMask);
+    XSelectInput(dis, DefaultRootWindow(dis), SubstructureNotifyMask|SubstructureRedirectMask|PropertyChangeMask);
     XSync(dis, False);
     XSetErrorHandler(xerror);
     XSync(dis, False);
