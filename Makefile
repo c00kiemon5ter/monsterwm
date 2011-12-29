@@ -49,12 +49,14 @@ clean:
 
 install: all
 	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
-	@mkdir -p ${DESTDIR}${PREFIX}/bin
-	@cp -f ${WMNAME} ${DESTDIR}${PREFIX}/bin
-	@chmod 755 ${DESTDIR}${PREFIX}/bin/${WMNAME}
+	@install -Dm755 ${WMNAME} ${DESTDIR}${PREFIX}/bin/${WMNAME}
+	@echo installing manual page to ${DESTDIR}${MANPREFIX}/man.1
+	@install -Dm644 ${WMNAME}.1 ${DESTDIR}${MANPREFIX}/man1/${WMNAME}.1
 
 uninstall:
 	@echo removing executable file from ${DESTDIR}${PREFIX}/bin
 	@rm -f ${DESTDIR}${PREFIX}/bin/${WMNAME}
+	@echo removing manual page from ${DESTDIR}${MANPREFIX}/man1
+	@rm -f ${DESTDIR}${MANPREFIX}/man1/${WMNAME}.1
 
 .PHONY: all options clean install uninstall
