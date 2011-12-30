@@ -3,3 +3,4 @@ monsterwm
 *.swp
 *~
 *.diff
+config.h
