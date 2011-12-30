@@ -174,8 +174,7 @@ void change_desktop(const Arg *arg) {
     previous_desktop = current_desktop;
     /* save current desktop settings and unmap windows */
     save_desktop(current_desktop);
-    for (client *c=head; c; c=c->next)
-        XUnmapWindow(dis, c->win);
+    for (client *c=head; c; c=c->next) XUnmapWindow(dis, c->win);
     /* read new desktop properties, tile and map new windows */
     select_desktop(arg->i);
     tile();
@@ -344,30 +343,28 @@ void maprequest(XEvent *e) {
 
     Window trans;
     Bool follow = False, winistrans = XGetTransientForHint(dis, ev->window, &trans) && trans;
-    int cd = current_desktop, nd = current_desktop;
 
+    int cd = current_desktop, newdsk = current_desktop;
     XClassHint ch = {0, 0};
     if (!winistrans && XGetClassHint(dis, ev->window, &ch))
-        for (unsigned int i=0; i<LENGTH(rules); i++) {
-            if (strcmp(ch.res_class, rules[i].class)
-            && strcmp(ch.res_name, rules[i].class)) continue;
-            nd = rules[i].desktop;
-            follow = rules[i].follow;
-            if (ch.res_class) XFree(ch.res_class);
-            if (ch.res_name)  XFree(ch.res_name);
-            break;
-        }
+        for (unsigned int i=0; i<LENGTH(rules); i++)
+            if (!strcmp(ch.res_class, rules[i].class) || !strcmp(ch.res_name, rules[i].class)) {
+                follow = rules[i].follow;
+                newdsk = rules[i].desktop;
+                break;
+            }
+    if (ch.res_class) XFree(ch.res_class);
+    if (ch.res_name) XFree(ch.res_name);
 
     save_desktop(cd);
-    select_desktop(nd);
+    select_desktop(newdsk);
     add_window(ev->window);
     select_desktop(cd);
-    if (cd == nd) {
+    if (cd == newdsk) {
         if (!winistrans) tile();
         XMapWindow(dis, ev->window);
         update_current();
-    }
-    if (follow) change_desktop(&(Arg){.i = nd});
+    } else if (follow) change_desktop(&(Arg){.i = newdsk});
     desktopinfo();
 }
 
