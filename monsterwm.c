@@ -231,6 +231,7 @@ void client_to_desktop(const Arg *arg) {
     tile();
     update_current();
     if (FOLLOW_WINDOW) change_desktop(arg);
+    desktopinfo();
 }
 
 void configurerequest(XEvent *e) {
