@@ -474,6 +474,7 @@ void run(void) {
 }
 
 void save_desktop(int i) {
+    if (i >= DESKTOPS) return;
     desktops[i].master_size = master_size;
     desktops[i].mode = mode;
     desktops[i].growth = growth;
@@ -483,7 +484,7 @@ void save_desktop(int i) {
 }
 
 void select_desktop(int i) {
-    if (current_desktop == i) return;
+    if (i >= DESKTOPS || i == current_desktop) return;
     master_size = desktops[i].master_size;
     mode = desktops[i].mode;
     growth = desktops[i].growth;
