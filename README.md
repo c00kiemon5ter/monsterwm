@@ -104,3 +104,7 @@ For any bug or request [fill an issue][bug] on [GitHub][ghp] or report on the [A
   [bug]: https://github.com/c00kiemon5ter/monsterwm/issues
   [ghp]: https://github.com/c00kiemon5ter/monsterwm
 
+License
+-------
+Licensed under MIT/X Consortium License, see [LICENSE][law] file for more copyright and license information.
+

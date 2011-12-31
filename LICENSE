@@ -1,10 +1,3 @@
---- --- --- --- --- --- --- --- --- --- --- --- ---
-Based on:
- - dwm     : http://dwm.suckless.org/
- - dminiwm : https://github.com/moetunes/dminiwm
- - catwm   : https://github.com/pyknite/catwm
---- --- --- --- --- --- --- --- --- --- --- --- ---
-
 MIT/X Consortium License
 
 © 2011 Ivan c00kiemon5ter Kanakarakis <ivan.kanak at gmail dot com>
