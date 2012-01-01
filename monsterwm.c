@@ -33,7 +33,6 @@ typedef struct {
 
 typedef struct client {
     struct client *next;
-    struct client *prev;
     Bool isurgent;
     Window win;
 } client;
@@ -134,22 +133,19 @@ static void (*events[LASTEvent])(XEvent *e) = {
 };
 
 void add_window(Window w) {
-    client *c;
+    client *c, *t;
     if (!(c = (client *)calloc(1, sizeof(client))))
         die("error: could not calloc() %u bytes\n", sizeof(client));
-    if (!head) {
-        head = c;
-        head->prev = head;
-    } else if (ATTACH_ASIDE) {
-        head->prev->next = c;
-        c->prev = head->prev;
-        head->prev = c;
+
+    if (!head) head = c;
+    else if (ATTACH_ASIDE) {
+        for(t=head; t->next; t=t->next); /* get the last client */
+        t->next = c;
     } else {
-        c->prev = head->prev;
-        head->prev = c;
-        c->next = head;
+        c->next = (t = head);
         head = c;
     }
+
     c->win = w;
     current = c;
     save_desktop(current_desktop);
@@ -368,31 +364,91 @@ void maprequest(XEvent *e) {
     desktopinfo();
 }
 
+/* move the current client, to current->next
+ * and current->next to current client's position
+ */
 void move_down() {
-    if (!current || head->prev == head) return;
-    client *next = (current->next) ? current->next : head;
-    Window tmpwin = current->win;
-    current->win = next->win;
-    next->win = tmpwin;
-    current = next;
+    if (!current || !head->next) return;
+    /* p is previous, n is next, if current is head n is last, c is current */
+    client *p, *n = (current->next) ? current->next : head;
+    for (p=head; p && p->next != current; p=p->next); /* get previous from current */
+    /* if there's a previous client then p->next should be what's after c
+     * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
+     */
+    if (p) p->next = current->next;
+    /* else if no p client, then c is head, swapping with n should update head
+     * [c]->[n]->..  ==>  [n]->[c]->..
+     *  ^head              ^head
+     */
+    else head = n;
+    /* if c is the last client, c will be the current head
+     * [n]->..->[p]->[c]->NULL  ==>  [c]->[n]->..->[p]->NULL
+     *  ^head                         ^head
+     * else c will take the place of n, so c-next will be n->next
+     * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
+     */
+    current->next = (current->next) ? n->next : n;
+    /* if c was swapped with n then they now point to the same ->next. n->next should be c
+     * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->..  ==>  ..->[p]->[n]->[c]->..
+     *                                        [c]-^
+     */
+    if (current->next == n->next) n->next = current;
+    /* else c is the last client and n is head,
+     * so c will be move to be head, no need to update n->next
+     * [n]->..->[p]->[c]->NULL  ==>  [c]->[n]->..->[p]->NULL
+     *  ^head                         ^head
+     */
+    else head = current;
+
     save_desktop(current_desktop);
     tile();
     update_current();
 }
 
+/* move the current client, to the previous from current
+ * and the previous from  current to current client's position
+ */
 void move_up() {
-    if (!current || head->prev == head) return;
-    Window tmpwin = current->win;
-    current->win = current->prev->win;
-    current->prev->win = tmpwin;
-    current = current->prev;
+    if (!current || !head->next) return;
+    client *pp = NULL, *p;
+    /* p is previous from current or last if current is head */
+    for (p=head; p->next; p=p->next) if (p->next == current) break;
+    /* pp is previous from p, or null if current is head and thus p is last */
+    if (p->next) for (pp=head; pp; pp=pp->next) if (pp->next == p) break;
+    /* if p has a previous client then the next client should be current (current is c)
+     * ..->[pp]->[p]->[c]->..  ==>  ..->[pp]->[c]->[p]->..
+     */
+    if (pp) pp->next = current;
+    /* if p doesn't have a previous client, then p might be head, so head must change to c
+     * [p]->[c]->..  ==>  [c]->[p]->..
+     *  ^head              ^head
+     * if p is not head, then c is head (and p is last), so the new head is next of c
+     * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
+     *  ^head         ^last           ^head         ^last
+     */
+    else head = (current == head) ? current->next : current;
+    /* next of p should be next of c
+     * ..->[pp]->[p]->[c]->[n]->..  ==>  ..->[pp]->[c]->[p]->[n]->..
+     * except if c was head (now c->next is head), so next of p should be c
+     * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
+     *  ^head         ^last           ^head         ^last
+     */
+    p->next = (current->next == head) ? current : current->next;
+    /* next of c should be p
+     * ..->[pp]->[p]->[c]->[n]->..  ==>  ..->[pp]->[c]->[p]->[n]->..
+     * except if c was head (now c->next is head), so c is must be last
+     * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
+     *  ^head         ^last           ^head         ^last
+     */
+    current->next = (current->next == head) ? NULL : p;
+
     save_desktop(current_desktop);
     tile();
     update_current();
 }
 
 void next_win() {
-    if (!current || head->prev == head) return;
+    if (!current || !head->next) return;
     if (mode == MONOCLE) XUnmapWindow(dis, current->win);
     current = (current->next) ? current->next : head;
     if (mode == MONOCLE) XMapWindow(dis, current->win);
@@ -400,9 +456,10 @@ void next_win() {
 }
 
 void prev_win() {
-    if (!current || head->prev == head) return;
+    if (!current || !head->next) return;
     if (mode == MONOCLE) XUnmapWindow(dis, current->win);
-    current = current->prev;
+    if (head == current) while (current->next) current=current->next;
+    else for (client *t=head; t; t=t->next) if (t->next == current) { current = t; break; }
     if (mode == MONOCLE) XMapWindow(dis, current->win);
     update_current();
 }
@@ -426,23 +483,13 @@ void quit(const Arg *arg) {
 
 void removeclient(client *c) {
     if (c == head) {
-        if (head->next) {            /* more windows on screen */
-            head->next->prev = head->prev;
-            head = head->next;
-        } else {                    /* head is only window on screen */
-            free(head);
-            head = head->prev = NULL;
-        }
+        if (head->next) head = head->next; /* more windows on screen */
+        else { free(head); head = NULL; }  /* head is only window on screen */
         current = head;
     } else {
-        if (c->next) {               /* w is somewhere in the middle */
-            c->next->prev = c->prev;
-            c->prev->next = c->next;
-        } else {                    /* w is last window on screen */
-            head->prev = c->prev;
-            c->prev->next = NULL;
-        }
-        current = c->prev;
+        client *p; for (p=head; p; p=p->next) if (p->next == c) break;
+        (current = p)->next = c->next;
+        free(c);
     }
     save_desktop(current_desktop);
     tile();
@@ -550,10 +597,10 @@ void spawn(const Arg *arg) {
 
 void swap_master() {
     if (!current || !head->next || mode == MONOCLE) return;
-    Window tmpwin = head->win;
-    current = (current == head) ? head->next : current;
-    head->win = current->win;
-    current->win = tmpwin;
+    /* if current is head swap with next window */
+    if (current == head) move_down();
+    /* if not head, then head is always behind us, so move_up until is head */
+    else while (current != head) move_up();
     current = head;
     save_desktop(current_desktop);
     tile();
