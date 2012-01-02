@@ -146,23 +146,17 @@ void add_window(Window w) {
         head = c;
     }
 
-    c->win = w;
-    current = c;
+    (current = c)->win = w;
     save_desktop(current_desktop);
     XSelectInput(dis, c->win, PropertyChangeMask);
     if (FOLLOW_MOUSE) XSelectInput(dis, c->win, EnterWindowMask);
 }
 
 void buttonpressed(XEvent *e) {
-    client *c;
     XButtonPressedEvent *ev = &e->xbutton;
     if (CLICK_TO_FOCUS && ev->window != current->win && ev->button == Button1)
-        for (c=head; c; c=c->next)
-            if (ev->window == c->win) {
-                current = c;
-                update_current();
-                return;
-            }
+        for (client *c=head; c; c=c->next) if (ev->window == c->win) { current = c; break; }
+    update_current();
 }
 
 void change_desktop(const Arg *arg) {
@@ -242,11 +236,10 @@ void deletewindow(Window w) {
 
 void desktopinfo(void) {
     Bool urgent = False;
-    int cd = current_desktop;
-    save_desktop(cd);
-    for (int n=0, d=0; d<DESKTOPS; d++, n=0, urgent = False) {
-        select_desktop(d);
-        for (client *c=head; c; c=c->next, ++n) if (c->isurgent) urgent = True;
+    int cd, n=0, d=0;
+    save_desktop(cd = current_desktop);
+    for (client *c; d<DESKTOPS; d++) {
+        for (select_desktop(d), c=head, n=0, urgent=False; c; c=c->next, ++n) if (c->isurgent) urgent = True;
         fprintf(stdout, "%d:%d:%d:%d:%d%c", d, n, mode, current_desktop == cd, urgent, d+1==DESKTOPS?'\n':' ');
     }
     fflush(stdout);
@@ -269,18 +262,12 @@ void die(const char *errstr, ...) {
 }
 
 void enternotify(XEvent *e) {
-    client *c;
     XCrossingEvent *ev = &e->xcrossing;
-
-    if (FOLLOW_MOUSE) {
-        if ((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root) return;
-        for (c=head; c; c=c->next)
-            if (ev->window == c->win) {
-                current = c;
-                update_current();
-                return;
-            }
-    }
+    if (FOLLOW_MOUSE)
+        if ((ev->mode == NotifyNormal && ev->detail != NotifyInferior) || ev->window == root)
+            for (current=head; current; current=current->next)
+                if (ev->window == current->win) { update_current(); break; }
+    if (!current) current = head;
 }
 
 void focusurgent() {
@@ -310,13 +297,10 @@ void grabkeys(void) {
 }
 
 void keypress(XEvent *e) {
-    static unsigned int len = sizeof keys / sizeof keys[0];
-    unsigned int i;
     KeySym keysym;
     XKeyEvent *ev = &e->xkey;
-
     keysym = XKeycodeToKeysym(dis, (KeyCode)ev->keycode, 0);
-    for (i = 0; i < len; i++)
+    for (unsigned int i=0; i<LENGTH(keys); i++)
         if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(ev->state) && keys[i].function)
                 keys[i].function(&keys[i].arg);
 }
@@ -371,7 +355,7 @@ void move_down() {
     if (!current || !head->next) return;
     /* p is previous, n is next, if current is head n is last, c is current */
     client *p, *n = (current->next) ? current->next : head;
-    for (p=head; p && p->next != current; p=p->next); /* get previous from current */
+    for (p=head; p && p->next != current; p=p->next);
     /* if there's a previous client then p->next should be what's after c
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
      */
@@ -513,9 +497,7 @@ void rotate_desktop(const Arg *arg) {
 
 void run(void) {
     XEvent ev;
-    while(running && !XNextEvent(dis, &ev))
-        if (events[ev.type])
-            events[ev.type](&ev);
+    while(running && !XNextEvent(dis, &ev)) if (events[ev.type]) events[ev.type](&ev);
 }
 
 void save_desktop(int i) {
@@ -548,8 +530,7 @@ void setup(void) {
     ww = XDisplayWidth(dis,  screen) - BORDER_WIDTH;
     wh = XDisplayHeight(dis, screen) - (SHOW_PANEL ? PANEL_HEIGHT : 0) - BORDER_WIDTH;
     master_size = ((mode == BSTACK) ? wh : ww) * MASTER_SIZE;
-    for (int i=0; i<DESKTOPS; i++)
-        save_desktop(i);
+    for (unsigned int i=0; i<DESKTOPS; i++) save_desktop(i);
     change_desktop(&(Arg){.i = DEFAULT_DESKTOP});
 
     win_focus = getcolor(FOCUS);
@@ -650,17 +631,12 @@ void tile(void) {
         rows = n/cols;
         cw = cols ? ww/cols : ww;
         for (i=0, c=head; c; c=c->next, i++) {
-            if (i/rows + 1 > cols - n%cols)
-                rows = n/cols + 1;
+            if (i/rows + 1 > cols - n%cols) rows = n/cols + 1;
             ch = h/rows;
             cx = 0 + cn*cw;
             cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0) + rn*ch;
             XMoveResizeWindow(dis, c->win, cx, cy, cw - 2*BORDER_WIDTH, ch - 2*BORDER_WIDTH);
-            rn++;
-            if (rn >= rows) {
-                rn = 0;
-                cn++;
-            }
+            if (++rn >= rows) { rn = 0; cn++; }
         }
     } else fprintf(stderr, "error: no such layout mode: %d\n", mode);
     free(c);
@@ -723,10 +699,8 @@ int main(int argc, char *argv[]) {
     if (argc == 2 && strcmp("-v", argv[1]) == 0) {
         fprintf(stdout, "%s-%s\n", WMNAME, VERSION);
         return EXIT_SUCCESS;
-    } else if (argc != 1)
-        die("usage: %s [-v]\n", WMNAME);
-    if (!(dis = XOpenDisplay(NULL)))
-        die("error: cannot open display\n");
+    } else if (argc != 1) die("usage: %s [-v]\n", WMNAME);
+    if (!(dis = XOpenDisplay(NULL))) die("error: cannot open display\n");
     setup();
     desktopinfo(); /* zero out every desktop on (re)start */
     run();
