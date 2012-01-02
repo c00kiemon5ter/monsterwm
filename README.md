@@ -1,30 +1,23 @@
 monsterwm
 =========
 
-### tiny and monsterous!
+→ tiny and monsterous!
+----------------------
 
-This is a branch off of moetunes [dminiwm][], which in turn was based on [catwm][] by [pyknite][].
-Credits and licensing included in `monsterwm.c` and/or `config.def.h`.
+**monsterwm** is a minimal, lightweight, tiny but monsterous dynamic tiling window manager.
+It will try to stay as small as possible. Currently under 700 lines with the config file included.
+It provides a set of different layout modes (see below), but has no floating mode support yet.
+Each virtual desktop has its own properties, unaffected by other desktops' settings.
 For screenshots and ramblings/updates check the [topic on ArchLinux forums][monsterwm].
 
-  [pyknite]: https://github.com/pyknite
-  [catwm]: https://bbs.archlinux.org/viewtopic.php?id=100215
-  [dminiwm]: https://bbs.archlinux.org/viewtopic.php?id=126463
-  [monsterwm]: https://bbs.archlinux.org/viewtopic.php?pid=1029955
+  [monsterwm]: https://bbs.archlinux.org/viewtopic.php?id=132122
 
-
-Summary
--------
-
-**monsterwm** is a very minimal, lightweight, monsterous, tiny, dynamic tiling window manager.
-It will try to stay as small as possible. Currently under 700 lines with the config file included.
-It's like dwm with gridlayout, bstack, pertag, dwmreturn patches builtin, but without floating mode.
 
 Modes
 -----
 
-It allows the "normal" method of tiling window managers (with the new window as the master)
-and with the new window opened at the bottom of the stack (like `dwm`'s attach\_aside)
+Monsterwm allows opening the new window as master or
+opening the window at the bottom of the stack (attach\_aside)
 
 ---
 
@@ -67,8 +60,8 @@ and with the new window opened at the bottom of the stack (like `dwm`'s attach\_
 
     -------------
     |           |
-    |           |
-    |           |
+    | no        |
+    | borders!  |
     |           |
     -------------
 
@@ -79,14 +72,27 @@ All accessible with keyboard shortcuts defined in the config.h file.
  * The window W at the top of the stack can be resized on a per desktop basis.
  * Changing a tiling mode or window size on one desktop doesn't affect the other desktops.
 
-One can also define an empty space on the bottom or top of the screen, to be used by a panel.
-The panel is toggleable, but will be visible if no windows are on the screen.
+
+Panel - Statusbar
+-----------------
+
+The user can define an empty space on the bottom or top of the screen, to be
+used by a panel. The panel is toggleable, but will be visible if no windows are
+on the screen.
+Monsterwm does not provide a panel and/or statusbar itself. Instead it adheres
+to the [UNIX philosophy][unix] and outputs information about the existent
+desktop, the number of windows on each, the mode of each desktop, the current
+desktop and urgent hints whenever needed. The user can use whatever tool or
+panel suits him best (dzen2, concy, w/e), to process and display that information.
+
+  [unix]: http://en.wikipedia.org/wiki/Unix_philosophy
+
 
 Installation
 ------------
 
 You need Xlib, then,
-copy the `config.def.h` file as `config.h`
+copy `config.def.h` as `config.h`
 and edit to suit your needs.
 Build and install.
 
@@ -104,7 +110,25 @@ For any bug or request [fill an issue][bug] on [GitHub][ghp] or report on the [A
   [bug]: https://github.com/c00kiemon5ter/monsterwm/issues
   [ghp]: https://github.com/c00kiemon5ter/monsterwm
 
+
 License
 -------
+
 Licensed under MIT/X Consortium License, see [LICENSE][law] file for more copyright and license information.
+
+  [law]: https://raw.github.com/c00kiemon5ter/monsterwm/master/LICENSE
+
+Thanks
+------
+
+[the suckless team][skls] for [dwm][],
+[moetunes][] for [dminiwm][],
+[pyknite][] for [catwm][]
+
+  [skls]: http://suckless.org/
+  [dwm]:  http://dwm.suckless.org/
+  [moetunes]: https://github.com/moetunes
+  [dminiwm]:  https://bbs.archlinux.org/viewtopic.php?id=126463
+  [pyknite]: https://github.com/pyknite
+  [catwm]:   https://github.com/pyknite/catwm
 
