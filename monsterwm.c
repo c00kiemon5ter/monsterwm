@@ -449,7 +449,6 @@ void move_up() {
 
 void next_win() {
     if (!current || !head->next) return;
-    if (mode == MONOCLE) XUnmapWindow(dis, current->win);
     current = (current->next) ? current->next : head;
     if (mode == MONOCLE) XMapWindow(dis, current->win);
     update_current();
@@ -457,7 +456,6 @@ void next_win() {
 
 void prev_win() {
     if (!current || !head->next) return;
-    if (mode == MONOCLE) XUnmapWindow(dis, current->win);
     if (head == current) while (current->next) current=current->next;
     else for (client *t=head; t; t=t->next) if (t->next == current) { current = t; break; }
     if (mode == MONOCLE) XMapWindow(dis, current->win);
