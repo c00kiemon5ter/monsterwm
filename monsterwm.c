@@ -205,6 +205,8 @@ void client_to_desktop(const Arg *arg) {
 
     select_desktop(cd);
     XUnmapWindow(dis, c->win);
+    if (c->isfullscreen) XChangeProperty(dis, c->win, netatoms[NET_WM_STATE],
+                         XA_ATOM, 32, PropModeReplace, (unsigned char*)0, 0);
     removeclient(c);
     save_desktop(cd);
 
