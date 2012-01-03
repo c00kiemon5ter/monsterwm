@@ -86,6 +86,7 @@ static void rotate_desktop(const Arg *arg);
 static void run(void);
 static void save_desktop(int i);
 static void select_desktop(int i);
+static void setfullscreen(client *c, Bool fullscreen);
 static void setup(void);
 static void sigchld();
 static void spawn(const Arg *arg);
@@ -196,20 +197,16 @@ void cleanup(void) {
 
 void client_to_desktop(const Arg *arg) {
     if (arg->i == current_desktop || !current) return;
-    client *c = current;
     int cd = current_desktop;
-
+    client *c = current;
+    if (c->isfullscreen) setfullscreen(c, False);
     select_desktop(arg->i);
     add_window(c->win);
     save_desktop(arg->i);
-
     select_desktop(cd);
     XUnmapWindow(dis, c->win);
-    if (c->isfullscreen) XChangeProperty(dis, c->win, netatoms[NET_WM_STATE],
-                         XA_ATOM, 32, PropModeReplace, (unsigned char*)0, 0);
     removeclient(c);
     save_desktop(cd);
-
     tile();
     update_current();
     if (FOLLOW_WINDOW) change_desktop(arg);
@@ -224,14 +221,9 @@ void client_to_desktop(const Arg *arg) {
 void clientmessage(XEvent *e) {
     XClientMessageEvent *ev = &e->xclient;
     client *c;
-
     if (!(c = wintoclient(ev->window)) || ev->message_type != netatoms[NET_WM_STATE] || ((unsigned)ev->data.l[1]
         != netatoms[NET_FULLSCREEN] && (unsigned)ev->data.l[2] != netatoms[NET_FULLSCREEN])) return;
-
-    c->isfullscreen = (ev->data.l[0] == 1 || (ev->data.l[0] == 2 && !c->isfullscreen));
-    XChangeProperty(dis, ev->window, netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace,
-                   (unsigned char*)(c->isfullscreen ? &netatoms[NET_FULLSCREEN] : 0), c->isfullscreen);
-
+    setfullscreen(c, (ev->data.l[0] == 1 || (ev->data.l[0] == 2 && !c->isfullscreen)));
     if (c->isfullscreen) XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
     else tile();
     update_current();
@@ -555,6 +547,11 @@ void select_desktop(int i) {
     current = desktops[i].current;
     showpanel = desktops[i].showpanel;
     current_desktop = i;
+}
+
+void setfullscreen(client *c, Bool fullscreen) {
+    XChangeProperty(dis, c->win, netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
+                   ((c->isfullscreen = fullscreen) ? &netatoms[NET_FULLSCREEN] : 0), fullscreen);
 }
 
 void setup(void) {
