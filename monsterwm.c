@@ -691,9 +691,8 @@ void update_current(void) {
 
 client* wintoclient(Window w) {
     client *c = NULL;
-    Bool found = False;
-    int d, cd = current_desktop;
-    for (d=0; d<DESKTOPS && !found; ++d)
+    int d = 0, cd = current_desktop;
+    for (Bool found = False; d<DESKTOPS && !found; ++d)
         for (select_desktop(d), c=head; c && !((found = (w == c->win))); c=c->next);
     select_desktop(cd);
     return c;
