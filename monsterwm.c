@@ -223,8 +223,8 @@ void clientmessage(XEvent *e) {
     XClientMessageEvent *ev = &e->xclient;
     client *c;
 
-    if (!(c = wintoclient(ev->window)) || ev->message_type != netatoms[NET_WM_STATE] ||
-       (ev->data.l[1] != netatoms[NET_FULLSCREEN] && ev->data.l[2] != netatoms[NET_FULLSCREEN])) return;
+    if (!(c = wintoclient(ev->window)) || ev->message_type != netatoms[NET_WM_STATE] || ((unsigned)ev->data.l[1]
+        != netatoms[NET_FULLSCREEN] && (unsigned)ev->data.l[2] != netatoms[NET_FULLSCREEN])) return;
 
     c->isfullscreen = (ev->data.l[0] == 1 || (ev->data.l[0] == 2 && !c->isfullscreen));
     XChangeProperty(dis, ev->window, netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace,
