@@ -673,8 +673,8 @@ client* wintoclient(Window w) {
     Bool found = False;
     int d, cd;
     save_desktop(cd = current_desktop);
-    for (select_desktop(d=0); d<DESKTOPS && !found; select_desktop(++d))
-        for (c=head; c; c=c->next) if ((found = (w == c->win))) break;
+    for (d=0; d<DESKTOPS && !found; ++d)
+        for (select_desktop(d), c=head; c && !((found = (w == c->win))); c=c->next);
     select_desktop(cd);
     return c;
 }
