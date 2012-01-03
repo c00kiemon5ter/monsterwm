@@ -17,6 +17,7 @@
 
 enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { TILE, MONOCLE, BSTACK, GRID, };
+enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_COUNT };
 
 /* structs */
 typedef union {
@@ -33,7 +34,7 @@ typedef struct {
 
 typedef struct client {
     struct client *next;
-    Bool isurgent;
+    Bool isurgent, isfullscreen;
     Window win;
 } client;
 
@@ -58,6 +59,7 @@ static void buttonpressed(XEvent *e);
 static void change_desktop(const Arg *arg);
 static void cleanup(void);
 static void client_to_desktop(const Arg *arg);
+static void clientmessage(XEvent *e);
 static void configurerequest(XEvent *e);
 static void deletewindow(Window w);
 static void desktopinfo(void);
@@ -118,12 +120,13 @@ static Display *dis;
 static Window root;
 static client *head = NULL;
 static client *current = NULL;
-static Atom atoms[WM_COUNT];
+static Atom wmatoms[WM_COUNT], netatoms[NET_COUNT];
 static desktop desktops[DESKTOPS];
 
 /* events array */
 static void (*events[LASTEvent])(XEvent *e) = {
     [ButtonPress] = buttonpressed,
+    [ClientMessage] = clientmessage,
     [ConfigureRequest] = configurerequest,
     [DestroyNotify] = destroynotify,
     [EnterNotify] = enternotify,
@@ -211,8 +214,36 @@ void client_to_desktop(const Arg *arg) {
     desktopinfo();
 }
 
+/* check if window requested fullscreen wm_state
+ * To change the state of a mapped window, a client MUST send a _NET_WM_STATE client message to the root window
+ * message_type must be _NET_WM_STATE, data.l[0] is the action to be taken, data.l[1] is the property to alter
+ * three actions: remove/unset _NET_WM_STATE_REMOVE=0, add/set _NET_WM_STATE_ADD=1, toggle _NET_WM_STATE_TOGGLE=2
+ */
+void clientmessage(XEvent *e) {
+    XClientMessageEvent *ev = &e->xclient;
+    client *c;
+
+    if (!(c = wintoclient(ev->window)) || ev->message_type != netatoms[NET_WM_STATE] ||
+       (ev->data.l[1] != netatoms[NET_FULLSCREEN] && ev->data.l[2] != netatoms[NET_FULLSCREEN])) return;
+
+    c->isfullscreen = (ev->data.l[0] == 1 || (ev->data.l[0] == 2 && !c->isfullscreen));
+    XChangeProperty(dis, ev->window, netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace,
+                   (unsigned char*)(c->isfullscreen ? &netatoms[NET_FULLSCREEN] : 0), c->isfullscreen);
+
+    if (c->isfullscreen) XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
+    else tile();
+    update_current();
+}
+
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
+
+    client *c = wintoclient(ev->window);
+    if ((c = wintoclient(ev->window)) && c->isfullscreen) {
+        XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
+        return;
+    }
+
     XWindowChanges wc;
     wc.x = ev->x;
     wc.y = ev->y + (showpanel && TOP_PANEL) ? PANEL_HEIGHT : 0;
@@ -230,9 +261,9 @@ void deletewindow(Window w) {
     XEvent ev;
     ev.type = ClientMessage;
     ev.xclient.window = w;
-    ev.xclient.message_type = atoms[WM_PROTOCOLS];
+    ev.xclient.message_type = wmatoms[WM_PROTOCOLS];
     ev.xclient.format = 32;
-    ev.xclient.data.l[0] = atoms[WM_DELETE_WINDOW];
+    ev.xclient.data.l[0] = wmatoms[WM_DELETE_WINDOW];
     ev.xclient.data.l[1] = CurrentTime;
     XSendEvent(dis, w, False, NoEventMask, &ev);
 }
@@ -547,15 +578,20 @@ void setup(void) {
     XFreeModifiermap(modmap);
 
     /* set up atoms for dialog/notification windows */
-    atoms[WM_PROTOCOLS]     = XInternAtom(dis, "WM_PROTOCOLS",     False);
-    atoms[WM_DELETE_WINDOW] = XInternAtom(dis, "WM_DELETE_WINDOW", False);
+    wmatoms[WM_PROTOCOLS]     = XInternAtom(dis, "WM_PROTOCOLS",     False);
+    wmatoms[WM_DELETE_WINDOW] = XInternAtom(dis, "WM_DELETE_WINDOW", False);
+    netatoms[NET_SUPPORTED]   = XInternAtom(dis, "_NET_SUPPORTED",   False);
+    netatoms[NET_WM_STATE]    = XInternAtom(dis, "_NET_WM_STATE",    False);
+    netatoms[NET_FULLSCREEN]  = XInternAtom(dis, "_NET_WM_STATE_FULLSCREEN", False);
 
     /* check if another window manager is running */
     xerrorxlib = XSetErrorHandler(xerrorstart);
     XSelectInput(dis, DefaultRootWindow(dis), SubstructureNotifyMask|SubstructureRedirectMask|PropertyChangeMask);
     XSync(dis, False);
+
     XSetErrorHandler(xerror);
     XSync(dis, False);
+    XChangeProperty(dis, root, netatoms[NET_SUPPORTED], XA_ATOM, 32, PropModeReplace, (unsigned char *)netatoms, NET_COUNT);
 
     grabkeys();
 }
@@ -615,17 +651,17 @@ void tile(void) {
     }
 
     if (!head->next || mode == MONOCLE) {
-        for (c=head; c; c=c->next) XMoveResizeWindow(dis, c->win, cx, cy, ww + 2*BORDER_WIDTH, h + 2*BORDER_WIDTH);
+        for (c=head; c; c=c->next) if (!c->isfullscreen) XMoveResizeWindow(dis, c->win, cx, cy, ww + 2*BORDER_WIDTH, h + 2*BORDER_WIDTH);
     } else if (mode == TILE) {
-        XMoveResizeWindow(dis, head->win, cx, cy, master_size - BORDER_WIDTH, h - BORDER_WIDTH);
-        XMoveResizeWindow(dis, head->next->win, (cx = master_size + BORDER_WIDTH), cy,
-                         (cw = ww - master_size - 2*BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
-        for (cy+=z+d, c=head->next->next; c; c=c->next, cy+=z) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
+        if (!head->isfullscreen) XMoveResizeWindow(dis, head->win, cx, cy, master_size - BORDER_WIDTH, h - BORDER_WIDTH);
+        if (!head->next->isfullscreen) XMoveResizeWindow(dis, head->next->win, (cx = master_size + BORDER_WIDTH), cy,
+                                                        (cw = ww - master_size - 2*BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
+        for (cy+=z+d, c=head->next->next; c; c=c->next, cy+=z) if (!c->isfullscreen) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
     } else if (mode == BSTACK) {
-        XMoveResizeWindow(dis, head->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH);
-        XMoveResizeWindow(dis, head->next->win, cx, (cy += master_size + BORDER_WIDTH),
-                         (cw = z - BORDER_WIDTH) + d, (ch = h - master_size - 2*BORDER_WIDTH));
-        for (cx+=z+d, c=head->next->next; c; c=c->next, cx+=z) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
+        if (!head->isfullscreen) XMoveResizeWindow(dis, head->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH);
+        if (!head->next->isfullscreen) XMoveResizeWindow(dis, head->next->win, cx, (cy += master_size + BORDER_WIDTH),
+                                                        (cw = z - BORDER_WIDTH) + d, (ch = h - master_size - 2*BORDER_WIDTH));
+        for (cx+=z+d, c=head->next->next; c; c=c->next, cx+=z) if (!c->isfullscreen) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
     } else if (mode == GRID) {
         ++n;                              /* include head on window count */
         int cols, rows, cn=0, rn=0, i=0;  /* columns, rows, and current column and row number */
@@ -638,7 +674,7 @@ void tile(void) {
             ch = h/rows;
             cx = 0 + cn*cw;
             cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0) + rn*ch;
-            XMoveResizeWindow(dis, c->win, cx, cy, cw - 2*BORDER_WIDTH, ch - 2*BORDER_WIDTH);
+            if (!c->isfullscreen) XMoveResizeWindow(dis, c->win, cx, cy, cw - 2*BORDER_WIDTH, ch - 2*BORDER_WIDTH);
             if (++rn >= rows) { rn = 0; cn++; }
         }
     } else fprintf(stderr, "error: no such layout mode: %d\n", mode);
@@ -656,12 +692,11 @@ void update_current(void) {
     int border_width = (!head->next || mode == MONOCLE) ? 0 : BORDER_WIDTH;
 
     for (client *c=head; c; c=c->next) {
-        XSetWindowBorderWidth(dis, c->win, border_width);
-        XSetWindowBorder(dis, c->win, win_unfocus);
+        XSetWindowBorderWidth(dis, c->win, (c->isfullscreen ? 0 : border_width));
+        XSetWindowBorder(dis, c->win, (current == c ? win_focus : win_unfocus));
         if (CLICK_TO_FOCUS) XGrabButton(dis, AnyButton, AnyModifier, c->win, True,
             ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
     }
-    XSetWindowBorder(dis, current->win, win_focus);
     XSetInputFocus(dis, current->win, RevertToParent, CurrentTime);
     XRaiseWindow(dis, current->win);
     if (CLICK_TO_FOCUS) XUngrabButton(dis, AnyButton, AnyModifier, current->win);
