@@ -151,7 +151,6 @@ void add_window(Window w) {
     }
 
     (current = c)->win = w;
-    save_desktop(current_desktop);
     XSelectInput(dis, c->win, PropertyChangeMask);
     if (FOLLOW_MOUSE) XSelectInput(dis, c->win, EnterWindowMask);
 }
@@ -166,15 +165,11 @@ void buttonpressed(XEvent *e) {
 void change_desktop(const Arg *arg) {
     if (arg->i == current_desktop) return;
     previous_desktop = current_desktop;
-    /* save current desktop settings */
-    save_desktop(current_desktop);
-    /* read new desktop properties, tile and map new windows */
     select_desktop(arg->i);
     tile();
     if (mode == MONOCLE && current) XMapWindow(dis, current->win);
     else for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
     update_current();
-    /* finally unmap previous desktop's windows */
     select_desktop(previous_desktop);
     for (client *c=head; c; c=c->next) XUnmapWindow(dis, c->win);
     select_desktop(arg->i);
@@ -202,11 +197,9 @@ void client_to_desktop(const Arg *arg) {
     if (c->isfullscreen) setfullscreen(c, False);
     select_desktop(arg->i);
     add_window(c->win);
-    save_desktop(arg->i);
     select_desktop(cd);
     XUnmapWindow(dis, c->win);
     removeclient(c);
-    save_desktop(cd);
     tile();
     update_current();
     if (FOLLOW_WINDOW) change_desktop(arg);
@@ -264,8 +257,7 @@ void deletewindow(Window w) {
 
 void desktopinfo(void) {
     Bool urgent = False;
-    int cd, n=0, d=0;
-    save_desktop(cd = current_desktop);
+    int cd = current_desktop, n=0, d=0;
     for (client *c; d<DESKTOPS; d++) {
         for (select_desktop(d), c=head, n=0, urgent=False; c; c=c->next, ++n) if (c->isurgent) urgent = True;
         fprintf(stdout, "%d:%d:%d:%d:%d%c", d, n, mode, current_desktop == cd, urgent, d+1==DESKTOPS?'\n':' ');
@@ -364,7 +356,6 @@ void maprequest(XEvent *e) {
     if (ch.res_class) XFree(ch.res_class);
     if (ch.res_name) XFree(ch.res_name);
 
-    save_desktop(cd);
     select_desktop(newdsk);
     add_window(ev->window);
     select_desktop(cd);
@@ -412,7 +403,6 @@ void move_down() {
      */
     else head = current;
 
-    save_desktop(current_desktop);
     tile();
     update_current();
 }
@@ -454,7 +444,6 @@ void move_up() {
      */
     current->next = (current->next == head) ? NULL : p;
 
-    save_desktop(current_desktop);
     tile();
     update_current();
 }
@@ -501,7 +490,6 @@ void removeclient(client *c) {
         (current = p)->next = c->next;
         free(c);
     }
-    save_desktop(current_desktop);
     tile();
     if (mode == MONOCLE && current) XMapWindow(dis, current->win);
     update_current();
@@ -540,6 +528,7 @@ void save_desktop(int i) {
 
 void select_desktop(int i) {
     if (i >= DESKTOPS || i == current_desktop) return;
+    save_desktop(current_desktop);
     master_size = desktops[i].master_size;
     mode = desktops[i].mode;
     growth = desktops[i].growth;
@@ -619,7 +608,6 @@ void swap_master() {
     /* if not head, then head is always behind us, so move_up until is head */
     else while (current != head) move_up();
     current = head;
-    save_desktop(current_desktop);
     tile();
     update_current();
 }
@@ -682,7 +670,6 @@ void tile(void) {
 
 void togglepanel() {
     showpanel = !showpanel;
-    save_desktop(current_desktop);
     tile();
 }
 
@@ -705,8 +692,7 @@ void update_current(void) {
 client* wintoclient(Window w) {
     client *c = NULL;
     Bool found = False;
-    int d, cd;
-    save_desktop(cd = current_desktop);
+    int d, cd = current_desktop;
     for (d=0; d<DESKTOPS && !found; ++d)
         for (select_desktop(d), c=head; c && !((found = (w == c->win))); c=c->next);
     select_desktop(cd);
