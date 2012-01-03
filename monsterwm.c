@@ -162,15 +162,18 @@ void buttonpressed(XEvent *e) {
 void change_desktop(const Arg *arg) {
     if (arg->i == current_desktop) return;
     previous_desktop = current_desktop;
-    /* save current desktop settings and unmap windows */
+    /* save current desktop settings */
     save_desktop(current_desktop);
-    for (client *c=head; c; c=c->next) XUnmapWindow(dis, c->win);
     /* read new desktop properties, tile and map new windows */
     select_desktop(arg->i);
     tile();
     if (mode == MONOCLE && current) XMapWindow(dis, current->win);
     else for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
     update_current();
+    /* finally unmap previous desktop's windows */
+    select_desktop(previous_desktop);
+    for (client *c=head; c; c=c->next) XUnmapWindow(dis, c->win);
+    select_desktop(arg->i);
     desktopinfo();
 }
 
