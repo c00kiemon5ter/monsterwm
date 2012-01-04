@@ -477,17 +477,20 @@ void quit(const Arg *arg) {
 }
 
 void removeclient(client *c) {
+    client *p = NULL;
+    int nd = 0, cd = current_desktop;
+    for (Bool found = False; nd<DESKTOPS && !found; nd++)
+        for (select_desktop(nd), p=head; p && !(found = (p == c || p->next == c)); p=p->next);
     if (c == head) {
         if (head->next) head = head->next; /* more windows on screen */
         else { free(head); head = NULL; }  /* head is only window on screen */
         current = head;
-    } else {
-        client *p; for (p=head; p; p=p->next) if (p->next == c) break;
-        (current = p)->next = c->next;
+    } else if (c) {
+        (current = p)->next = c->next;     /* p should be previous of c */
         free(c);
     }
+    select_desktop(cd);
     tile();
-    if (mode == MONOCLE && current) XMapWindow(dis, current->win);
     update_current();
 }
 
@@ -697,7 +700,7 @@ client* wintoclient(Window w) {
     client *c = NULL;
     int d = 0, cd = current_desktop;
     for (Bool found = False; d<DESKTOPS && !found; ++d)
-        for (select_desktop(d), c=head; c && !((found = (w == c->win))); c=c->next);
+        for (select_desktop(d), c=head; c && !(found = (w == c->win)); c=c->next);
     select_desktop(cd);
     return c;
 }
