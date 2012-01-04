@@ -55,7 +55,7 @@ typedef struct {
 
 /* Functions */
 static void add_window(Window w);
-static void buttonpressed(XEvent *e);
+static void buttonpress(XEvent *e);
 static void change_desktop(const Arg *arg);
 static void cleanup(void);
 static void client_to_desktop(const Arg *arg);
@@ -126,7 +126,7 @@ static desktop desktops[DESKTOPS];
 
 /* events array */
 static void (*events[LASTEvent])(XEvent *e) = {
-    [ButtonPress] = buttonpressed,
+    [ButtonPress] = buttonpress,
     [ClientMessage] = clientmessage,
     [ConfigureRequest] = configurerequest,
     [DestroyNotify] = destroynotify,
@@ -155,10 +155,10 @@ void add_window(Window w) {
     if (FOLLOW_MOUSE) XSelectInput(dis, c->win, EnterWindowMask);
 }
 
-void buttonpressed(XEvent *e) {
-    XButtonPressedEvent *ev = &e->xbutton;
-    if (CLICK_TO_FOCUS && ev->window != current->win && ev->button == Button1)
-        for (client *c=head; c; c=c->next) if (ev->window == c->win) { current = c; break; }
+void buttonpress(XEvent *e) {
+    if (CLICK_TO_FOCUS && e->xbutton.window != current->win && e->xbutton.button == Button1)
+        for (current=head; current; current=current->next) if (e->xbutton.window == current->win) break;
+    if (!current) current = head;
     update_current();
 }
 
@@ -212,34 +212,31 @@ void client_to_desktop(const Arg *arg) {
  * three actions: remove/unset _NET_WM_STATE_REMOVE=0, add/set _NET_WM_STATE_ADD=1, toggle _NET_WM_STATE_TOGGLE=2
  */
 void clientmessage(XEvent *e) {
-    XClientMessageEvent *ev = &e->xclient;
     client *c;
-    if (!(c = wintoclient(ev->window)) || ev->message_type != netatoms[NET_WM_STATE] || ((unsigned)ev->data.l[1]
-        != netatoms[NET_FULLSCREEN] && (unsigned)ev->data.l[2] != netatoms[NET_FULLSCREEN])) return;
-    setfullscreen(c, (ev->data.l[0] == 1 || (ev->data.l[0] == 2 && !c->isfullscreen)));
+    if (!(c = wintoclient(e->xclient.window)) || e->xclient.message_type != netatoms[NET_WM_STATE] || ((unsigned)e->xclient.data.l[1]
+        != netatoms[NET_FULLSCREEN] && (unsigned)e->xclient.data.l[2] != netatoms[NET_FULLSCREEN])) return;
+    setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscreen)));
     if (c->isfullscreen) XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
     else tile();
     update_current();
 }
 
 void configurerequest(XEvent *e) {
-    XConfigureRequestEvent *ev = &e->xconfigurerequest;
-
-    client *c = wintoclient(ev->window);
-    if ((c = wintoclient(ev->window)) && c->isfullscreen) {
+    client *c = wintoclient(e->xconfigurerequest.window);
+    if (c && c->isfullscreen) {
         XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
         return;
     }
 
     XWindowChanges wc;
-    wc.x = ev->x;
-    wc.y = ev->y + (showpanel && TOP_PANEL) ? PANEL_HEIGHT : 0;
-    wc.width  = (ev->width  < ww - BORDER_WIDTH) ? ev->width  : ww + BORDER_WIDTH;
-    wc.height = (ev->height < wh - BORDER_WIDTH) ? ev->height : wh + BORDER_WIDTH;
-    wc.border_width = ev->border_width;
-    wc.sibling    = ev->above;
-    wc.stack_mode = ev->detail;
-    XConfigureWindow(dis, ev->window, ev->value_mask, &wc);
+    wc.x = e->xconfigurerequest.x;
+    wc.y = e->xconfigurerequest.y + (showpanel && TOP_PANEL) ? PANEL_HEIGHT : 0;
+    wc.width  = (e->xconfigurerequest.width  < ww - BORDER_WIDTH) ? e->xconfigurerequest.width  : ww + BORDER_WIDTH;
+    wc.height = (e->xconfigurerequest.height < wh - BORDER_WIDTH) ? e->xconfigurerequest.height : wh + BORDER_WIDTH;
+    wc.border_width = e->xconfigurerequest.border_width;
+    wc.sibling    = e->xconfigurerequest.above;
+    wc.stack_mode = e->xconfigurerequest.detail;
+    XConfigureWindow(dis, e->xconfigurerequest.window, e->xconfigurerequest.value_mask, &wc);
     XSync(dis, False);
     tile();
 }
@@ -267,9 +264,8 @@ void desktopinfo(void) {
 }
 
 void destroynotify(XEvent *e) {
-    XDestroyWindowEvent *ev = &e->xdestroywindow;
-    client *c;
-    if ((c = wintoclient(ev->window))) removeclient(c);
+    client *c = wintoclient(e->xdestroywindow.window);
+    if (c) removeclient(c);
     desktopinfo();
 }
 
@@ -282,12 +278,11 @@ void die(const char *errstr, ...) {
 }
 
 void enternotify(XEvent *e) {
-    XCrossingEvent *ev = &e->xcrossing;
     if (FOLLOW_MOUSE)
-        if ((ev->mode == NotifyNormal && ev->detail != NotifyInferior) || ev->window == root)
-            for (current=head; current; current=current->next)
-                if (ev->window == current->win) { update_current(); break; }
+        if ((e->xcrossing.mode == NotifyNormal && e->xcrossing.detail != NotifyInferior) || e->xcrossing.window == root)
+            for (current=head; current; current=current->next) if (e->xcrossing.window == current->win) break;
     if (!current) current = head;
+    update_current();
 }
 
 void focusurgent() {
@@ -318,10 +313,9 @@ void grabkeys(void) {
 
 void keypress(XEvent *e) {
     KeySym keysym;
-    XKeyEvent *ev = &e->xkey;
-    keysym = XKeycodeToKeysym(dis, (KeyCode)ev->keycode, 0);
+    keysym = XKeycodeToKeysym(dis, (KeyCode)e->xkey.keycode, 0);
     for (unsigned int i=0; i<LENGTH(keys); i++)
-        if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(ev->state) && keys[i].function)
+        if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(e->xkey.state) && keys[i].function)
                 keys[i].function(&keys[i].arg);
 }
 
@@ -336,17 +330,16 @@ void last_desktop() {
 }
 
 void maprequest(XEvent *e) {
-    XMapRequestEvent *ev = &e->xmaprequest;
     static XWindowAttributes wa;
-    if (XGetWindowAttributes(dis, ev->window, &wa) && wa.override_redirect) return;
-    if (wintoclient(ev->window)) return;
+    if (XGetWindowAttributes(dis, e->xmaprequest.window, &wa) && wa.override_redirect) return;
+    if (wintoclient(e->xmaprequest.window)) return;
 
     Window trans;
-    Bool follow = False, istransient = XGetTransientForHint(dis, ev->window, &trans) && trans;
+    Bool follow = False, istransient = XGetTransientForHint(dis, e->xmaprequest.window, &trans) && trans;
 
     int cd = current_desktop, newdsk = current_desktop;
     XClassHint ch = {0, 0};
-    if (!istransient && XGetClassHint(dis, ev->window, &ch))
+    if (!istransient && XGetClassHint(dis, e->xmaprequest.window, &ch))
         for (unsigned int i=0; i<LENGTH(rules); i++)
             if (!strcmp(ch.res_class, rules[i].class) || !strcmp(ch.res_name, rules[i].class)) {
                 follow = rules[i].follow;
@@ -357,11 +350,11 @@ void maprequest(XEvent *e) {
     if (ch.res_name) XFree(ch.res_name);
 
     select_desktop(newdsk);
-    add_window(ev->window);
+    add_window(e->xmaprequest.window);
     select_desktop(cd);
     if (cd == newdsk) {
         if (!(current->istransient = istransient)) tile();
-        XMapWindow(dis, ev->window);
+        XMapWindow(dis, e->xmaprequest.window);
         update_current();
     } else if (follow) change_desktop(&(Arg){.i = newdsk});
     desktopinfo();
@@ -468,11 +461,10 @@ void prev_win() {
 }
 
 void propertynotify(XEvent *e) {
-    XPropertyEvent *ev = &e->xproperty;
     client *c;
-    if ((c = wintoclient(ev->window)))
-        if (ev->atom == XA_WM_HINTS) {
-            XWMHints *wmh = XGetWMHints(dis, ev->window);
+    if ((c = wintoclient(e->xproperty.window)))
+        if (e->xproperty.atom == XA_WM_HINTS) {
+            XWMHints *wmh = XGetWMHints(dis, e->xproperty.window);
             c->isurgent = wmh && (wmh->flags & XUrgencyHint);
             XFree(wmh);
             desktopinfo();
