@@ -491,6 +491,7 @@ void removeclient(client *c) {
     }
     select_desktop(cd);
     tile();
+    if (mode == MONOCLE && cd == nd && current) XMapWindow(dis, current->win);
     update_current();
 }
 
