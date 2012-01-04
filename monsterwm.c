@@ -372,8 +372,10 @@ void maprequest(XEvent *e) {
  */
 void move_down() {
     if (!current || !head->next) return;
+    for (client *t=head; t; t=t->next) if (t->isfullscreen) return;
+
     /* p is previous, n is next, if current is head n is last, c is current */
-    client *p, *n = (current->next) ? current->next : head;
+    client *p = NULL, *n = (current->next) ? current->next : head;
     for (p=head; p && p->next != current; p=p->next);
     /* if there's a previous client then p->next should be what's after c
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
@@ -412,9 +414,11 @@ void move_down() {
  */
 void move_up() {
     if (!current || !head->next) return;
+    for (client *t=head; t; t=t->next) if (t->isfullscreen) return;
+
     client *pp = NULL, *p;
     /* p is previous from current or last if current is head */
-    for (p=head; p->next; p=p->next) if (p->next == current) break;
+    for (p=head; p->next && p->next != current; p=p->next);
     /* pp is previous from p, or null if current is head and thus p is last */
     if (p->next) for (pp=head; pp; pp=pp->next) if (pp->next == p) break;
     /* if p has a previous client then the next client should be current (current is c)
@@ -603,6 +607,7 @@ void spawn(const Arg *arg) {
 
 void swap_master() {
     if (!current || !head->next || mode == MONOCLE) return;
+    for (client *t=head; t; t=t->next) if (t->isfullscreen) return;
     /* if current is head swap with next window */
     if (current == head) move_down();
     /* if not head, then head is always behind us, so move_up until is head */
