@@ -638,23 +638,22 @@ void tile(void) {
     }
 
     if (!head->next || head->next->istransient || mode == MONOCLE) {
-        for (c=head; c; c=c->next)
-            if (!c->isfullscreen && !c->istransient)
-                XMoveResizeWindow(dis, c->win, cx, cy, ww + BORDER_WIDTH, h + BORDER_WIDTH);
+        for (c=head; c; c=c->next) if (!c->isfullscreen && !c->istransient)
+            XMoveResizeWindow(dis, c->win, cx, cy, ww + BORDER_WIDTH, h + BORDER_WIDTH);
     } else if (mode == TILE) {
         if (!head->isfullscreen && !head->istransient)
             XMoveResizeWindow(dis, head->win, cx, cy, master_size - BORDER_WIDTH, h - BORDER_WIDTH);
         if (!head->next->isfullscreen && !head->next->istransient)
-            XMoveResizeWindow(dis, head->next->win, (cx = master_size + BORDER_WIDTH), cy,
-                             (cw = ww - master_size - 2*BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
+            XMoveResizeWindow(dis, head->next->win, (cx = master_size), cy,
+                             (cw = ww - master_size - BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
         for (cy+=z+d, c=head->next->next; c; c=c->next, cy+=z)
             if (!c->isfullscreen && !c->istransient) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
     } else if (mode == BSTACK) {
         if (!head->isfullscreen && !head->istransient)
             XMoveResizeWindow(dis, head->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH);
         if (!head->next->isfullscreen && !head->next->istransient)
-            XMoveResizeWindow(dis, head->next->win, cx, (cy += master_size + BORDER_WIDTH),
-                             (cw = z - BORDER_WIDTH) + d, (ch = h - master_size - 2*BORDER_WIDTH));
+            XMoveResizeWindow(dis, head->next->win, cx, (cy += master_size),
+                             (cw = z - BORDER_WIDTH) + d, (ch = h - master_size - BORDER_WIDTH));
         for (cx+=z+d, c=head->next->next; c; c=c->next, cx+=z)
             if (!c->isfullscreen && !c->istransient) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
     } else if (mode == GRID) {
@@ -669,7 +668,7 @@ void tile(void) {
             ch = h/rows;
             cx = 0 + cn*cw;
             cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0) + rn*ch;
-            if (!c->isfullscreen && !c->istransient) XMoveResizeWindow(dis, c->win, cx, cy, cw - 2*BORDER_WIDTH, ch - 2*BORDER_WIDTH);
+            if (!c->isfullscreen && !c->istransient) XMoveResizeWindow(dis, c->win, cx, cy, cw - BORDER_WIDTH, ch - BORDER_WIDTH);
             if (++rn >= rows) { rn = 0; cn++; }
         }
     } else fprintf(stderr, "error: no such layout mode: %d\n", mode);
