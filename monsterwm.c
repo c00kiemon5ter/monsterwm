@@ -640,7 +640,7 @@ void tile(void) {
     if (!head->next || head->next->istransient || mode == MONOCLE) {
         for (c=head; c; c=c->next)
             if (!c->isfullscreen && !c->istransient)
-                XMoveResizeWindow(dis, c->win, cx, cy, ww + 2*BORDER_WIDTH, h + 2*BORDER_WIDTH);
+                XMoveResizeWindow(dis, c->win, cx, cy, ww + BORDER_WIDTH, h + BORDER_WIDTH);
     } else if (mode == TILE) {
         if (!head->isfullscreen && !head->istransient)
             XMoveResizeWindow(dis, head->win, cx, cy, master_size - BORDER_WIDTH, h - BORDER_WIDTH);
