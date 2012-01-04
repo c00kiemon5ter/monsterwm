@@ -683,7 +683,7 @@ void togglepanel() {
 
 void update_current(void) {
     if (!current) return;
-    int border_width = (!head->next || mode == MONOCLE) ? 0 : BORDER_WIDTH;
+    int border_width = (!head->next || head->next->istransient || mode == MONOCLE) ? 0 : BORDER_WIDTH;
 
     for (client *c=head; c; c=c->next) {
         XSetWindowBorderWidth(dis, c->win, (c->isfullscreen ? 0 : border_width));
