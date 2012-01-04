@@ -54,7 +54,7 @@ typedef struct {
 } AppRule;
 
 /* Functions */
-static void add_window(Window w);
+static void addwindow(Window w);
 static void buttonpress(XEvent *e);
 static void change_desktop(const Arg *arg);
 static void cleanup(void);
@@ -136,7 +136,7 @@ static void (*events[LASTEvent])(XEvent *e) = {
     [PropertyNotify] = propertynotify,
 };
 
-void add_window(Window w) {
+void addwindow(Window w) {
     client *c, *t;
     if (!(c = (client *)calloc(1, sizeof(client))))
         die("error: could not calloc() %u bytes\n", sizeof(client));
@@ -196,7 +196,7 @@ void client_to_desktop(const Arg *arg) {
     client *c = current;
     if (c->isfullscreen) setfullscreen(c, False);
     select_desktop(arg->i);
-    add_window(c->win);
+    addwindow(c->win);
     select_desktop(cd);
     XUnmapWindow(dis, c->win);
     removeclient(c);
@@ -350,7 +350,7 @@ void maprequest(XEvent *e) {
     if (ch.res_name) XFree(ch.res_name);
 
     select_desktop(newdsk);
-    add_window(e->xmaprequest.window);
+    addwindow(e->xmaprequest.window);
     select_desktop(cd);
     if (cd == newdsk) {
         if (!(current->istransient = istransient)) tile();
