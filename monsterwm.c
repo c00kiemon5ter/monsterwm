@@ -192,14 +192,17 @@ void cleanup(void) {
 
 void client_to_desktop(const Arg *arg) {
     if (arg->i == current_desktop || !current) return;
+    Window w = current->win;
     int cd = current_desktop;
-    client *c = current;
-    if (c->isfullscreen) setfullscreen(c, False);
+
+    XUnmapWindow(dis, current->win);
+    if (current->isfullscreen) setfullscreen(current, False);
+    removeclient(current);
+
     select_desktop(arg->i);
-    addwindow(c->win);
+    addwindow(w);
+
     select_desktop(cd);
-    XUnmapWindow(dis, c->win);
-    removeclient(c);
     tile();
     update_current();
     if (FOLLOW_WINDOW) change_desktop(arg);
