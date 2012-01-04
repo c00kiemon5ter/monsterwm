@@ -217,7 +217,7 @@ void clientmessage(XEvent *e) {
         != netatoms[NET_FULLSCREEN] && (unsigned)e->xclient.data.l[2] != netatoms[NET_FULLSCREEN])) return;
     setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscreen)));
     if (c->isfullscreen) XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
-    else tile();
+    tile();
     update_current();
 }
 
@@ -631,8 +631,8 @@ void tile(void) {
     int cx = 0, cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0), cw = 0, ch = 0;
 
     client *c;
-    for (n=0, c=head->next; c; c=c->next) if (!c->istransient) ++n; /* count windows on stack */
-    if ((mode == TILE || mode == BSTACK) && n > 1) {   /* adjust to match screen height/width */
+    for (n=0, c=head->next; c; c=c->next) if (!c->istransient && !c->isfullscreen) ++n;
+    if ((mode == TILE || mode == BSTACK) && n > 1) { /* adjust to match screen height/width */
         d = (z - growth)%n + growth;
         z = (z - growth)/n;
     }
