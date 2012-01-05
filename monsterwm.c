@@ -150,8 +150,7 @@ void addwindow(Window w) {
         head = c;
     }
 
-    (current = c)->win = w;
-    XSelectInput(dis, c->win, PropertyChangeMask);
+    XSelectInput(dis, ((current = c)->win = w), PropertyChangeMask);
     if (FOLLOW_MOUSE) XSelectInput(dis, c->win, EnterWindowMask);
 }
 
