@@ -650,15 +650,14 @@ void tile(void) {
     } else if ((mode == TILE || mode == BSTACK) && n) { /* adjust to match screen height/width */
         if (n>1) { d = (z - growth)%n + growth; z = (z - growth)/n; }
         if (!head->isfullscreen && !head->istransient)
-            XMoveResizeWindow(dis, head->win, cx, cy,
-                    ((mode == BSTACK) ? ww : master_size) - BORDER_WIDTH,
-                    ((mode == BSTACK) ? master_size :  h) - BORDER_WIDTH);
+            (mode == BSTACK) ? XMoveResizeWindow(dis, head->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH)
+                             : XMoveResizeWindow(dis, head->win, cx, cy, master_size - BORDER_WIDTH,  h - BORDER_WIDTH);
         if (!head->next->isfullscreen && !head->next->istransient)
-            XMoveResizeWindow(dis, head->next->win,
-                    (mode == BSTACK) ? cx : (cx += master_size), (mode == BSTACK) ? (cy += master_size) : cy,
-                    (mode == BSTACK) ? (cw = z - BORDER_WIDTH) + d : (cw = ww - master_size - BORDER_WIDTH),
-                    (mode == BSTACK) ? (ch = h - master_size - BORDER_WIDTH) : (ch = z - BORDER_WIDTH) + d);
-        for (((mode==BSTACK)?(cx+=z+d):(cy+=z+d)), c=head->next->next; c; c=c->next, (mode==BSTACK)?(cx+=z):(cy+=z))
+            (mode == BSTACK) ? XMoveResizeWindow(dis, head->next->win, cx, (cy += master_size),
+                            (cw = z - BORDER_WIDTH) + d, (ch = h - master_size - BORDER_WIDTH))
+                             : XMoveResizeWindow(dis, head->next->win, (cx += master_size), cy,
+                            (cw = ww - master_size - BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
+        for ((mode==BSTACK)?(cx+=z+d):(cy+=z+d), c=head->next->next; c; c=c->next, (mode==BSTACK)?(cx+=z):(cy+=z))
             if (!c->isfullscreen && !c->istransient) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
     } else if (mode == GRID) {
         ++n;                              /* include head on window count */
