@@ -215,10 +215,10 @@ void client_to_desktop(const Arg *arg) {
  * three actions: remove/unset _NET_WM_STATE_REMOVE=0, add/set _NET_WM_STATE_ADD=1, toggle _NET_WM_STATE_TOGGLE=2
  */
 void clientmessage(XEvent *e) {
-    client *c;
-    if (!(c = wintoclient(e->xclient.window)) || e->xclient.message_type != netatoms[NET_WM_STATE] || ((unsigned)e->xclient.data.l[1]
-        != netatoms[NET_FULLSCREEN] && (unsigned)e->xclient.data.l[2] != netatoms[NET_FULLSCREEN])) return;
-    setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscreen)));
+    client *c = wintoclient(e->xclient.window);
+    if (c && e->xclient.message_type == netatoms[NET_WM_STATE] && ((unsigned)e->xclient.data.l[1]
+        == netatoms[NET_FULLSCREEN] || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN]))
+        setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscreen)));
     tile();
     update_current();
 }
