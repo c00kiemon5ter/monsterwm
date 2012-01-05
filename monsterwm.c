@@ -485,18 +485,12 @@ void quit(const Arg *arg) {
 }
 
 void removeclient(client *c) {
-    client *p = NULL;
+    client **p = NULL;
     int nd = 0, cd = current_desktop;
     for (Bool found = False; nd<DESKTOPS && !found; nd++)
-        for (select_desktop(nd), p=head; p && !(found = (p == c || p->next == c)); p=p->next);
-    if (c == head) {
-        if (head->next) head = head->next; /* more windows on screen */
-        else { free(head); head = NULL; }  /* head is only window on screen */
-        current = head;
-    } else if (c) {
-        (current = p)->next = c->next;     /* p should be previous of c */
-        free(c);
-    }
+        for (select_desktop(nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
+    current = (*p = c->next) ? *p : head;
+    free(c);
     select_desktop(cd);
     tile();
     if (mode == MONOCLE && cd == --nd && current) XMapWindow(dis, current->win);
