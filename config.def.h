@@ -26,6 +26,7 @@
 #define MINWSZ          50        /* minimum window size in pixels  */
 #define DEFAULT_DESKTOP 0         /* the desktop to focus initially */
 #define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
+#define USELESSGAP      8         /* the size of the useless gap in pixels */
 
 /**
  * open applications to specified desktop with specified mode.
