@@ -225,21 +225,20 @@ void clientmessage(XEvent *e) {
 
 void configurerequest(XEvent *e) {
     client *c = wintoclient(e->xconfigurerequest.window);
-    if (c && c->isfullscreen) {
+    if (c && c->isfullscreen)
         XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
-        return;
+    else {
+        XWindowChanges wc;
+        wc.x = e->xconfigurerequest.x;
+        wc.y = e->xconfigurerequest.y + (showpanel && TOP_PANEL) ? PANEL_HEIGHT : 0;
+        wc.width  = (e->xconfigurerequest.width  < ww - BORDER_WIDTH) ? e->xconfigurerequest.width  : ww + BORDER_WIDTH;
+        wc.height = (e->xconfigurerequest.height < wh - BORDER_WIDTH) ? e->xconfigurerequest.height : wh + BORDER_WIDTH;
+        wc.border_width = e->xconfigurerequest.border_width;
+        wc.sibling    = e->xconfigurerequest.above;
+        wc.stack_mode = e->xconfigurerequest.detail;
+        XConfigureWindow(dis, e->xconfigurerequest.window, e->xconfigurerequest.value_mask, &wc);
+        XSync(dis, False);
     }
-
-    XWindowChanges wc;
-    wc.x = e->xconfigurerequest.x;
-    wc.y = e->xconfigurerequest.y + (showpanel && TOP_PANEL) ? PANEL_HEIGHT : 0;
-    wc.width  = (e->xconfigurerequest.width  < ww - BORDER_WIDTH) ? e->xconfigurerequest.width  : ww + BORDER_WIDTH;
-    wc.height = (e->xconfigurerequest.height < wh - BORDER_WIDTH) ? e->xconfigurerequest.height : wh + BORDER_WIDTH;
-    wc.border_width = e->xconfigurerequest.border_width;
-    wc.sibling    = e->xconfigurerequest.above;
-    wc.stack_mode = e->xconfigurerequest.detail;
-    XConfigureWindow(dis, e->xconfigurerequest.window, e->xconfigurerequest.value_mask, &wc);
-    XSync(dis, False);
     tile();
 }
 
