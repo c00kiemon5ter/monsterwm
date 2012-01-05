@@ -534,15 +534,8 @@ void focus(Client *c, Desktop *d) {
     w[(d->curr->isfloat || d->curr->istrans) ? 0:ft] = d->curr->win;
     for (fl += !ISFFT(d->curr) ? 1:0, c = d->head; c; c = c->next) {
         XSetWindowBorder(dis, c->win, c == d->curr ? win_focus:win_unfocus);
-        /*
-         * a window should have borders in any case, except if
-         *  - the window is fullscreen
-         *  - the window is not floating or transient and
-         *      - the mode is MONOCLE or,
-         *      - it is the only window on screen
-         */
-        XSetWindowBorderWidth(dis, c->win, c->isfull || (!ISFFT(c) &&
-            (d->mode == MONOCLE || !d->head->next)) ? 0:BORDER_WIDTH);
+        /* windows always get borders, except if fullscreen */
+        XSetWindowBorderWidth(dis, c->win, c->isfull ? 0:BORDER_WIDTH);
         if (c != d->curr) w[c->isfull ? --fl:ISFFT(c) ? --ft:--n] = c->win;
         if (CLICK_TO_FOCUS || c == d->curr) grabbuttons(c);
     }
@@ -783,7 +776,8 @@ void mousemotion(const Arg *arg) {
  * each window should cover all the available screen space
  */
 void monocle(int x, int y, int w, int h, const Desktop *d) {
-    for (Client *c = d->head; c; c = c->next) if (!ISFFT(c)) XMoveResizeWindow(dis, c->win, x, y, w, h);
+    for (Client *c = d->head; c; c = c->next) if (!ISFFT(c))
+        XMoveResizeWindow(dis, c->win, x, y, w - 2*BORDER_WIDTH, h - 2*BORDER_WIDTH);
 }
 
 /**
@@ -999,15 +993,14 @@ void run(void) {
  * the border should be zero (0).
  *
  * if a client is reset from fullscreen,
- * the border should be BORDER_WIDTH,
- * except if no other client is on that desktop.
+ * the border should be BORDER_WIDTH.
  */
-void setfullscreen(Client *c, Desktop *d, Bool fullscrn) {
+void setfullscreen(Client *c, __attribute__((unused)) Desktop *d, Bool fullscrn) {
     if (fullscrn != c->isfull) XChangeProperty(dis, c->win,
             netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
             ((c->isfull = fullscrn) ? &netatoms[NET_FULLSCREEN]:0), fullscrn);
     if (fullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww, wh + PANEL_HEIGHT);
-    XSetWindowBorderWidth(dis, c->win, (c->isfull || !d->head->next ? 0:BORDER_WIDTH));
+    XSetWindowBorderWidth(dis, c->win, c->isfull ? 0:BORDER_WIDTH);
 }
 
 /**
