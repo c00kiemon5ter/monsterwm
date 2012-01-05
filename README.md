@@ -83,7 +83,7 @@ Monsterwm does not provide a panel and/or statusbar itself. Instead it adheres
 to the [UNIX philosophy][unix] and outputs information about the existent
 desktop, the number of windows on each, the mode of each desktop, the current
 desktop and urgent hints whenever needed. The user can use whatever tool or
-panel suits him best (dzen2, concy, w/e), to process and display that information.
+panel suits him best (dzen2, conky, w/e), to process and display that information.
 
   [unix]: http://en.wikipedia.org/wiki/Unix_philosophy
 

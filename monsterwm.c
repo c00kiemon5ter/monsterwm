@@ -109,7 +109,7 @@ static int previous_desktop = 0;
 static int growth = 0;
 static int mode = DEFAULT_MODE;
 static int master_size;
-static int wh; /* window area heght - screen height minus the border size and panel height */
+static int wh; /* window area height - screen height minus the border size and panel height */
 static int ww; /* window area width - screen width minus the border size */
 static int screen;
 static int xerror(Display *dis, XErrorEvent *ee);
