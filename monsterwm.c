@@ -219,7 +219,6 @@ void clientmessage(XEvent *e) {
     if (!(c = wintoclient(e->xclient.window)) || e->xclient.message_type != netatoms[NET_WM_STATE] || ((unsigned)e->xclient.data.l[1]
         != netatoms[NET_FULLSCREEN] && (unsigned)e->xclient.data.l[2] != netatoms[NET_FULLSCREEN])) return;
     setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscreen)));
-    if (c->isfullscreen) XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
     tile();
     update_current();
 }
@@ -337,12 +336,10 @@ void maprequest(XEvent *e) {
     if (XGetWindowAttributes(dis, e->xmaprequest.window, &wa) && wa.override_redirect) return;
     if (wintoclient(e->xmaprequest.window)) return;
 
-    Window trans;
-    Bool follow = False, istransient = XGetTransientForHint(dis, e->xmaprequest.window, &trans) && trans;
-
+    Bool follow = False;
     int cd = current_desktop, newdsk = current_desktop;
     XClassHint ch = {0, 0};
-    if (!istransient && XGetClassHint(dis, e->xmaprequest.window, &ch))
+    if (XGetClassHint(dis, e->xmaprequest.window, &ch))
         for (unsigned int i=0; i<LENGTH(rules); i++)
             if (!strcmp(ch.res_class, rules[i].class) || !strcmp(ch.res_name, rules[i].class)) {
                 follow = rules[i].follow;
@@ -354,9 +351,19 @@ void maprequest(XEvent *e) {
 
     select_desktop(newdsk);
     addwindow(e->xmaprequest.window);
+
+    Window w;
+    current->istransient = XGetTransientForHint(dis, e->xmaprequest.window, &w);
+
+    int di; unsigned long dl; unsigned char *state = NULL; Atom da;
+    if (XGetWindowProperty(dis, current->win, netatoms[NET_WM_STATE], 0L, sizeof da,
+                    False, XA_ATOM, &da, &di, &dl, &dl, &state) == Success && state)
+        setfullscreen(current, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
+    if (state) XFree(state);
+
     select_desktop(cd);
     if (cd == newdsk) {
-        if (!(current->istransient = istransient)) tile();
+        tile();
         XMapWindow(dis, e->xmaprequest.window);
         update_current();
     } else if (follow) change_desktop(&(Arg){.i = newdsk});
@@ -544,6 +551,7 @@ void select_desktop(int i) {
 void setfullscreen(client *c, Bool fullscreen) {
     XChangeProperty(dis, c->win, netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
                    ((c->isfullscreen = fullscreen) ? &netatoms[NET_FULLSCREEN] : 0), fullscreen);
+    if (c->isfullscreen) XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
 }
 
 void setup(void) {
