@@ -44,6 +44,7 @@ typedef struct {
     int growth;
     client *head;
     client *current;
+    client *prevfocus;
     Bool showpanel;
 } desktop;
 
@@ -119,8 +120,7 @@ static unsigned int win_unfocus;
 static unsigned int numlockmask = 0; /* dynamic key lock mask */
 static Display *dis;
 static Window root;
-static client *head = NULL;
-static client *current = NULL;
+static client *head, *prevfocus, *current;
 static Atom wmatoms[WM_COUNT], netatoms[NET_COUNT];
 static desktop desktops[DESKTOPS];
 
@@ -150,6 +150,7 @@ void addwindow(Window w) {
         head = c;
     }
 
+    prevfocus = current;
     XSelectInput(dis, ((current = c)->win = w), PropertyChangeMask);
     if (FOLLOW_MOUSE) XSelectInput(dis, c->win, EnterWindowMask);
 }
@@ -455,14 +456,14 @@ void move_up() {
 
 void next_win() {
     if (!current || !head->next) return;
-    current = (current->next) ? current->next : head;
+    current = ((prevfocus = current)->next) ? current->next : head;
     if (mode == MONOCLE) XMapWindow(dis, current->win);
     update_current();
 }
 
 void prev_win() {
     if (!current || !head->next) return;
-    if (head == current) while (current->next) current=current->next;
+    if (head == (prevfocus = current)) while (current->next) current=current->next;
     else for (client *t=head; t; t=t->next) if (t->next == current) { current = t; break; }
     if (mode == MONOCLE) XMapWindow(dis, current->win);
     update_current();
@@ -489,8 +490,9 @@ void removeclient(client *c) {
     int nd = 0, cd = current_desktop;
     for (Bool found = False; nd<DESKTOPS && !found; nd++)
         for (select_desktop(nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
-    current = (*p = c->next) ? *p : head;
+    *p = c->next;
     free(c);
+    current = (prevfocus && prevfocus != current) ? prevfocus : (*p) ? (prevfocus = *p) : (prevfocus = head);
     select_desktop(cd);
     tile();
     if (mode == MONOCLE && cd == --nd && current) XMapWindow(dis, current->win);
@@ -526,6 +528,7 @@ void save_desktop(int i) {
     desktops[i].head = head;
     desktops[i].current = current;
     desktops[i].showpanel = showpanel;
+    desktops[i].prevfocus = prevfocus;
 }
 
 void select_desktop(int i) {
@@ -537,6 +540,7 @@ void select_desktop(int i) {
     head = desktops[i].head;
     current = desktops[i].current;
     showpanel = desktops[i].showpanel;
+    prevfocus = desktops[i].prevfocus;
     current_desktop = i;
 }
 
