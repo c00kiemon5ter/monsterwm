@@ -17,7 +17,7 @@
 
 enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { TILE, MONOCLE, BSTACK, GRID, };
-enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_COUNT };
+enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_ACTIVE, NET_COUNT };
 
 /* structs */
 typedef union {
@@ -219,6 +219,7 @@ void clientmessage(XEvent *e) {
     if (c && e->xclient.message_type == netatoms[NET_WM_STATE] && ((unsigned)e->xclient.data.l[1]
         == netatoms[NET_FULLSCREEN] || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN]))
         setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscreen)));
+    else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) current = c;
     tile();
     update_current();
 }
@@ -578,6 +579,7 @@ void setup(void) {
     wmatoms[WM_DELETE_WINDOW] = XInternAtom(dis, "WM_DELETE_WINDOW", False);
     netatoms[NET_SUPPORTED]   = XInternAtom(dis, "_NET_SUPPORTED",   False);
     netatoms[NET_WM_STATE]    = XInternAtom(dis, "_NET_WM_STATE",    False);
+    netatoms[NET_ACTIVE]      = XInternAtom(dis, "_NET_ACTIVE_WINDOW",       False);
     netatoms[NET_FULLSCREEN]  = XInternAtom(dis, "_NET_WM_STATE_FULLSCREEN", False);
 
     /* check if another window manager is running */
@@ -690,7 +692,8 @@ void update_current(void) {
         if (CLICK_TO_FOCUS) XGrabButton(dis, AnyButton, AnyModifier, c->win, True,
             ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
     }
-    XSetInputFocus(dis, current->win, RevertToParent, CurrentTime);
+    XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32, PropModeReplace, (unsigned char *)&current->win, 1);
+    XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
     XRaiseWindow(dis, current->win);
     if (CLICK_TO_FOCUS) XUngrabButton(dis, AnyButton, AnyModifier, current->win);
     XSync(dis, False);
