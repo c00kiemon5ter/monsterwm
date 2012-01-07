@@ -582,7 +582,7 @@ void setup(void) {
 
     /* check if another window manager is running */
     xerrorxlib = XSetErrorHandler(xerrorstart);
-    XSelectInput(dis, DefaultRootWindow(dis), SubstructureNotifyMask|SubstructureRedirectMask|PropertyChangeMask);
+    XSelectInput(dis, DefaultRootWindow(dis), SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask);
     XSync(dis, False);
 
     XSetErrorHandler(xerror);
@@ -710,7 +710,7 @@ client* wintoclient(Window w) {
  * default error handler, which may call exit through xerrorlib.  */
 int xerror(Display *dis, XErrorEvent *ee) {
     if (ee->error_code == BadWindow
-            || (ee->error_code == BadMatch    && (ee->request_code == X_SetInputFocus || ee->request_code ==  X_ConfigureWindow))
+            || (ee->error_code == BadMatch    && (ee->request_code == X_SetInputFocus || ee->request_code == X_ConfigureWindow))
             || (ee->error_code == BadDrawable && (ee->request_code == X_PolyText8     || ee->request_code == X_PolyFillRectangle
                                                || ee->request_code == X_PolySegment   || ee->request_code == X_CopyArea))
             || (ee->error_code == BadAccess   &&  ee->request_code == X_GrabKey))
