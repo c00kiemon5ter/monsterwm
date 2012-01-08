@@ -159,7 +159,7 @@ void addwindow(Window w) {
 
 void buttonpress(XEvent *e) {
     if (CLICK_TO_FOCUS && e->xbutton.window != current->win && e->xbutton.button == Button1)
-        for (current=head; current; current=current->next) if (e->xbutton.window == current->win) break;
+        for (current=head; current && current->win != e->xbutton.window; current=current->next);
     if (!current) current = head;
     update_current();
 }
