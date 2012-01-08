@@ -686,7 +686,7 @@ void togglepanel() {
 
 void unmapnotify(XEvent *e) {
     client *c = wintoclient(e->xunmap.window);
-    if (c && e->xunmap.send_event) XDestroyWindow(dis, c->win);
+    if (c && e->xunmap.send_event) removeclient(c);
 }
 
 void update_current(void) {
