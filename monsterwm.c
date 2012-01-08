@@ -683,7 +683,7 @@ void togglepanel() {
 }
 
 void update_current(void) {
-    if (!current) return;
+    if (!current) { XDeleteProperty(dis, root, netatoms[NET_ACTIVE]); return; }
     int border_width = (!head->next || head->next->istransient || mode == MONOCLE) ? 0 : BORDER_WIDTH;
 
     for (client *c=head; c; c=c->next) {
