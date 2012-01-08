@@ -96,6 +96,7 @@ static void switch_mode(const Arg *arg);
 static void tile(void);
 static void togglepanel();
 static void update_current(void);
+static void unmapnotify(XEvent *e);
 static client* wintoclient(Window w);
 static int xerrorstart();
 
@@ -134,6 +135,7 @@ static void (*events[LASTEvent])(XEvent *e) = {
     [KeyPress] = keypress,
     [MapRequest] = maprequest,
     [PropertyNotify] = propertynotify,
+    [UnmapNotify] = unmapnotify,
 };
 
 void addwindow(Window w) {
@@ -680,6 +682,11 @@ void tile(void) {
 void togglepanel() {
     showpanel = !showpanel;
     tile();
+}
+
+void unmapnotify(XEvent *e) {
+    client *c = wintoclient(e->xunmap.window);
+    if (c && e->xunmap.send_event) XDestroyWindow(dis, c->win);
 }
 
 void update_current(void) {
