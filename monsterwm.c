@@ -14,6 +14,7 @@
 #include <X11/Xatom.h>
 
 #define LENGTH(x) (sizeof(x)/sizeof(*x))
+#define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 
 enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { TILE, MONOCLE, BSTACK, GRID, };

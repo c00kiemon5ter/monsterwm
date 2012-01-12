@@ -3,8 +3,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
-
 /** buttons **/
 #define MOD1            Mod1Mask    /* ALT key */
 #define MOD4            Mod4Mask    /* Super/Windows key */
