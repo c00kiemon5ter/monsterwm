@@ -29,7 +29,7 @@ typedef union {
 typedef struct {
     unsigned int mod;
     KeySym keysym;
-    void (*function)(const Arg *);
+    void (*func)(const Arg *);
     const Arg arg;
 } key;
 
@@ -309,8 +309,8 @@ void keypress(XEvent *e) {
     KeySym keysym;
     keysym = XKeycodeToKeysym(dis, (KeyCode)e->xkey.keycode, 0);
     for (unsigned int i=0; i<LENGTH(keys); i++)
-        if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(e->xkey.state) && keys[i].function)
-                keys[i].function(&keys[i].arg);
+        if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(e->xkey.state) && keys[i].func)
+                keys[i].func(&keys[i].arg);
 }
 
 void killclient() {
