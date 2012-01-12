@@ -155,8 +155,7 @@ void addwindow(Window w) {
     }
 
     prevfocus = current;
-    XSelectInput(dis, ((current = c)->win = w), PropertyChangeMask);
-    if (FOLLOW_MOUSE) XSelectInput(dis, c->win, EnterWindowMask);
+    XSelectInput(dis, ((current = c)->win = w), PropertyChangeMask|(FOLLOW_MOUSE?EnterWindowMask:0));
 }
 
 void buttonpress(XEvent *e) {
@@ -273,10 +272,9 @@ void die(const char *errstr, ...) {
 }
 
 void enternotify(XEvent *e) {
-    if (FOLLOW_MOUSE)
-        if ((e->xcrossing.mode == NotifyNormal && e->xcrossing.detail != NotifyInferior) || e->xcrossing.window == root)
-            for (current=head; current; current=current->next) if (e->xcrossing.window == current->win) break;
-    if (!current) current = head;
+    client *c = wintoclient(e->xcrossing.window);
+    if (!c) return;
+    if (FOLLOW_MOUSE && e->xcrossing.mode == NotifyNormal && e->xcrossing.detail != NotifyInferior) current = c;
     update_current();
 }
 
