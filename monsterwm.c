@@ -295,13 +295,12 @@ unsigned long getcolor(const char* color) {
 void grabkeys(void) {
     KeyCode code;
     XUngrabKey(dis, AnyKey, AnyModifier, root);
-    for (unsigned int i=0; i<LENGTH(keys); i++) {
-        code = XKeysymToKeycode(dis, keys[i].keysym);
-        XGrabKey(dis, code, keys[i].mod,                          root, True, GrabModeAsync, GrabModeAsync);
-        XGrabKey(dis, code, keys[i].mod |               LockMask, root, True, GrabModeAsync, GrabModeAsync);
-        XGrabKey(dis, code, keys[i].mod | numlockmask,            root, True, GrabModeAsync, GrabModeAsync);
-        XGrabKey(dis, code, keys[i].mod | numlockmask | LockMask, root, True, GrabModeAsync, GrabModeAsync);
-    }
+
+    unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
+    for (unsigned int k=0; k<LENGTH(keys); k++)
+        if ((code = XKeysymToKeycode(dis, keys[k].keysym)))
+            for (unsigned int m=0; m<LENGTH(modifiers); m++)
+                XGrabKey(dis, code, keys[k].mod|modifiers[m], root, True, GrabModeAsync, GrabModeAsync);
 }
 
 void keypress(XEvent *e) {
