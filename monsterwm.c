@@ -13,8 +13,9 @@
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
 
-#define LENGTH(x) (sizeof(x)/sizeof(*x))
+#define LENGTH(x)       (sizeof(x)/sizeof(*x))
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
+#define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
 
 enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { TILE, MONOCLE, BSTACK, GRID, };
@@ -699,7 +700,7 @@ void update_current(void) {
         XSetWindowBorderWidth(dis, c->win, (c->isfullscreen ? 0 : border_width));
         XSetWindowBorder(dis, c->win, (current == c ? win_focus : win_unfocus));
         if (CLICK_TO_FOCUS) XGrabButton(dis, AnyButton, AnyModifier, c->win, True,
-            ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
+                            BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
     }
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32, PropModeReplace, (unsigned char *)&current->win, 1);
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
