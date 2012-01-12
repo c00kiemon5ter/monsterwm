@@ -272,9 +272,10 @@ void die(const char *errstr, ...) {
 }
 
 void enternotify(XEvent *e) {
+    if (!FOLLOW_MOUSE) return;
     client *c = wintoclient(e->xcrossing.window);
     if (!c) return;
-    if (FOLLOW_MOUSE && e->xcrossing.mode == NotifyNormal && e->xcrossing.detail != NotifyInferior) current = c;
+    if (e->xcrossing.mode == NotifyNormal && e->xcrossing.detail != NotifyInferior) current = c;
     update_current();
 }
 
