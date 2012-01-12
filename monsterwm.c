@@ -97,7 +97,7 @@ static void swap_master();
 static void switch_mode(const Arg *arg);
 static void tile(void);
 static void togglepanel();
-static void update_current(void);
+static void update_current(client *c);
 static void unmapnotify(XEvent *e);
 static client* wintoclient(Window w);
 static int xerrorstart();
@@ -161,8 +161,7 @@ void addwindow(Window w) {
 void buttonpress(XEvent *e) {
     if (CLICK_TO_FOCUS && e->xbutton.window != current->win && e->xbutton.button == Button1)
         for (current=head; current && current->win != e->xbutton.window; current=current->next);
-    if (!current) current = head;
-    update_current();
+    update_current(current ? NULL : head);
 }
 
 void change_desktop(const Arg *arg) {
@@ -172,7 +171,7 @@ void change_desktop(const Arg *arg) {
     tile();
     if (mode == MONOCLE && current) XMapWindow(dis, current->win);
     else for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
-    update_current();
+    update_current(NULL);
     select_desktop(previous_desktop);
     for (client *c=head; c; c=c->next) XUnmapWindow(dis, c->win);
     select_desktop(arg->i);
@@ -207,7 +206,7 @@ void client_to_desktop(const Arg *arg) {
 
     select_desktop(cd);
     tile();
-    update_current();
+    update_current(NULL);
     if (FOLLOW_WINDOW) change_desktop(arg);
     desktopinfo();
 }
@@ -224,7 +223,7 @@ void clientmessage(XEvent *e) {
         setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscreen)));
     else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) current = c;
     tile();
-    update_current();
+    update_current(NULL);
 }
 
 void configurerequest(XEvent *e) {
@@ -275,13 +274,11 @@ void enternotify(XEvent *e) {
     if (!FOLLOW_MOUSE) return;
     client *c = wintoclient(e->xcrossing.window);
     if (!c) return;
-    if (e->xcrossing.mode == NotifyNormal && e->xcrossing.detail != NotifyInferior) current = c;
-    update_current();
+    if (e->xcrossing.mode == NotifyNormal && e->xcrossing.detail != NotifyInferior) update_current(c);
 }
 
 void focusurgent() {
-    for (client *c=head; c; c=c->next) if (c->isurgent) current = c;
-    update_current();
+    for (client *c=head; c; c=c->next) if (c->isurgent) update_current(c);
 }
 
 unsigned long getcolor(const char* color) {
@@ -356,7 +353,7 @@ void maprequest(XEvent *e) {
     if (cd == newdsk) {
         tile();
         XMapWindow(dis, e->xmaprequest.window);
-        update_current();
+        update_current(NULL);
     } else if (follow) change_desktop(&(Arg){.i = newdsk});
     desktopinfo();
 }
@@ -400,7 +397,7 @@ void move_down() {
     else head = current;
 
     tile();
-    update_current();
+    update_current(NULL);
 }
 
 /* move the current client, to the previous from current
@@ -443,14 +440,13 @@ void move_up() {
     current->next = (current->next == head) ? NULL : p;
 
     tile();
-    update_current();
+    update_current(NULL);
 }
 
 void next_win() {
     if (!current || !head->next) return;
-    current = ((prevfocus = current)->next) ? current->next : head;
+    update_current((prevfocus = current)->next ? current->next : head);
     if (mode == MONOCLE) XMapWindow(dis, current->win);
-    update_current();
 }
 
 void prev_win() {
@@ -458,7 +454,7 @@ void prev_win() {
     if (head == (prevfocus = current)) while (current->next) current=current->next;
     else for (client *t=head; t; t=t->next) if (t->next == current) { current = t; break; }
     if (mode == MONOCLE) XMapWindow(dis, current->win);
-    update_current();
+    update_current(NULL);
 }
 
 void propertynotify(XEvent *e) {
@@ -488,7 +484,7 @@ void removeclient(client *c) {
     select_desktop(cd);
     tile();
     if (mode == MONOCLE && cd == --nd && current) XMapWindow(dis, current->win);
-    update_current();
+    update_current(NULL);
 }
 
 void resize_master(const Arg *arg) {
@@ -620,9 +616,8 @@ void swap_master() {
     if (current == head) move_down();
     /* if not head, then head is always behind us, so move_up until is head */
     else while (current != head) move_up();
-    current = head;
+    update_current(head);
     tile();
-    update_current();
 }
 
 void switch_mode(const Arg *arg) {
@@ -631,7 +626,7 @@ void switch_mode(const Arg *arg) {
     mode = arg->i;
     master_size = (mode == BSTACK ? wh : ww) * MASTER_SIZE;
     tile();
-    update_current();
+    update_current(NULL);
     desktopinfo();
 }
 
@@ -690,8 +685,11 @@ void unmapnotify(XEvent *e) {
     desktopinfo();
 }
 
-void update_current(void) {
-    if (!current) { XDeleteProperty(dis, root, netatoms[NET_ACTIVE]); return; }
+void update_current(client *c) {
+    if (!current && !c) {
+        XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
+        return;
+    } else if(c) current = c;
     int border_width = (!head->next || head->next->istransient || mode == MONOCLE) ? 0 : BORDER_WIDTH;
 
     for (client *c=head; c; c=c->next) {
