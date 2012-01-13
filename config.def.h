@@ -77,8 +77,8 @@ static key keys[] = {
 };
 
 static Button buttons[] = {
-    {  MOD1,    Button1,     mousemove,     {NULL}},
-    {  MOD1,    Button3,     mouseresize,   {NULL}},
+    {  MOD1,    Button1,     mousemotion,   {.i = MOVE}},
+    {  MOD1,    Button3,     mousemotion,   {.i = RESIZE}},
     {  MOD4,    Button3,     spawn,         {.com = dmenucmd}},
 };
 #endif

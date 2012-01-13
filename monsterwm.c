@@ -17,8 +17,9 @@
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 #define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
 
-enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
+enum { RESIZE, MOVE, };
 enum { TILE, MONOCLE, BSTACK, GRID, };
+enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_ACTIVE, NET_COUNT };
 
 /* structs */
@@ -85,8 +86,7 @@ static void last_desktop();
 static void maprequest(XEvent *e);
 static void move_down();
 static void move_up();
-static void mousemove(const Arg *arg);
-static void mouseresize(const Arg *arg);
+static void mousemotion(const Arg *arg);
 static void next_win();
 static void prev_win();
 static void propertynotify(XEvent *e);
@@ -384,8 +384,8 @@ void maprequest(XEvent *e) {
     desktopinfo();
 }
 
-void mousemove(const Arg *arg) {
-    if (!current || !arg) return;
+void mousemotion(const Arg *arg) {
+    if (!current) return;
     static XWindowAttributes wa;
     XGetWindowAttributes(dis, current->win, &wa);
 
@@ -403,33 +403,8 @@ void mousemove(const Arg *arg) {
                 events[ev.type](&ev);
                 break;
             case MotionNotify:
-                XMoveWindow(dis, current->win, wa.x + ev.xmotion.x - x, wa.y + ev.xmotion.y - y);
-                break;
-        }
-    } while(ev.type != ButtonRelease);
-    XUngrabPointer(dis, CurrentTime);
-}
-
-void mouseresize(const Arg *arg) {
-    if (!current || !arg) return;
-    static XWindowAttributes wa;
-    XGetWindowAttributes(dis, current->win, &wa);
-
-    if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
-                     GrabModeAsync, None, None, CurrentTime) != GrabSuccess) return;
-    int x, y, z; unsigned int v; Window w;
-    XQueryPointer(dis, root, &w, &w, &x, &y, &z, &z, &v);
-
-    XEvent ev;
-    do {
-        XMaskEvent(dis, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
-        switch (ev.type) {
-            case ConfigureRequest:
-            case MapRequest:
-                events[ev.type](&ev);
-                break;
-            case MotionNotify:
-                XResizeWindow(dis, current->win, wa.width + ev.xmotion.x - x, wa.height + ev.xmotion.y - y);
+                if (arg->i == MOVE) XMoveWindow(dis, current->win, wa.x + ev.xmotion.x - x, wa.y + ev.xmotion.y - y);
+                else XResizeWindow(dis, current->win, wa.width + ev.xmotion.x - x, wa.height + ev.xmotion.y - y);
                 break;
         }
     } while(ev.type != ButtonRelease);
@@ -557,13 +532,12 @@ void removeclient(client *c) {
     for (Bool found = False; nd<DESKTOPS && !found; nd++)
         for (select_desktop(nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
-    Bool transient = c->istransient;
-    free(c);
     current = (prevfocus && prevfocus != current) ? prevfocus : (*p) ? (prevfocus = *p) : (prevfocus = head);
     select_desktop(cd);
-    if (!transient) tile();
+    if (!c->istransient) tile();
     if (mode == MONOCLE && cd == --nd && current) XMapWindow(dis, current->win);
     update_current(NULL);
+    free(c);
 }
 
 void resize_master(const Arg *arg) {
