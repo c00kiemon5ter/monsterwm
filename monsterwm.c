@@ -34,6 +34,13 @@ typedef struct {
     const Arg arg;
 } key;
 
+typedef struct {
+    unsigned int mask;
+    unsigned int button;
+    void (*func)(const Arg *);
+    const Arg arg;
+} Button;
+
 typedef struct client {
     struct client *next;
     Bool isurgent, istransient, isfullscreen;
@@ -70,6 +77,7 @@ static void die(const char* errstr, ...);
 static void enternotify(XEvent *e);
 static void focusurgent();
 static unsigned long getcolor(const char* color);
+static void grabbuttons(client *c);
 static void grabkeys(void);
 static void keypress(XEvent *e);
 static void killclient();
@@ -77,6 +85,7 @@ static void last_desktop();
 static void maprequest(XEvent *e);
 static void move_down();
 static void move_up();
+static void mousemove(const Arg *arg);
 static void next_win();
 static void prev_win();
 static void propertynotify(XEvent *e);
@@ -159,9 +168,16 @@ void addwindow(Window w) {
 }
 
 void buttonpress(XEvent *e) {
-    if (CLICK_TO_FOCUS && e->xbutton.window != current->win && e->xbutton.button == Button1)
-        for (current=head; current && current->win != e->xbutton.window; current=current->next);
-    update_current(current ? NULL : head);
+    client *c = wintoclient(e->xbutton.window);
+    if (!c) return;
+    if (CLICK_TO_FOCUS && current != c && e->xbutton.button == Button1) update_current(c);
+
+    for (unsigned int i=0; i<LENGTH(buttons); i++)
+        if (buttons[i].func && buttons[i].button == e->xbutton.button &&
+            CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state)) {
+            update_current(c);
+            buttons[i].func(&(buttons[i].arg));
+        }
 }
 
 void change_desktop(const Arg *arg) {
@@ -290,6 +306,14 @@ unsigned long getcolor(const char* color) {
     return c.pixel;
 }
 
+void grabbuttons(client *c) {
+    unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
+    for (unsigned int b=0; b<LENGTH(buttons); b++)
+        for (unsigned int m=0; m<LENGTH(modifiers); m++)
+            XGrabButton(dis, buttons[b].button, buttons[b].mask|modifiers[m], c->win,
+                        False, BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
+}
+
 void grabkeys(void) {
     KeyCode code;
     XUngrabKey(dis, AnyKey, AnyModifier, root);
@@ -354,8 +378,35 @@ void maprequest(XEvent *e) {
         tile();
         XMapWindow(dis, e->xmaprequest.window);
         update_current(NULL);
+        grabbuttons(current);
     } else if (follow) change_desktop(&(Arg){.i = newdsk});
     desktopinfo();
+}
+
+void mousemove(const Arg *arg) {
+    if (!current) return;
+    static XWindowAttributes wa;
+    XGetWindowAttributes(dis, current->win, &wa);
+
+    if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
+                     GrabModeAsync, None, None, CurrentTime) != GrabSuccess) return;
+    int x, y, z; unsigned int v; Window w;
+    XQueryPointer(dis, root, &w, &w, &x, &y, &z, &z, &v);
+
+    XEvent ev;
+    do {
+        XMaskEvent(dis, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
+        switch (ev.type) {
+            case ConfigureRequest:
+            case MapRequest:
+                events[ev.type](&ev);
+                break;
+            case MotionNotify:
+                XMoveWindow(dis, current->win, wa.x + ev.xmotion.x - x, wa.y + ev.xmotion.y - y);
+                break;
+        }
+    } while(ev.type != ButtonRelease);
+    XUngrabPointer(dis, CurrentTime);
 }
 
 /* move the current client, to current->next
@@ -582,7 +633,7 @@ void setup(void) {
 
     /* check if another window manager is running */
     xerrorxlib = XSetErrorHandler(xerrorstart);
-    XSelectInput(dis, DefaultRootWindow(dis), SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask);
+    XSelectInput(dis, DefaultRootWindow(dis), SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask|ButtonPressMask);
     XSync(dis, False);
 
     XSetErrorHandler(xerror);

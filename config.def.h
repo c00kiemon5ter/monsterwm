@@ -76,4 +76,7 @@ static key keys[] = {
        DESKTOPCHANGE(    XK_F4,                             3)
 };
 
+static Button buttons[] = {
+    {  MOD1,    Button1,     mousemove,     {NULL}},
+};
 #endif
