@@ -557,10 +557,11 @@ void removeclient(client *c) {
     for (Bool found = False; nd<DESKTOPS && !found; nd++)
         for (select_desktop(nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
+    Bool transient = c->istransient;
     free(c);
     current = (prevfocus && prevfocus != current) ? prevfocus : (*p) ? (prevfocus = *p) : (prevfocus = head);
     select_desktop(cd);
-    tile();
+    if (!transient) tile();
     if (mode == MONOCLE && cd == --nd && current) XMapWindow(dis, current->win);
     update_current(NULL);
 }
