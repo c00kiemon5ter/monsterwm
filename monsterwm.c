@@ -86,6 +86,7 @@ static void maprequest(XEvent *e);
 static void move_down();
 static void move_up();
 static void mousemove(const Arg *arg);
+static void mouseresize(const Arg *arg);
 static void next_win();
 static void prev_win();
 static void propertynotify(XEvent *e);
@@ -403,6 +404,32 @@ void mousemove(const Arg *arg) {
                 break;
             case MotionNotify:
                 XMoveWindow(dis, current->win, wa.x + ev.xmotion.x - x, wa.y + ev.xmotion.y - y);
+                break;
+        }
+    } while(ev.type != ButtonRelease);
+    XUngrabPointer(dis, CurrentTime);
+}
+
+void mouseresize(const Arg *arg) {
+    if (!current || !arg) return;
+    static XWindowAttributes wa;
+    XGetWindowAttributes(dis, current->win, &wa);
+
+    if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
+                     GrabModeAsync, None, None, CurrentTime) != GrabSuccess) return;
+    int x, y, z; unsigned int v; Window w;
+    XQueryPointer(dis, root, &w, &w, &x, &y, &z, &z, &v);
+
+    XEvent ev;
+    do {
+        XMaskEvent(dis, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
+        switch (ev.type) {
+            case ConfigureRequest:
+            case MapRequest:
+                events[ev.type](&ev);
+                break;
+            case MotionNotify:
+                XResizeWindow(dis, current->win, wa.width + ev.xmotion.x - x, wa.height + ev.xmotion.y - y);
                 break;
         }
     } while(ev.type != ButtonRelease);
