@@ -376,8 +376,8 @@ void maprequest(XEvent *e) {
 
     select_desktop(cd);
     if (cd == newdsk) {
-        tile();
-        XMapWindow(dis, e->xmaprequest.window);
+        if (!current->istransient) tile();
+        XMapWindow(dis, current->win);
         update_current(NULL);
         grabbuttons(current);
     } else if (follow) change_desktop(&(Arg){.i = newdsk});
