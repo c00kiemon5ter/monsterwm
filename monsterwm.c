@@ -672,7 +672,6 @@ void swap_master() {
 }
 
 void switch_mode(const Arg *arg) {
-    if (mode == arg->i) return;
     if (mode == MONOCLE) for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
     mode = arg->i;
     master_size = (mode == BSTACK ? wh : ww) * MASTER_SIZE;
