@@ -1,4 +1,4 @@
-/* see LICENSE for copyright and license */
+/* see license for copyright and license */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -639,22 +639,28 @@ void tile(void) {
     /* client's x,y coordinates, width and height */
     int cx = 0, cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0), cw = 0, ch = 0;
 
+    /* count stack windows -- do not consider fullscreen or transient clients */
     for (n=0, c=head->next; c; c=c->next) if (!c->istransient && !c->isfullscreen) ++n;
-    if (!head->next || head->next->istransient || mode == MONOCLE) {
+
+    if (!head->next || (head->next->istransient && !head->next->next) || mode == MONOCLE) {
         for (c=head; c; c=c->next) if (!c->isfullscreen && !c->istransient)
             XMoveResizeWindow(dis, c->win, cx, cy, ww + BORDER_WIDTH, h + BORDER_WIDTH);
-    } else if ((mode == TILE || mode == BSTACK) && n) { /* adjust to match screen height/width */
-        if (n>1) { d = (z - growth)%n + growth; z = (z - growth)/n; }
+    } else if (mode == TILE || mode == BSTACK) {
+        d = (z - growth)%n + growth;       /* n should be greater than one */
+        z = (z - growth)/n;         /* adjust to match screen height/width */
         if (!head->isfullscreen && !head->istransient)
             (mode == BSTACK) ? XMoveResizeWindow(dis, head->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH)
                              : XMoveResizeWindow(dis, head->win, cx, cy, master_size - BORDER_WIDTH,  h - BORDER_WIDTH);
-        if (!head->next->isfullscreen && !head->next->istransient)
-            (mode == BSTACK) ? XMoveResizeWindow(dis, head->next->win, cx, (cy += master_size),
-                            (cw = z - BORDER_WIDTH) + d, (ch = h - master_size - BORDER_WIDTH))
-                             : XMoveResizeWindow(dis, head->next->win, (cx += master_size), cy,
-                            (cw = ww - master_size - BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
-        for ((mode==BSTACK)?(cx+=z+d):(cy+=z+d), c=head->next->next; c; c=c->next, (mode==BSTACK)?(cx+=z):(cy+=z))
-            if (!c->isfullscreen && !c->istransient) XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
+        for (c=head->next; c && (c->isfullscreen || c->istransient); c=c->next);
+        if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, (cy += master_size),
+                                (cw = z - BORDER_WIDTH) + d, (ch = h - master_size - BORDER_WIDTH))
+                                : XMoveResizeWindow(dis, c->win, (cx += master_size), cy,
+                                (cw = ww - master_size - BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
+        if (c) for (mode==BSTACK?(cx+=z+d):(cy+=z+d), c=c->next; c; c=c->next)
+            if (!c->isfullscreen && !c->istransient) {
+                XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
+                mode==BSTACK?(cx+=z):(cy+=z);
+            }
     } else if (mode == GRID) {
         ++n;                              /* include head on window count */
         int cols, rows, cn=0, rn=0, i=0;  /* columns, rows, and current column and row number */
@@ -690,7 +696,9 @@ void update_current(client *c) {
         XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
         return;
     } else if(c) current = c;
-    int border_width = (!head->next || head->next->istransient || mode == MONOCLE) ? 0 : BORDER_WIDTH;
+
+    int border_width = (!head->next || (head->next->istransient &&
+                        !head->next->next) || mode == MONOCLE) ? 0 : BORDER_WIDTH;
 
     for (client *c=head; c; c=c->next) {
         XSetWindowBorderWidth(dis, c->win, (c->isfullscreen ? 0 : border_width));
@@ -698,9 +706,11 @@ void update_current(client *c) {
         if (CLICK_TO_FOCUS) XGrabButton(dis, AnyButton, AnyModifier, c->win, True,
                             BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
     }
+
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32, PropModeReplace, (unsigned char *)&current->win, 1);
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
     XRaiseWindow(dis, current->win);
+
     if (CLICK_TO_FOCUS) XUngrabButton(dis, AnyButton, AnyModifier, current->win);
     XSync(dis, False);
 }
