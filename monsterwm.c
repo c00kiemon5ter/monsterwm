@@ -384,7 +384,7 @@ void maprequest(XEvent *e) {
 }
 
 void mousemove(const Arg *arg) {
-    if (!current) return;
+    if (!current || !arg) return;
     static XWindowAttributes wa;
     XGetWindowAttributes(dis, current->win, &wa);
 
