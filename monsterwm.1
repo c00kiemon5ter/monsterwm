@@ -5,17 +5,13 @@ monsterwm \- minimal and dynamic tiling window manager
 .B monsterwm
 .RB [ \-v ]
 .SH DESCRIPTION
-monsterwm is a very minimal, lightweight, monsterous, tiny, dynamic tiling
-window manager. It will try to stay as small as possible. It looks a lot like
-.I dwm
-with gridlayout, bstack, pertag, dwmreturn patches builtin, but without
-floating mode(currently).
+monsterwm is a very minimal, lightweight, tiny but monsterous, dynamic tiling
+window manager with partial floating mode support. It will try to stay as small
+as possible.
 .P
 .SH MODES
 It allows the "normal" method of tiling window managers (with the new window as
-the master) and with the new window opened at the bottom of the stack (like
-.I dwm's
-attach_aside).
+the master) and with the new window opened at the bottom of the stack
 .P
 .B monsterwm
 three other modes available:
@@ -27,6 +23,9 @@ equally divided into a grid.
 .I Monocle mode
 or fullscreen mode, where the clients take up the entire workspace, and additional
 clients are hidden behind the current shown window.
+.I Partial floating mode
+where, windows can move and be resized freely in the screen space, as long as no
+window is added or removed, except if that window is transient.
 .SH OPTIONS
 .TP
 .B \-v
@@ -35,7 +34,7 @@ prints version information to standard output, then exits.
 .SS Status bar
 monsterwm does not provide a status bar. Consistent with the Unix philosophy,
 monsterwm provides information to the status bar or panel of choice via text.
-.SS Keyboard commands
+.SS Keyboard and mouse commands
 All of
 .I monsterwm's
 commands can be customized by editing
@@ -105,6 +104,16 @@ is configured with four workspaces.
 .TP
 .B Mod1\-Shift\-F{1..n}
 Move focused window to nth workspace.
+.TP
+.B Mod1\-Button1
+Dragging the mouse will move the selected window
+.TP
+.B Mod1\-Button3
+Dragging the mouse will resize the selected window
+.TP
+.B Mod4\-Button3
+will bring up
+.I dmenu
 .TP
 .SH CUSTOMIZATION
 .I monsterwm
