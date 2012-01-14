@@ -217,6 +217,7 @@ void addwindow(Window w) {
 
     prevfocus = current;
     XSelectInput(dis, ((current = c)->win = w), PropertyChangeMask|(FOLLOW_MOUSE?EnterWindowMask:0));
+    if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, w, True, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
 }
 
 /* on the press of a button check to see if there's a binded function to call */
