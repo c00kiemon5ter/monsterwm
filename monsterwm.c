@@ -44,7 +44,7 @@ typedef struct {
 
 typedef struct client {
     struct client *next;
-    Bool isurgent, istransient, isfullscreen;
+    Bool isurgent, istransient, isfullscreen, isfloating;
     Window win;
 } client;
 
@@ -376,7 +376,7 @@ void maprequest(XEvent *e) {
 
     select_desktop(cd);
     if (cd == newdsk) {
-        if (!current->istransient) tile();
+        tile();
         XMapWindow(dis, current->win);
         update_current(NULL);
         grabbuttons(current);
@@ -407,6 +407,7 @@ void mousemotion(const Arg *arg) {
                 else XResizeWindow(dis, current->win, wa.width + ev.xmotion.x - x, wa.height + ev.xmotion.y - y);
                 break;
         }
+        current->isfloating = True;
     } while(ev.type != ButtonRelease);
     XUngrabPointer(dis, CurrentTime);
 }
@@ -534,7 +535,7 @@ void removeclient(client *c) {
     *p = c->next;
     current = (prevfocus && prevfocus != current) ? prevfocus : (*p) ? (prevfocus = *p) : (prevfocus = head);
     select_desktop(cd);
-    if (!c->istransient) tile();
+    tile();
     if (mode == MONOCLE && cd == --nd && current) XMapWindow(dis, current->win);
     update_current(NULL);
     free(c);
@@ -675,6 +676,7 @@ void swap_master() {
 
 void switch_mode(const Arg *arg) {
     if (mode == MONOCLE) for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
+    for (client *c=head; c; c=c->next) c->isfloating = False;
     mode = arg->i;
     master_size = (mode == BSTACK ? wh : ww) * MASTER_SIZE;
     tile();
@@ -692,24 +694,24 @@ void tile(void) {
     int cx = 0, cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0), cw = 0, ch = 0;
 
     /* count stack windows -- do not consider fullscreen or transient clients */
-    for (n=0, c=head->next; c; c=c->next) if (!c->istransient && !c->isfullscreen) ++n;
+    for (n=0, c=head->next; c; c=c->next) if (!c->istransient && !c->isfullscreen && !c->isfloating) ++n;
 
     if (!head->next || (head->next->istransient && !head->next->next) || mode == MONOCLE) {
-        for (c=head; c; c=c->next) if (!c->isfullscreen && !c->istransient)
+        for (c=head; c; c=c->next) if (!c->isfullscreen && !c->istransient && !c->isfloating)
             XMoveResizeWindow(dis, c->win, cx, cy, ww + BORDER_WIDTH, h + BORDER_WIDTH);
     } else if (mode == TILE || mode == BSTACK) {
         d = (z - growth)%n + growth;       /* n should be greater than one */
         z = (z - growth)/n;         /* adjust to match screen height/width */
-        if (!head->isfullscreen && !head->istransient)
+        if (!head->isfullscreen && !head->istransient && !head->isfloating)
             (mode == BSTACK) ? XMoveResizeWindow(dis, head->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH)
                              : XMoveResizeWindow(dis, head->win, cx, cy, master_size - BORDER_WIDTH,  h - BORDER_WIDTH);
-        for (c=head->next; c && (c->isfullscreen || c->istransient); c=c->next);
+        for (c=head->next; c && (c->isfullscreen || c->istransient || c->isfloating); c=c->next);
         if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, (cy += master_size),
                                 (cw = z - BORDER_WIDTH) + d, (ch = h - master_size - BORDER_WIDTH))
                                 : XMoveResizeWindow(dis, c->win, (cx += master_size), cy,
                                 (cw = ww - master_size - BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
         if (c) for (mode==BSTACK?(cx+=z+d):(cy+=z+d), c=c->next; c; c=c->next)
-            if (!c->isfullscreen && !c->istransient) {
+            if (!c->isfullscreen && !c->istransient && !c->isfloating) {
                 XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
                 mode==BSTACK?(cx+=z):(cy+=z);
             }
@@ -725,7 +727,8 @@ void tile(void) {
             ch = h/rows;
             cx = cn*cw;
             cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0) + rn*ch;
-            if (!c->isfullscreen && !c->istransient) XMoveResizeWindow(dis, c->win, cx, cy, cw - BORDER_WIDTH, ch - BORDER_WIDTH);
+            if (!c->isfullscreen && !c->istransient && !c->isfloating)
+                XMoveResizeWindow(dis, c->win, cx, cy, cw - BORDER_WIDTH, ch - BORDER_WIDTH);
             if (++rn >= rows) { rn = 0; cn++; }
         }
     } else fprintf(stderr, "error: no such layout mode: %d\n", mode);
