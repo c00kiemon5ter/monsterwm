@@ -524,7 +524,7 @@ void mousemotion(const Arg *arg) {
 
     if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
                      GrabModeAsync, None, None, CurrentTime) != GrabSuccess) return;
-    int x, y, z; unsigned int v; Window w;
+    int x, y, z, xw, yh; unsigned int v; Window w;
     XQueryPointer(dis, root, &w, &w, &x, &y, &z, &z, &v);
 
     XEvent ev;
@@ -536,8 +536,10 @@ void mousemotion(const Arg *arg) {
                 events[ev.type](&ev);
                 break;
             case MotionNotify:
-                if (arg->i == MOVE) XMoveWindow(dis, current->win, wa.x + ev.xmotion.x - x, wa.y + ev.xmotion.y - y);
-                else XResizeWindow(dis, current->win, wa.width + ev.xmotion.x - x, wa.height + ev.xmotion.y - y);
+                xw = (arg->i == MOVE ? wa.x : wa.width)  + ev.xmotion.x - x;
+                yh = (arg->i == MOVE ? wa.y : wa.height) + ev.xmotion.y - y;
+                if (arg->i == RESIZE) XResizeWindow(dis, current->win, xw>MINWSZ?xw:wa.width, yh>MINWSZ?yh:wa.height);
+                else if (arg->i == MOVE) XMoveWindow(dis, current->win, xw, yh);
                 break;
         }
         current->isfloating = True;
