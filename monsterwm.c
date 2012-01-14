@@ -410,6 +410,7 @@ void mousemotion(const Arg *arg) {
         current->isfloating = True;
     } while(ev.type != ButtonRelease);
     XUngrabPointer(dis, CurrentTime);
+    tile();
 }
 
 /* move the current client, to current->next
