@@ -6,8 +6,8 @@ monsterwm \- minimal and dynamic tiling window manager
 .RB [ \-v ]
 .SH DESCRIPTION
 monsterwm is a very minimal, lightweight, tiny but monsterous, dynamic tiling
-window manager with partial floating mode support. It will try to stay as small
-as possible.
+window manager with floating mode support. It will try to stay as small as
+possible.
 .P
 .SH MODES
 It allows the "normal" method of tiling window managers (with the new window as
@@ -23,9 +23,9 @@ equally divided into a grid.
 .I Monocle mode
 or fullscreen mode, where the clients take up the entire workspace, and additional
 clients are hidden behind the current shown window.
-.I Partial floating mode
-where, windows can move and be resized freely in the screen space, as long as no
-window is added or removed, except if that window is transient.
+.I Floating mode
+where, windows can move and be resized freely in the screen space. Windows
+retain their floating status until the user switches to a tiling mode.
 .SH OPTIONS
 .TP
 .B \-v

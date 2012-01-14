@@ -67,7 +67,7 @@ opening the window at the bottom of the stack (attach\_aside)
 
 ---
 
- *partial floating mode*
+ *floating mode*
 
     -------------
     |  |        |
@@ -76,9 +76,13 @@ opening the window at the bottom of the stack (attach\_aside)
     |     |   | |
     ------`---'--
 
- _Partial_ floating mode means that one can freely move and resize windows, but
- the windows will revert to their tiling mode position once a window is added or
- removed, and that window is not transient.
+ In floating mode one can freely move and resize windows in the screen space.
+ Changing desktops, adding or removing floating windows, does not affect the
+ floating status of the windows. Windows will revert to their tiling mode
+ position once the user selects a tiling mode.
+ Note, that one cannot "select" the floating mode, but it will be enabled if
+ one tries to move or resize a window with the mouse. Once one does that, then
+ the window is marked as being in floating mode.
 
 ---
 
