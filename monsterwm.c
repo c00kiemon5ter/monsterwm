@@ -939,15 +939,11 @@ void update_current(client *c) {
     for (client *c=head; c; c=c->next) {
         XSetWindowBorderWidth(dis, c->win, (c->isfullscreen ? 0 : border_width));
         XSetWindowBorder(dis, c->win, (current == c ? win_focus : win_unfocus));
-        if (CLICK_TO_FOCUS) XGrabButton(dis, AnyButton, AnyModifier, c->win, True,
-                            BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
     }
 
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32, PropModeReplace, (unsigned char *)&current->win, 1);
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
     XRaiseWindow(dis, current->win);
-
-    if (CLICK_TO_FOCUS) XUngrabButton(dis, AnyButton, AnyModifier, current->win);
     XSync(dis, False);
 }
 
