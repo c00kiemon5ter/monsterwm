@@ -217,7 +217,6 @@ void addwindow(Window w) {
 
     prevfocus = current;
     XSelectInput(dis, ((current = c)->win = w), PropertyChangeMask|(FOLLOW_MOUSE?EnterWindowMask:0));
-    if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, w, True, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
 }
 
 /* on the press of a button check to see if there's a binded function to call */
@@ -940,11 +939,14 @@ void update_current(client *c) {
     for (client *c=head; c; c=c->next) {
         XSetWindowBorderWidth(dis, c->win, (c->isfullscreen ? 0 : border_width));
         XSetWindowBorder(dis, c->win, (current == c ? win_focus : win_unfocus));
+        if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
+                ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
     }
 
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32, PropModeReplace, (unsigned char *)&current->win, 1);
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
     XRaiseWindow(dis, current->win);
+    if (CLICK_TO_FOCUS) XUngrabButton(dis, Button1, None, current->win);
     XSync(dis, False);
 }
 
