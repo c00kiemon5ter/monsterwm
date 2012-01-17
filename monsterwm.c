@@ -89,12 +89,8 @@ typedef struct client {
  * showpanel    - the visibility status of the panel
  */
 typedef struct {
-    int master_size;
-    int mode;
-    int growth;
-    client *head;
-    client *current;
-    client *prevfocus;
+    int master_size, mode, growth;
+    client *head, *current, *prevfocus;
     Bool showpanel;
 } desktop;
 
@@ -686,7 +682,7 @@ void removeclient(client *c) {
     for (Bool found = False; nd<DESKTOPS && !found; nd++)
         for (select_desktop(nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
-    current = (prevfocus && prevfocus != current) ? prevfocus : (*p) ? (prevfocus = *p) : (prevfocus = head);
+    if (current == c) current = (prevfocus && prevfocus != c) ? prevfocus : (*p) ? (prevfocus = *p) : (prevfocus = head);
     select_desktop(cd);
     tile();
     if (mode == MONOCLE && cd == --nd && current) XMapWindow(dis, current->win);
