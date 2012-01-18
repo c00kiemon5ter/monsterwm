@@ -152,6 +152,7 @@ static void togglepanel();
 static void update_current(client *c);
 static void unmapnotify(XEvent *e);
 static client* wintoclient(Window w);
+static int xerror(Display *dis, XErrorEvent *ee);
 static int xerrorstart();
 
 #include "config.h"
@@ -168,10 +169,8 @@ static int master_size;
 static int wh; /* window area height - screen height minus the border size and panel height */
 static int ww; /* window area width - screen width minus the border size */
 static int screen;
-static int xerror(Display *dis, XErrorEvent *ee);
 static int (*xerrorxlib)(Display *, XErrorEvent *);
-static unsigned int win_focus;
-static unsigned int win_unfocus;
+static unsigned int win_unfocus, win_focus;
 static unsigned int numlockmask = 0; /* dynamic key lock mask */
 static Display *dis;
 static Window root;
@@ -249,9 +248,7 @@ void change_desktop(const Arg *arg) {
     desktopinfo();
 }
 
-/* remove all windows in all desktops
- * get the all windows and send a delete message
- */
+/* remove all windows in all desktops by sending a delete message */
 void cleanup(void) {
     Window root_return;
     Window parent_return;
@@ -386,8 +383,7 @@ void die(const char *errstr, ...) {
 void enternotify(XEvent *e) {
     if (!FOLLOW_MOUSE) return;
     client *c = wintoclient(e->xcrossing.window);
-    if (!c) return;
-    if (e->xcrossing.mode == NotifyNormal && e->xcrossing.detail != NotifyInferior) update_current(c);
+    if (c && e->xcrossing.mode == NotifyNormal && e->xcrossing.detail != NotifyInferior) update_current(c);
 }
 
 /* find and focus the client which received
@@ -436,7 +432,7 @@ void keypress(XEvent *e) {
     keysym = XKeycodeToKeysym(dis, (KeyCode)e->xkey.keycode, 0);
     for (unsigned int i=0; i<LENGTH(keys); i++)
         if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(e->xkey.state) && keys[i].func)
-                keys[i].func(&keys[i].arg);
+            keys[i].func(&keys[i].arg);
 }
 
 /* explicitly kill a client - close the highlighted window
@@ -653,14 +649,12 @@ void prev_win() {
  * is changed, such as an urgent hint is received
  */
 void propertynotify(XEvent *e) {
-    client *c;
-    if ((c = wintoclient(e->xproperty.window)))
-        if (e->xproperty.atom == XA_WM_HINTS) {
-            XWMHints *wmh = XGetWMHints(dis, e->xproperty.window);
-            c->isurgent = wmh && (wmh->flags & XUrgencyHint);
-            XFree(wmh);
-            desktopinfo();
-        }
+    client *c = wintoclient(e->xproperty.window);
+    if (!c || e->xproperty.atom != XA_WM_HINTS) return;
+    XWMHints *wmh = XGetWMHints(dis, c->win);
+    c->isurgent = wmh && (wmh->flags & XUrgencyHint);
+    XFree(wmh);
+    desktopinfo();
 }
 
 /* to quit just stop receiving events
@@ -731,7 +725,7 @@ void save_desktop(int i) {
 
 /* set the specified desktop's properties */
 void select_desktop(int i) {
-    if (i >= DESKTOPS || i == current_desktop) return;
+    if (i >= DESKTOPS) return;
     save_desktop(current_desktop);
     master_size = desktops[i].master_size;
     mode = desktops[i].mode;
@@ -829,14 +823,14 @@ void spawn(const Arg *arg) {
 }
 
 /* swap master window with current or
- * if current is master with the next
- * if current is not head, then head is
- * behind us, so move_up until is head
+ * if current is head swap with next
+ * if current is not head, then head
+ * is behind us, so move_up until we
+ * are the head
  */
 void swap_master() {
     if (!current || !head->next || mode == MONOCLE) return;
     for (client *t=head; t; t=t->next) if (t->isfullscreen) return;
-    /* if current is head swap with next window */
     if (current == head) move_down();
     else while (current != head) move_up();
     update_current(head);
@@ -884,7 +878,7 @@ void tile(void) {
         if (c) for (mode==BSTACK?(cx+=z+d):(cy+=z+d), c=c->next; c; c=c->next)
             if (!c->isfullscreen && !c->istransient && !c->isfloating) {
                 XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
-                mode==BSTACK?(cx+=z):(cy+=z);
+                (mode == BSTACK) ? (cx+=z) : (cy+=z);
             }
     } else if (mode == GRID) {
         ++n;                              /* include head on window count */
