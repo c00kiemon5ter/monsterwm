@@ -676,7 +676,7 @@ void removeclient(client *c) {
     for (Bool found = False; nd<DESKTOPS && !found; nd++)
         for (select_desktop(nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
-    if (current == c) current = (prevfocus && prevfocus != c) ? prevfocus : (*p) ? (prevfocus = *p) : (prevfocus = head);
+    current = (prevfocus && prevfocus != c) ? prevfocus : (*p) ? (prevfocus = *p) : (prevfocus = head);
     select_desktop(cd);
     tile();
     if (mode == MONOCLE && cd == --nd && current) XMapWindow(dis, current->win);
