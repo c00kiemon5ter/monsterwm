@@ -545,7 +545,6 @@ void mousemotion(const Arg *arg) {
  */
 void move_down() {
     if (!current || !head->next) return;
-    for (client *t=head; t; t=t->next) if (t->isfullscreen) return;
 
     /* p is previous, n is next, if current is head n is last, c is current */
     client *p = NULL, *n = (current->next) ? current->next : head;
@@ -587,7 +586,6 @@ void move_down() {
  */
 void move_up() {
     if (!current || !head->next) return;
-    for (client *t=head; t; t=t->next) if (t->isfullscreen) return;
 
     client *pp = NULL, *p;
     /* p is previous from current or last if current is head */
