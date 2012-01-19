@@ -104,6 +104,7 @@ typedef struct {
     const char *class;
     const int desktop;
     const Bool follow;
+    const Bool floating;
 } AppRule;
 
 /* Functions */
@@ -467,7 +468,7 @@ void maprequest(XEvent *e) {
     if (XGetWindowAttributes(dis, e->xmaprequest.window, &wa) && wa.override_redirect) return;
     if (wintoclient(e->xmaprequest.window)) return;
 
-    Bool follow = False;
+    Bool follow = False, floating = False;
     int cd = current_desktop, newdsk = current_desktop;
     XClassHint ch = {0, 0};
     if (XGetClassHint(dis, e->xmaprequest.window, &ch))
@@ -475,6 +476,7 @@ void maprequest(XEvent *e) {
             if (!strcmp(ch.res_class, rules[i].class) || !strcmp(ch.res_name, rules[i].class)) {
                 follow = rules[i].follow;
                 newdsk = rules[i].desktop;
+                floating = rules[i].floating;
                 break;
             }
     if (ch.res_class) XFree(ch.res_class);
@@ -486,6 +488,7 @@ void maprequest(XEvent *e) {
 
     Window w;
     current->istransient = XGetTransientForHint(dis, current->win, &w);
+    current->isfloating = floating;
 
     int di; unsigned long dl; unsigned char *state = NULL; Atom da;
     if (XGetWindowProperty(dis, current->win, netatoms[NET_WM_STATE], 0L, sizeof da,

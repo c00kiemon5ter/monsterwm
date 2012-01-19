@@ -28,9 +28,9 @@
 
 /** open applications to specified desktop **/
 static const AppRule rules[] = { \
-    /*  class      desktop    follow */  /* desktop index starts from 0 */
-    { "MPlayer",      3,       True  },  /* if there are 4 desktops, 3 is the  */
-    { "Chromium",     0,       False },  /* last desktop, 0 is always the fist */
+    /*  class     desktop  follow  float */  /* desktop index starts from 0 */
+    { "MPlayer",     3,    True,   False },  /* if there are 4 desktops, 3 is the  */
+    { "Gimp",        0,    False,  True  },  /* last desktop, 0 is always the fist */
 };
 
 /* helper for spawning shell commands */
