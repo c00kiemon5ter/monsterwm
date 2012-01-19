@@ -241,7 +241,7 @@ void change_desktop(const Arg *arg) {
     tile();
     if (mode == MONOCLE && current) XMapWindow(dis, current->win);
     else for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
-    update_current(NULL);
+    update_current(current);
     select_desktop(previous_desktop);
     for (client *c=head; c; c=c->next) XUnmapWindow(dis, c->win);
     select_desktop(arg->i);
@@ -268,6 +268,9 @@ void cleanup(void) {
  * remove the client
  * add the window to the new desktop
  * if defined change focus to the new desktop
+ *
+ * keep in mind that current pointer might
+ * change with each select_desktop() invocation
  */
 void client_to_desktop(const Arg *arg) {
     if (arg->i == current_desktop || !current) return;
@@ -283,7 +286,7 @@ void client_to_desktop(const Arg *arg) {
 
     select_desktop(cd);
     tile();
-    update_current(NULL);
+    update_current(current);
     if (FOLLOW_WINDOW) change_desktop(arg);
     desktopinfo();
 }
@@ -305,7 +308,7 @@ void clientmessage(XEvent *e) {
         setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscreen)));
     else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) current = c;
     tile();
-    update_current(NULL);
+    update_current(current);
 }
 
 /* a configure request means that the window requested changes in its geometry
@@ -494,7 +497,7 @@ void maprequest(XEvent *e) {
     if (cd == newdsk) {
         tile();
         XMapWindow(dis, current->win);
-        update_current(NULL);
+        update_current(current);
         grabbuttons(current);
     } else if (follow) change_desktop(&(Arg){.i = newdsk});
     desktopinfo();
@@ -579,7 +582,7 @@ void move_down() {
     else head = current;
 
     tile();
-    update_current(NULL);
+    update_current(current);
 }
 
 /* move the current client, to the previous from current
@@ -621,7 +624,7 @@ void move_up() {
     current->next = (current->next == head) ? NULL : p;
 
     tile();
-    update_current(NULL);
+    update_current(current);
 }
 
 /* cyclic focus the next window
@@ -641,7 +644,7 @@ void prev_win() {
     if (head == (prevfocus = current)) while (current->next) current=current->next;
     else for (client *t=head; t; t=t->next) if (t->next == current) { current = t; break; }
     if (mode == MONOCLE) XMapWindow(dis, current->win);
-    update_current(NULL);
+    update_current(current);
 }
 
 /* property notify is called when one of the window's properties
@@ -668,6 +671,10 @@ void quit(const Arg *arg) {
  * the previous client must point to the next client of the given
  * the removing client can be on any desktop, so we must return
  * back the current focused desktop
+ *
+ * keep in mind that the current set and the current update may
+ * differ. current pointer changes in every select_desktop()
+ * invocation.
  */
 void removeclient(client *c) {
     client **p = NULL;
@@ -679,7 +686,7 @@ void removeclient(client *c) {
     select_desktop(cd);
     tile();
     if (mode == MONOCLE && cd == --nd && current) XMapWindow(dis, current->win);
-    update_current(NULL);
+    update_current(current);
     free(c);
 }
 
@@ -843,7 +850,7 @@ void switch_mode(const Arg *arg) {
     mode = arg->i;
     master_size = (mode == BSTACK ? wh : ww) * MASTER_SIZE;
     tile();
-    update_current(NULL);
+    update_current(current);
     desktopinfo();
 }
 
@@ -919,15 +926,15 @@ void unmapnotify(XEvent *e) {
  * if current is NULL then delete the active window property
  */
 void update_current(client *c) {
-    if (!current && !c) {
+    if (!c) {
         XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
         return;
-    } else if(c) current = c;
+    } else current = c;
 
     int border_width = (!head->next || (head->next->istransient &&
                         !head->next->next) || mode == MONOCLE) ? 0 : BORDER_WIDTH;
 
-    for (client *c=head; c; c=c->next) {
+    for (c=head; c; c=c->next) {
         XSetWindowBorderWidth(dis, c->win, (c->isfullscreen ? 0 : border_width));
         XSetWindowBorder(dis, c->win, (current == c ? win_focus : win_unfocus));
         if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
