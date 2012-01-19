@@ -107,7 +107,7 @@ typedef struct {
 } AppRule;
 
 /* Functions */
-static void addwindow(Window w);
+static client* addwindow(Window w);
 static void buttonpress(XEvent *e);
 static void change_desktop(const Arg *arg);
 static void cleanup(void);
@@ -196,7 +196,7 @@ static void (*events[LASTEvent])(XEvent *e) = {
 /* create a new client and add the new window
  * window should notify of property change events
  */
-void addwindow(Window w) {
+client* addwindow(Window w) {
     client *c, *t;
     if (!(c = (client *)calloc(1, sizeof(client))))
         die("error: could not calloc() %u bytes\n", sizeof(client));
@@ -210,8 +210,8 @@ void addwindow(Window w) {
         head = c;
     }
 
-    prevfocus = current;
-    XSelectInput(dis, ((current = c)->win = w), PropertyChangeMask|(FOLLOW_MOUSE?EnterWindowMask:0));
+    XSelectInput(dis, (c->win = w), PropertyChangeMask|(FOLLOW_MOUSE?EnterWindowMask:0));
+    return c;
 }
 
 /* on the press of a button check to see if there's a binded function to call */
@@ -279,7 +279,7 @@ void client_to_desktop(const Arg *arg) {
     removeclient(current);
 
     select_desktop(arg->i);
-    addwindow(w);
+    current = addwindow(w);
 
     select_desktop(cd);
     tile();
@@ -478,10 +478,11 @@ void maprequest(XEvent *e) {
     if (ch.res_name) XFree(ch.res_name);
 
     select_desktop(newdsk);
-    addwindow(e->xmaprequest.window);
+    prevfocus = current;
+    current = addwindow(e->xmaprequest.window);
 
     Window w;
-    current->istransient = XGetTransientForHint(dis, e->xmaprequest.window, &w);
+    current->istransient = XGetTransientForHint(dis, current->win, &w);
 
     int di; unsigned long dl; unsigned char *state = NULL; Atom da;
     if (XGetWindowProperty(dis, current->win, netatoms[NET_WM_STATE], 0L, sizeof da,
