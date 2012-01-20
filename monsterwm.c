@@ -781,7 +781,6 @@ void setup(void) {
     wh = XDisplayHeight(dis, screen) - (SHOW_PANEL ? PANEL_HEIGHT : 0) - BORDER_WIDTH;
     master_size = ((mode == BSTACK) ? wh : ww) * MASTER_SIZE;
     for (unsigned int i=0; i<DESKTOPS; i++) save_desktop(i);
-    change_desktop(&(Arg){.i = DEFAULT_DESKTOP});
 
     win_focus = getcolor(FOCUS);
     win_unfocus = getcolor(UNFOCUS);
@@ -811,6 +810,7 @@ void setup(void) {
     XChangeProperty(dis, root, netatoms[NET_SUPPORTED], XA_ATOM, 32, PropModeReplace, (unsigned char *)netatoms, NET_COUNT);
 
     grabkeys();
+    change_desktop(&(Arg){.i = DEFAULT_DESKTOP});
 }
 
 void sigchld() {
