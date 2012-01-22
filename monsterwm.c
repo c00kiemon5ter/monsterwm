@@ -18,9 +18,9 @@
 #define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
 
 /* mouse motion actions */
-enum { RESIZE, MOVE, };
+enum { RESIZE, MOVE };
 /* tiling layout modes */
-enum { TILE, MONOCLE, BSTACK, GRID, };
+enum { TILE, MONOCLE, BSTACK, GRID, MODES };
 /* wm and net atoms selected through wmatoms and netatoms arrays */
 enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_ACTIVE, NET_COUNT };
@@ -123,10 +123,12 @@ static void focusurgent();
 static unsigned long getcolor(const char* color);
 static void grabbuttons(client *c);
 static void grabkeys(void);
+static void grid(int h, int y);
 static void keypress(XEvent *e);
 static void killclient();
 static void last_desktop();
 static void maprequest(XEvent *e);
+static void monocle(int h, int y);
 static void move_down();
 static void move_up();
 static void mousemotion(const Arg *arg);
@@ -146,6 +148,7 @@ static void setfullscreen(client *c, Bool fullscreen);
 static void setup(void);
 static void sigchld();
 static void spawn(const Arg *arg);
+static void stack(int h, int y);
 static void swap_master();
 static void switch_mode(const Arg *arg);
 static void tile(void);
@@ -179,19 +182,26 @@ static client *head, *prevfocus, *current;
 static Atom wmatoms[WM_COUNT], netatoms[NET_COUNT];
 static desktop desktops[DESKTOPS];
 
-/* events array
- * on receival of a new event, call the appropriate function to handle it
- */
+/* events array - on new event, call the appropriate handling function */
 static void (*events[LASTEvent])(XEvent *e) = {
-    [ButtonPress] = buttonpress,
-    [ClientMessage] = clientmessage,
+    [ButtonPress]      = buttonpress,
+    [ClientMessage]    = clientmessage,
     [ConfigureRequest] = configurerequest,
-    [DestroyNotify] = destroynotify,
-    [EnterNotify] = enternotify,
-    [KeyPress] = keypress,
-    [MapRequest] = maprequest,
-    [PropertyNotify] = propertynotify,
-    [UnmapNotify] = unmapnotify,
+    [DestroyNotify]    = destroynotify,
+    [EnterNotify]      = enternotify,
+    [KeyPress]         = keypress,
+    [MapRequest]       = maprequest,
+    [PropertyNotify]   = propertynotify,
+    [UnmapNotify]      = unmapnotify,
+};
+
+/* layout array - given the current layout mode, tile the windows
+ * h (or hh) is the avaible height that windows have to expand
+ * y (or cy) is the num of pixels from top to place the windows (y coordinate)
+ */
+static void (*layout[MODES])(int h, int y) = {
+    [TILE]   = stack, [MONOCLE] = monocle,
+    [BSTACK] = stack, [GRID]    = grid,
 };
 
 /* create a new client and add the new window
@@ -430,6 +440,27 @@ void grabkeys(void) {
                 XGrabKey(dis, code, keys[k].mod|modifiers[m], root, True, GrabModeAsync, GrabModeAsync);
 }
 
+/* arrange windows in a grid */
+void grid(int hh, int cy) {
+    /* num of windows, client x/y coords and width/height, columns/rows, current column/row num */
+    int n = 0, cx, cw, ch, cols, rows, cn=0, rn=0, i=0;
+    for (client *c = head; c; c=c->next) if (!c->istransient && !c->isfullscreen && !c->isfloating) ++n;
+
+    for (cols=0; cols <= n/2; cols++) if (cols*cols >= n) break; /* emulate square root */
+    if (n == 5) cols = 2;
+    rows = n/cols;
+    cw = cols ? ww/cols : ww;
+    for (client *c=head; c; c=c->next, i++) {
+        if (i/rows + 1 > cols - n%cols) rows = n/cols + 1;
+        ch = hh/rows;
+        cx = cn*cw;
+        cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0) + rn*ch;
+        if (!c->isfullscreen && !c->istransient && !c->isfloating)
+            XMoveResizeWindow(dis, c->win, cx, cy, cw - BORDER_WIDTH, ch - BORDER_WIDTH);
+        if (++rn >= rows) { rn = 0; cn++; }
+    }
+}
+
 /* on the press of a key check to see if there's a binded function to call */
 void keypress(XEvent *e) {
     KeySym keysym;
@@ -545,6 +576,12 @@ void mousemotion(const Arg *arg) {
     } while(ev.type != ButtonRelease);
     XUngrabPointer(dis, CurrentTime);
     tile();
+}
+
+/* each window should cover all the available screen space */
+void monocle(int hh, int cy) {
+    for (client *c=head; c; c=c->next) if (!c->isfullscreen && !c->istransient && !c->isfloating)
+        XMoveResizeWindow(dis, c->win, 0, cy, ww + BORDER_WIDTH, hh + BORDER_WIDTH);
 }
 
 /* move the current client, to current->next
@@ -831,6 +868,35 @@ void spawn(const Arg *arg) {
     }
 }
 
+/* arrange windows in normal or bottom stack tile */
+void stack(int hh, int cy) {
+    client *c;
+    int n = 0, d = 0, z = (mode == BSTACK ? ww : hh), cx = 0, cw = 0, ch = 0;
+
+    /* count stack windows */
+    for (n = 0, c = head->next; c; c=c->next) if (!c->istransient && !c->isfullscreen && !c->isfloating) ++n;
+
+    /* adjust to match screen height/width */
+    d = (z - growth) % n + growth;
+    z = (z - growth) / n;
+
+    if (!(c = head)->isfullscreen && !c->istransient && !c->isfloating)
+        (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH)
+                         : XMoveResizeWindow(dis, c->win, cx, cy, master_size - BORDER_WIDTH, hh - BORDER_WIDTH);
+
+    for (c=head->next; c && (c->isfullscreen || c->istransient || c->isfloating); c=c->next);
+    if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, (cy += master_size),
+                            (cw = z - BORDER_WIDTH) + d, (ch = hh - master_size - BORDER_WIDTH))
+                            : XMoveResizeWindow(dis, c->win, (cx += master_size), cy,
+                            (cw = ww - master_size - BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
+
+    if (c) for (mode==BSTACK?(cx+=z+d):(cy+=z+d), c=c->next; c; c=c->next)
+        if (!c->isfullscreen && !c->istransient && !c->isfloating) {
+            XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
+            (mode == BSTACK) ? (cx+=z) : (cy+=z);
+        }
+}
+
 /* swap master window with current or
  * if current is head swap with next
  * if current is not head, then head
@@ -857,56 +923,12 @@ void switch_mode(const Arg *arg) {
     desktopinfo();
 }
 
-/* tile all windows of current desktop to the set tiling mode */
+/* tile all windows of current desktop - call the handler tiling function */
 void tile(void) {
     if (!head) return; /* nothing to arange */
-
-    client *c;
-    /* n:number of windows, d:difference, h:available height, z:client height */
-    int n = 0, d = 0, h = wh + (showpanel ? 0 : PANEL_HEIGHT), z = mode == BSTACK ? ww : h;
-    /* client's x,y coordinates, width and height */
-    int cx = 0, cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0), cw = 0, ch = 0;
-
-    /* count stack windows -- do not consider fullscreen or transient clients */
-    for (n=0, c=head->next; c; c=c->next) if (!c->istransient && !c->isfullscreen && !c->isfloating) ++n;
-
-    if (!head->next || (head->next->istransient && !head->next->next) || mode == MONOCLE) {
-        for (c=head; c; c=c->next) if (!c->isfullscreen && !c->istransient && !c->isfloating)
-            XMoveResizeWindow(dis, c->win, cx, cy, ww + BORDER_WIDTH, h + BORDER_WIDTH);
-    } else if (mode == TILE || mode == BSTACK) {
-        d = (z - growth)%n + growth;       /* n should be greater than one */
-        z = (z - growth)/n;         /* adjust to match screen height/width */
-        if (!head->isfullscreen && !head->istransient && !head->isfloating)
-            (mode == BSTACK) ? XMoveResizeWindow(dis, head->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH)
-                             : XMoveResizeWindow(dis, head->win, cx, cy, master_size - BORDER_WIDTH,  h - BORDER_WIDTH);
-        for (c=head->next; c && (c->isfullscreen || c->istransient || c->isfloating); c=c->next);
-        if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, (cy += master_size),
-                                (cw = z - BORDER_WIDTH) + d, (ch = h - master_size - BORDER_WIDTH))
-                                : XMoveResizeWindow(dis, c->win, (cx += master_size), cy,
-                                (cw = ww - master_size - BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
-        if (c) for (mode==BSTACK?(cx+=z+d):(cy+=z+d), c=c->next; c; c=c->next)
-            if (!c->isfullscreen && !c->istransient && !c->isfloating) {
-                XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
-                (mode == BSTACK) ? (cx+=z) : (cy+=z);
-            }
-    } else if (mode == GRID) {
-        ++n;                              /* include head on window count */
-        int cols, rows, cn=0, rn=0, i=0;  /* columns, rows, and current column and row number */
-        for (cols=0; cols <= n/2; cols++) if (cols*cols >= n) break;   /* emulate square root */
-        if (n == 5) cols = 2;
-        rows = n/cols;
-        cw = cols ? ww/cols : ww;
-        for (i=0, c=head; c; c=c->next, i++) {
-            if (i/rows + 1 > cols - n%cols) rows = n/cols + 1;
-            ch = h/rows;
-            cx = cn*cw;
-            cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0) + rn*ch;
-            if (!c->isfullscreen && !c->istransient && !c->isfloating)
-                XMoveResizeWindow(dis, c->win, cx, cy, cw - BORDER_WIDTH, ch - BORDER_WIDTH);
-            if (++rn >= rows) { rn = 0; cn++; }
-        }
-    } else fprintf(stderr, "error: no such layout mode: %d\n", mode);
-    free(c);
+    int h = wh + (showpanel ? 0 : PANEL_HEIGHT), y = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0);
+    if (!head->next || (head->next->istransient && !head->next->next)) layout[MONOCLE](h, y);
+    else layout[mode](h, y);
 }
 
 /* toggle visibility state of the panel */
