@@ -115,6 +115,7 @@ static void cleanup(void);
 static void client_to_desktop(const Arg *arg);
 static void clientmessage(XEvent *e);
 static void configurerequest(XEvent *e);
+static void deletewindow(Window w);
 static void desktopinfo(void);
 static void destroynotify(XEvent *e);
 static void die(const char* errstr, ...);
@@ -143,7 +144,6 @@ static void rotate_desktop(const Arg *arg);
 static void run(void);
 static void save_desktop(int i);
 static void select_desktop(int i);
-static void sendevent(Window w, int atom);
 static void setfullscreen(client *c, Bool fullscreen);
 static void setup(void);
 static void sigchld();
@@ -268,7 +268,7 @@ void cleanup(void) {
 
     XUngrabKey(dis, AnyKey, AnyModifier, root);
     XQueryTree(dis, root, &root_return, &parent_return, &children, &nchildren);
-    for (unsigned int i = 0; i<nchildren; i++) sendevent(children[i], WM_DELETE_WINDOW);
+    for (unsigned int i = 0; i<nchildren; i++) deletewindow(children[i]);
     if (children) XFree(children);
     XSync(dis, False);
     XSetInputFocus(dis, PointerRoot, RevertToPointerRoot, CurrentTime);
@@ -344,6 +344,18 @@ void configurerequest(XEvent *e) {
         XSync(dis, False);
     }
     tile();
+}
+
+/* send the given event - WM_DELETE_WINDOW for now */
+void deletewindow(Window w) {
+    XEvent ev;
+    ev.type = ClientMessage;
+    ev.xclient.window = w;
+    ev.xclient.message_type = wmatoms[WM_PROTOCOLS];
+    ev.xclient.format = 32;
+    ev.xclient.data.l[0] = wmatoms[WM_DELETE_WINDOW];
+    ev.xclient.data.l[1] = CurrentTime;
+    XSendEvent(dis, w, False, NoEventMask, &ev);
 }
 
 /* output info about the desktops on standard output stream
@@ -475,7 +487,7 @@ void keypress(XEvent *e) {
  */
 void killclient() {
     if (!current) return;
-    sendevent(current->win, WM_DELETE_WINDOW);
+    deletewindow(current->win);
     removeclient(current);
 }
 
@@ -781,19 +793,6 @@ void select_desktop(int i) {
     showpanel = desktops[i].showpanel;
     prevfocus = desktops[i].prevfocus;
     current_desktop = i;
-}
-
-/* send the given event - WM_DELETE_WINDOW for now */
-void sendevent(Window w, int atom) {
-    if (atom >= WM_COUNT) return;
-    XEvent ev;
-    ev.type = ClientMessage;
-    ev.xclient.window = w;
-    ev.xclient.message_type = wmatoms[WM_PROTOCOLS];
-    ev.xclient.format = 32;
-    ev.xclient.data.l[0] = wmatoms[atom];
-    ev.xclient.data.l[1] = CurrentTime;
-    XSendEvent(dis, w, False, NoEventMask, &ev);
 }
 
 /* set or unset fullscreen state of client */
