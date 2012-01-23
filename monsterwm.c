@@ -459,21 +459,16 @@ void grabkeys(void) {
 
 /* arrange windows in a grid */
 void grid(int hh, int cy) {
-    /* num of windows, client x/y coords and width/height, columns/rows, current column/row num */
-    int n = 0, cx, cw, ch, cols, rows, cn=0, rn=0, i=0;
+    int n = 0, cols = 0;
     for (client *c = head; c; c=c->next) if (!c->istransient && !c->isfullscrn && !c->isfloating) ++n;
-
     for (cols=0; cols <= n/2; cols++) if (cols*cols >= n) break; /* emulate square root */
     if (n == 5) cols = 2;
-    rows = n/cols;
-    cw = cols ? ww/cols : ww;
+
+    int rows = n/cols, cw = (cols ? ww/cols : ww), cn = 0, rn = 0, i = 0;
     for (client *c=head; c; c=c->next, i++) {
+        if (c->isfullscrn || c->istransient || c->isfloating) { i--; continue; }
         if (i/rows + 1 > cols - n%cols) rows = n/cols + 1;
-        ch = hh/rows;
-        cx = cn*cw;
-        cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0) + rn*ch;
-        if (!c->isfullscrn && !c->istransient && !c->isfloating)
-            XMoveResizeWindow(dis, c->win, cx, cy, cw - BORDER_WIDTH, ch - BORDER_WIDTH);
+        XMoveResizeWindow(dis, c->win, cn*cw, cy + rn*hh/rows, cw - BORDER_WIDTH, hh/rows - BORDER_WIDTH);
         if (++rn >= rows) { rn = 0; cn++; }
     }
 }
