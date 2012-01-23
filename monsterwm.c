@@ -17,11 +17,8 @@
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 #define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
 
-/* mouse motion actions */
 enum { RESIZE, MOVE };
-/* tiling layout modes */
 enum { TILE, MONOCLE, BSTACK, GRID, MODES };
-/* wm and net atoms selected through wmatoms and netatoms arrays */
 enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_ACTIVE, NET_COUNT };
 
@@ -107,7 +104,7 @@ typedef struct {
     const Bool floating;
 } AppRule;
 
-/* Functions */
+/* function prototypes sorted alphabetically */
 static client* addwindow(Window w);
 static void buttonpress(XEvent *e);
 static void change_desktop(const Arg *arg);
@@ -161,7 +158,6 @@ static int xerrorstart();
 
 #include "config.h"
 
-/* variables */
 static Bool running = True;
 static Bool showpanel = SHOW_PANEL;
 static int retval = 0;
@@ -321,8 +317,9 @@ void client_to_desktop(const Arg *arg) {
  */
 void clientmessage(XEvent *e) {
     client *c = wintoclient(e->xclient.window);
-    if (c && e->xclient.message_type == netatoms[NET_WM_STATE] && ((unsigned)e->xclient.data.l[1]
-        == netatoms[NET_FULLSCREEN] || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN]))
+    if (c && e->xclient.message_type         == netatoms[NET_WM_STATE]
+          && ((unsigned)e->xclient.data.l[1] == netatoms[NET_FULLSCREEN]
+           || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN]))
         setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscrn)));
     else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) current = c;
     tile();
@@ -344,8 +341,8 @@ void configurerequest(XEvent *e) {
         wc.width  = (e->xconfigurerequest.width  < ww - BORDER_WIDTH) ? e->xconfigurerequest.width  : ww + BORDER_WIDTH;
         wc.height = (e->xconfigurerequest.height < wh - BORDER_WIDTH) ? e->xconfigurerequest.height : wh + BORDER_WIDTH;
         wc.border_width = e->xconfigurerequest.border_width;
-        wc.sibling    = e->xconfigurerequest.above;
-        wc.stack_mode = e->xconfigurerequest.detail;
+        wc.sibling      = e->xconfigurerequest.above;
+        wc.stack_mode   = e->xconfigurerequest.detail;
         XConfigureWindow(dis, e->xconfigurerequest.window, e->xconfigurerequest.value_mask, &wc);
         XSync(dis, False);
     }
@@ -416,7 +413,8 @@ void die(const char *errstr, ...) {
 void enternotify(XEvent *e) {
     if (!FOLLOW_MOUSE) return;
     client *c = wintoclient(e->xcrossing.window);
-    if (c && e->xcrossing.mode == NotifyNormal && e->xcrossing.detail != NotifyInferior) update_current(c);
+    if (c && e->xcrossing.mode   == NotifyNormal
+          && e->xcrossing.detail != NotifyInferior) update_current(c);
 }
 
 /* find and focus the client which received
@@ -479,6 +477,7 @@ void grid(int hh, int cy) {
 void keypress(XEvent *e) {
     KeySym keysym;
     keysym = XKeycodeToKeysym(dis, (KeyCode)e->xkey.keycode, 0);
+
     for (unsigned int i=0; i<LENGTH(keys); i++)
         if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(e->xkey.state) && keys[i].func)
             keys[i].func(&keys[i].arg);
@@ -582,7 +581,8 @@ void mousemotion(const Arg *arg) {
             case MotionNotify:
                 xw = (arg->i == MOVE ? wa.x : wa.width)  + ev.xmotion.x - x;
                 yh = (arg->i == MOVE ? wa.y : wa.height) + ev.xmotion.y - y;
-                if (arg->i == RESIZE) XResizeWindow(dis, current->win, xw>MINWSZ?xw:wa.width, yh>MINWSZ?yh:wa.height);
+                if (arg->i == RESIZE) XResizeWindow(dis, current->win,
+                        xw>MINWSZ?xw:wa.width, yh>MINWSZ?yh:wa.height);
                 else if (arg->i == MOVE) XMoveWindow(dis, current->win, xw, yh);
                 break;
         }
@@ -800,9 +800,10 @@ void select_desktop(int i) {
 
 /* set or unset fullscreen state of client */
 void setfullscreen(client *c, Bool fullscrn) {
-    if (fullscrn != c->isfullscrn) XChangeProperty(dis, c->win, netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace,
-                             (unsigned char*)((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN] : 0), fullscrn);
-    if (c->isfullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
+    if (fullscrn != c->isfullscrn) XChangeProperty(dis, c->win,
+            netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
+            ((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN] : 0), fullscrn);
+    if (c->isfullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww+BORDER_WIDTH, wh+BORDER_WIDTH+PANEL_HEIGHT);
 }
 
 /* set initial values
@@ -841,12 +842,14 @@ void setup(void) {
 
     /* check if another window manager is running */
     xerrorxlib = XSetErrorHandler(xerrorstart);
-    XSelectInput(dis, DefaultRootWindow(dis), SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask|ButtonPressMask);
+    XSelectInput(dis, DefaultRootWindow(dis), SubstructureRedirectMask|ButtonPressMask|
+                                              SubstructureNotifyMask|PropertyChangeMask);
     XSync(dis, False);
 
     XSetErrorHandler(xerror);
     XSync(dis, False);
-    XChangeProperty(dis, root, netatoms[NET_SUPPORTED], XA_ATOM, 32, PropModeReplace, (unsigned char *)netatoms, NET_COUNT);
+    XChangeProperty(dis, root, netatoms[NET_SUPPORTED], XA_ATOM, 32,
+              PropModeReplace, (unsigned char *)netatoms, NET_COUNT);
 
     grabkeys();
     change_desktop(&(Arg){.i = DEFAULT_DESKTOP});
@@ -894,7 +897,7 @@ void stack(int hh, int cy) {
      *      |   |    |   |                          |
      *      |   |----|   }--> screen height - hh  --'
      *      |   |    | }-|--> client height - z       :: 2 stack clients on tile mode ..looks like a spaceship
-     *      ----------  -'                            :: peice of aart by c00kiemon5ter o.O om nom nom nom nom
+     *      ----------  -'                            :: piece of aart by c00kiemon5ter o.O om nom nom nom nom
      *
      *     what we do is, remove the growth from the screen height  : (z - growth)
      *     and then divide that space with the windows on the stack : (z - growth)/n
@@ -959,7 +962,8 @@ void switch_mode(const Arg *arg) {
 /* tile all windows of current desktop - call the handler tiling function */
 void tile(void) {
     if (!head) return; /* nothing to arange */
-    layout[head->next?mode:MONOCLE](wh + (showpanel ? 0 : PANEL_HEIGHT), (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0));
+    layout[head->next ? mode : MONOCLE](wh + (showpanel ? 0 : PANEL_HEIGHT),
+                                (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0));
 }
 
 /* toggle visibility state of the panel */
@@ -1001,7 +1005,8 @@ void update_current(client *c) {
                 ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
     }
 
-    XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32, PropModeReplace, (unsigned char *)&current->win, 1);
+    XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32,
+                PropModeReplace, (unsigned char *)&current->win, 1);
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
     XRaiseWindow(dis, current->win);
     if (CLICK_TO_FOCUS) XUngrabButton(dis, Button1, None, current->win);
@@ -1022,12 +1027,12 @@ client* wintoclient(Window w) {
  * ignored (especially on UnmapNotify's). Other types of errors call Xlibs
  * default error handler, which may call exit through xerrorlib.  */
 int xerror(Display *dis, XErrorEvent *ee) {
-    if (ee->error_code == BadWindow
-            || (ee->error_code == BadMatch    && (ee->request_code == X_SetInputFocus || ee->request_code == X_ConfigureWindow))
-            || (ee->error_code == BadDrawable && (ee->request_code == X_PolyText8     || ee->request_code == X_PolyFillRectangle
-                                               || ee->request_code == X_PolySegment   || ee->request_code == X_CopyArea))
-            || (ee->error_code == BadAccess   &&  ee->request_code == X_GrabKey))
-        return 0;
+    if (ee->error_code == BadWindow   || (ee->error_code == BadAccess && ee->request_code == X_GrabKey)
+    || (ee->error_code == BadMatch    && (ee->request_code == X_SetInputFocus
+                                      ||  ee->request_code == X_ConfigureWindow))
+    || (ee->error_code == BadDrawable && (ee->request_code == X_PolyFillRectangle
+    || ee->request_code == X_CopyArea ||  ee->request_code == X_PolySegment
+                                      ||  ee->request_code == X_PolyText8))) return 0;
     fprintf(stderr, "error: xerror: request code: %d, error code: %d\n", ee->request_code, ee->error_code);
     return xerrorxlib(dis, ee);
 }
