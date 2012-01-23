@@ -531,7 +531,7 @@ void maprequest(XEvent *e) {
 
     Window w;
     current->istransient = XGetTransientForHint(dis, current->win, &w);
-    current->isfloating = floating;
+    current->isfloating = floating || current->istransient;
 
     int di; unsigned long dl; unsigned char *state = NULL; Atom da;
     if (XGetWindowProperty(dis, current->win, netatoms[NET_WM_STATE], 0L, sizeof da,
