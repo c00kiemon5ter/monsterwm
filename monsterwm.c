@@ -63,19 +63,19 @@ typedef struct {
 /* a client is a wrapper to a window that additionally
  * holds some properties for that window
  *
- * next         - the client after this one, or NULL if the current is the only or last client
- * isurgent     - the window received an urgent hint
- * istransient  - the window is transient
- * isfullscreen - the window is fullscreen
- * isfloating   - the window is floating
- * win          - the window
+ * next        - the client after this one, or NULL if the current is the only or last client
+ * isurgent    - the window received an urgent hint
+ * istransient - the window is transient
+ * isfullscrn  - the window is fullscreen
+ * isfloating  - the window is floating
+ * win         - the window
  *
  * istransient is separate from isfloating as floating window can be reset
  * to their tiling positions, while the transients will always be floating
  */
 typedef struct client {
     struct client *next;
-    Bool isurgent, istransient, isfullscreen, isfloating;
+    Bool isurgent, istransient, isfullscrn, isfloating;
     Window win;
 } client;
 
@@ -144,7 +144,7 @@ static void rotate_desktop(const Arg *arg);
 static void run(void);
 static void save_desktop(int i);
 static void select_desktop(int i);
-static void setfullscreen(client *c, Bool fullscreen);
+static void setfullscreen(client *c, Bool fullscrn);
 static void setup(void);
 static void sigchld();
 static void spawn(const Arg *arg);
@@ -289,7 +289,7 @@ void client_to_desktop(const Arg *arg) {
     int cd = current_desktop;
 
     XUnmapWindow(dis, current->win);
-    if (current->isfullscreen) setfullscreen(current, False);
+    if (current->isfullscrn) setfullscreen(current, False);
     removeclient(current);
 
     select_desktop(arg->i);
@@ -316,7 +316,7 @@ void clientmessage(XEvent *e) {
     client *c = wintoclient(e->xclient.window);
     if (c && e->xclient.message_type == netatoms[NET_WM_STATE] && ((unsigned)e->xclient.data.l[1]
         == netatoms[NET_FULLSCREEN] || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN]))
-        setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscreen)));
+        setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscrn)));
     else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) current = c;
     tile();
     update_current(current);
@@ -329,7 +329,7 @@ void clientmessage(XEvent *e) {
  */
 void configurerequest(XEvent *e) {
     client *c = wintoclient(e->xconfigurerequest.window);
-    if (c && c->isfullscreen)
+    if (c && c->isfullscrn)
         XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
     else {
         XWindowChanges wc;
@@ -456,7 +456,7 @@ void grabkeys(void) {
 void grid(int hh, int cy) {
     /* num of windows, client x/y coords and width/height, columns/rows, current column/row num */
     int n = 0, cx, cw, ch, cols, rows, cn=0, rn=0, i=0;
-    for (client *c = head; c; c=c->next) if (!c->istransient && !c->isfullscreen && !c->isfloating) ++n;
+    for (client *c = head; c; c=c->next) if (!c->istransient && !c->isfullscrn && !c->isfloating) ++n;
 
     for (cols=0; cols <= n/2; cols++) if (cols*cols >= n) break; /* emulate square root */
     if (n == 5) cols = 2;
@@ -467,7 +467,7 @@ void grid(int hh, int cy) {
         ch = hh/rows;
         cx = cn*cw;
         cy = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0) + rn*ch;
-        if (!c->isfullscreen && !c->istransient && !c->isfloating)
+        if (!c->isfullscrn && !c->istransient && !c->isfloating)
             XMoveResizeWindow(dis, c->win, cx, cy, cw - BORDER_WIDTH, ch - BORDER_WIDTH);
         if (++rn >= rows) { rn = 0; cn++; }
     }
@@ -592,7 +592,7 @@ void mousemotion(const Arg *arg) {
 
 /* each window should cover all the available screen space */
 void monocle(int hh, int cy) {
-    for (client *c=head; c; c=c->next) if (!c->isfullscreen && !c->istransient && !c->isfloating)
+    for (client *c=head; c; c=c->next) if (!c->isfullscrn && !c->istransient && !c->isfloating)
         XMoveResizeWindow(dis, c->win, 0, cy, ww + BORDER_WIDTH, hh + BORDER_WIDTH);
 }
 
@@ -796,10 +796,10 @@ void select_desktop(int i) {
 }
 
 /* set or unset fullscreen state of client */
-void setfullscreen(client *c, Bool fullscreen) {
-    XChangeProperty(dis, c->win, netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
-                   ((c->isfullscreen = fullscreen) ? &netatoms[NET_FULLSCREEN] : 0), fullscreen);
-    if (c->isfullscreen) XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
+void setfullscreen(client *c, Bool fullscrn) {
+    XChangeProperty(dis, c->win, netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace,
+            (unsigned char*)((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN] : 0), fullscrn);
+    if (c->isfullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
 }
 
 /* set initial values
@@ -873,24 +873,24 @@ void stack(int hh, int cy) {
     int n = 0, d = 0, z = (mode == BSTACK ? ww : hh), cx = 0, cw = 0, ch = 0;
 
     /* count stack windows */
-    for (n = 0, c = head->next; c; c=c->next) if (!c->istransient && !c->isfullscreen && !c->isfloating) ++n;
+    for (n = 0, c = head->next; c; c=c->next) if (!c->istransient && !c->isfullscrn && !c->isfloating) ++n;
 
     /* adjust to match screen height/width */
     d = (z - growth) % n + growth;
     z = (z - growth) / n;
 
-    if (!(c = head)->isfullscreen && !c->istransient && !c->isfloating)
+    if (!(c = head)->isfullscrn && !c->istransient && !c->isfloating)
         (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH)
                          : XMoveResizeWindow(dis, c->win, cx, cy, master_size - BORDER_WIDTH, hh - BORDER_WIDTH);
 
-    for (c=head->next; c && (c->isfullscreen || c->istransient || c->isfloating); c=c->next);
+    for (c=head->next; c && (c->isfullscrn || c->istransient || c->isfloating); c=c->next);
     if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, (cy += master_size),
                             (cw = z - BORDER_WIDTH) + d, (ch = hh - master_size - BORDER_WIDTH))
                             : XMoveResizeWindow(dis, c->win, (cx += master_size), cy,
                             (cw = ww - master_size - BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
 
     if (c) for (mode==BSTACK?(cx+=z+d):(cy+=z+d), c=c->next; c; c=c->next)
-        if (!c->isfullscreen && !c->istransient && !c->isfloating) {
+        if (!c->isfullscrn && !c->istransient && !c->isfloating) {
             XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
             (mode == BSTACK) ? (cx+=z) : (cy+=z);
         }
@@ -958,7 +958,7 @@ void update_current(client *c) {
                         !head->next->next) || mode == MONOCLE) ? 0 : BORDER_WIDTH;
 
     for (c=head; c; c=c->next) {
-        XSetWindowBorderWidth(dis, c->win, (c->isfullscreen ? 0 : border_width));
+        XSetWindowBorderWidth(dis, c->win, (c->isfullscrn ? 0 : border_width));
         XSetWindowBorder(dis, c->win, (current == c ? win_focus : win_unfocus));
         if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
                 ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
