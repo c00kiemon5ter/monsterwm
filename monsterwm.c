@@ -334,8 +334,7 @@ void clientmessage(XEvent *e) {
  */
 void configurerequest(XEvent *e) {
     client *c = wintoclient(e->xconfigurerequest.window);
-    if (c && c->isfullscrn)
-        XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
+    if (c && c->isfullscrn) setfullscreen(c, True);
     else {
         XWindowChanges wc;
         wc.x = e->xconfigurerequest.x;
@@ -587,12 +586,13 @@ void mousemotion(const Arg *arg) {
         current->isfloating = True;
     } while(ev.type != ButtonRelease);
     XUngrabPointer(dis, CurrentTime);
+    update_current(current);
     tile();
 }
 
 /* each window should cover all the available screen space */
 void monocle(int hh, int cy) {
-    for (client *c=head; c; c=c->next) if (!c->isfullscrn && !c->istransient && !c->isfloating)
+    for (client *c=head; c; c=c->next) if (!c->isfullscrn && !c->isfloating && !c->istransient)
         XMoveResizeWindow(dis, c->win, 0, cy, ww + BORDER_WIDTH, hh + BORDER_WIDTH);
 }
 
@@ -797,8 +797,8 @@ void select_desktop(int i) {
 
 /* set or unset fullscreen state of client */
 void setfullscreen(client *c, Bool fullscrn) {
-    XChangeProperty(dis, c->win, netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace,
-            (unsigned char*)((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN] : 0), fullscrn);
+    if (fullscrn != c->isfullscrn) XChangeProperty(dis, c->win, netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace,
+                             (unsigned char*)((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN] : 0), fullscrn);
     if (c->isfullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww + BORDER_WIDTH, wh + BORDER_WIDTH + PANEL_HEIGHT);
 }
 
@@ -872,25 +872,57 @@ void stack(int hh, int cy) {
     client *c;
     int n = 0, d = 0, z = (mode == BSTACK ? ww : hh), cx = 0, cw = 0, ch = 0;
 
-    /* count stack windows */
-    for (n = 0, c = head->next; c; c=c->next) if (!c->istransient && !c->isfullscrn && !c->isfloating) ++n;
+    /* count stack windows - start from head->next */
+    for (n=0, c=head->next; c; c=c->next) if (!c->isfullscrn && !c->isfloating && !c->istransient) ++n;
 
-    /* adjust to match screen height/width */
-    d = (z - growth) % n + growth;
-    z = (z - growth) / n;
+    /* grab the first non-floating, non-fullscreen window and place it on master
+     * if it's a stack window, remove it from the stack count (--n)
+     */
+    for (c=head; c && (c->isfullscrn || c->isfloating || c->istransient); c=c->next, --n);
 
-    if (!(c = head)->isfullscrn && !c->istransient && !c->isfloating)
-        (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH)
-                         : XMoveResizeWindow(dis, c->win, cx, cy, master_size - BORDER_WIDTH, hh - BORDER_WIDTH);
+    /* if there is only one window, it should cover the available screen space
+     * if there is only one stack window (n == 1) then we don't care about growth
+     * if more than one stack windows (n > 1) on screen then adjustments may be needed
+     *   - d is the num of pixels than remain on the bottom of the screen plus the growth
+     *   - z is the clients' height/width
+     *
+     *      ----------  -.    --------------------.
+     *      |   |----| --|--> growth               `}--> first client will get (z+d) height/width
+     *      |   |    |   |                          |
+     *      |   |----|   }--> screen height - hh  --'
+     *      |   |    | }-|--> client height - z       :: 2 stack clients on tile mode ..looks like a spaceship
+     *      ----------  -'                            :: peice of aart by c00kiemon5ter o.O om nom nom nom nom
+     *
+     *     what we do is, remove the growth from the screen height  : (z - growth)
+     *     and then divide that space with the windows on the stack : (z - growth)/n
+     *     so all windows have equal height/width (z)
+     *     growth is left out and will later be added to the first's client height/width
+     *     before that, there will be cases when the num of windows is not perfectly
+     *     divided with then available screen height/width (ie 100px scr. height, and 3 windows)
+     *     so we get that remaining space and merge growth to it (d): (z - growth) % n + growth
+     *     finally we know each client's height, and how many pixels should be added to
+     *     the first stack window so that it satisfies growth, and doesn't create gaps
+     *     on the bottom of the screen.
+     */
+    if (c && n < 1) {
+        XMoveResizeWindow(dis, c->win, cx, cy, ww - BORDER_WIDTH, hh - BORDER_WIDTH);
+        return;
+    } else if (c && n > 1) { d = (z - growth) % n + growth; z = (z - growth) / n; }
 
-    for (c=head->next; c && (c->isfullscrn || c->istransient || c->isfloating); c=c->next);
+    /* tile the first non-floating, non-fullscreen window to cover the master area */
+    if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH)
+                            : XMoveResizeWindow(dis, c->win, cx, cy, master_size - BORDER_WIDTH, hh - BORDER_WIDTH);
+
+    /* tile the next non-floating, non-fullscreen stack window with growth/d */
+    if (c) for (c=c->next; c && (c->isfullscrn || c->isfloating || c->istransient); c=c->next);
     if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, (cy += master_size),
                             (cw = z - BORDER_WIDTH) + d, (ch = hh - master_size - BORDER_WIDTH))
                             : XMoveResizeWindow(dis, c->win, (cx += master_size), cy,
                             (cw = ww - master_size - BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
 
+    /* tile the rest of the non-floating, non-fullscreen stack windows */
     if (c) for (mode==BSTACK?(cx+=z+d):(cy+=z+d), c=c->next; c; c=c->next)
-        if (!c->isfullscrn && !c->istransient && !c->isfloating) {
+        if (!c->isfullscrn && !c->isfloating && !c->istransient) {
             XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
             (mode == BSTACK) ? (cx+=z) : (cy+=z);
         }
@@ -924,9 +956,7 @@ void switch_mode(const Arg *arg) {
 /* tile all windows of current desktop - call the handler tiling function */
 void tile(void) {
     if (!head) return; /* nothing to arange */
-    int h = wh + (showpanel ? 0 : PANEL_HEIGHT), y = (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0);
-    if (!head->next || (head->next->istransient && !head->next->next)) layout[MONOCLE](h, y);
-    else layout[mode](h, y);
+    layout[head->next?mode:MONOCLE](wh + (showpanel ? 0 : PANEL_HEIGHT), (TOP_PANEL && showpanel ? PANEL_HEIGHT : 0));
 }
 
 /* toggle visibility state of the panel */
@@ -947,6 +977,12 @@ void unmapnotify(XEvent *e) {
 /* update client - set highlighted borders and active window
  * if no client is given update current
  * if current is NULL then delete the active window property
+ *
+ * a window should have borders in any case except if
+ *  - the window is not floating or transient
+ *  - the window is fullscreen
+ *  - the window is the only window on screen
+ *  - the mode is MONOCLE and non of the above applies
  */
 void update_current(client *c) {
     if (!c) {
@@ -954,11 +990,9 @@ void update_current(client *c) {
         return;
     } else current = c;
 
-    int border_width = (!head->next || (head->next->istransient &&
-                        !head->next->next) || mode == MONOCLE) ? 0 : BORDER_WIDTH;
-
     for (c=head; c; c=c->next) {
-        XSetWindowBorderWidth(dis, c->win, (c->isfullscrn ? 0 : border_width));
+        XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn || (mode == MONOCLE
+                                && (!c->isfloating && !c->istransient))) ? 0 : BORDER_WIDTH);
         XSetWindowBorder(dis, c->win, (current == c ? win_focus : win_unfocus));
         if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
                 ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
