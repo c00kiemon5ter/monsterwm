@@ -350,6 +350,7 @@ void configurerequest(XEvent *e) {
         XSync(dis, False);
     }
     tile();
+    update_current(c?c:current);
 }
 
 /* send the given event - WM_DELETE_WINDOW for now */
