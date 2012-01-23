@@ -290,6 +290,7 @@ void client_to_desktop(const Arg *arg) {
     Window w = current->win;
     Bool wfloating = current->isfloating;
     Bool wfullscrn = current->isfullscrn;
+    Bool transient = current->istransient;
 
     XUnmapWindow(dis, current->win);
     removeclient(current);
@@ -298,6 +299,7 @@ void client_to_desktop(const Arg *arg) {
     current = addwindow(w);
     current->isfloating = wfloating;
     current->isfullscrn = wfullscrn;
+    current->istransient = transient;
 
     select_desktop(cd);
     tile();
