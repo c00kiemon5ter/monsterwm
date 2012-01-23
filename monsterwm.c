@@ -285,19 +285,24 @@ void cleanup(void) {
  */
 void client_to_desktop(const Arg *arg) {
     if (arg->i == current_desktop || !current) return;
-    Window w = current->win;
     int cd = current_desktop;
 
+    Window w = current->win;
+    Bool wfloating = current->isfloating;
+    Bool wfullscrn = current->isfullscrn;
+
     XUnmapWindow(dis, current->win);
-    if (current->isfullscrn) setfullscreen(current, False);
     removeclient(current);
 
     select_desktop(arg->i);
     current = addwindow(w);
+    current->isfloating = wfloating;
+    current->isfullscrn = wfullscrn;
 
     select_desktop(cd);
     tile();
     update_current(current);
+
     if (FOLLOW_WINDOW) change_desktop(arg);
     desktopinfo();
 }
