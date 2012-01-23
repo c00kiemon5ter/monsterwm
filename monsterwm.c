@@ -904,7 +904,6 @@ void stack(int hh, int cy) {
  */
 void swap_master() {
     if (!current || !head->next || mode == MONOCLE) return;
-    for (client *t=head; t; t=t->next) if (t->isfullscreen) return;
     if (current == head) move_down();
     else while (current != head) move_up();
     update_current(head);
