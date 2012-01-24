@@ -334,15 +334,11 @@ void clientmessage(XEvent *e) {
 void configurerequest(XEvent *e) {
     client *c = wintoclient(e->xconfigurerequest.window);
     if (c && c->isfullscrn) setfullscreen(c, True);
-    else {
-        XWindowChanges wc;
-        wc.x = e->xconfigurerequest.x;
-        wc.y = e->xconfigurerequest.y + (showpanel && TOP_PANEL) ? PANEL_HEIGHT : 0;
-        wc.width  = (e->xconfigurerequest.width  < ww - BORDER_WIDTH) ? e->xconfigurerequest.width  : ww + BORDER_WIDTH;
-        wc.height = (e->xconfigurerequest.height < wh - BORDER_WIDTH) ? e->xconfigurerequest.height : wh + BORDER_WIDTH;
-        wc.border_width = e->xconfigurerequest.border_width;
-        wc.sibling      = e->xconfigurerequest.above;
-        wc.stack_mode   = e->xconfigurerequest.detail;
+    else { /* keeping the window happy costs 10 lines ..fuuuu! shrink them! */
+        XWindowChanges wc;                     wc.border_width = e->xconfigurerequest.border_width;
+        wc.x       = e->xconfigurerequest.x;     wc.width      = e->xconfigurerequest.width;
+        wc.y       = e->xconfigurerequest.y;     wc.height     = e->xconfigurerequest.height;
+        wc.sibling = e->xconfigurerequest.above; wc.stack_mode = e->xconfigurerequest.detail;
         XConfigureWindow(dis, e->xconfigurerequest.window, e->xconfigurerequest.value_mask, &wc);
         XSync(dis, False);
     }
