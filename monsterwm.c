@@ -343,10 +343,10 @@ void configurerequest(XEvent *e) {
         XSync(dis, False);
     }
     tile();
-    update_current(c?c:current);
+    if (c && c == current) update_current(c);
 }
 
-/* send the given event - WM_DELETE_WINDOW for now */
+/* close the window */
 void deletewindow(Window w) {
     XEvent ev;
     ev.type = ClientMessage;
