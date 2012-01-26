@@ -133,11 +133,13 @@ Currently:
  * [monocleborders] : adds borders to the monocle layout
  * [showhide]       : adds a function to show and hide all windows on all desktops
  * [uselessgaps]    : adds gaps around every window on screen
+ * [warpcursor]     : cursors follows and is placed in the center of the current window
 
   [fib]:            https://github.com/c00kiemon5ter/monsterwm/tree/fib
   [monocleborders]: https://github.com/c00kiemon5ter/monsterwm/tree/monocleborders
   [showhide]:       https://github.com/c00kiemon5ter/monsterwm/tree/showhide
   [uselessgaps]:    https://github.com/c00kiemon5ter/monsterwm/tree/uselessgaps
+  [warpcursor]:     https://github.com/c00kiemon5ter/monsterwm/tree/warpcursor
 
 
 Bugs
