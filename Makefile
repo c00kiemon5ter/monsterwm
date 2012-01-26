@@ -41,7 +41,7 @@ config.h:
 	@echo creating $@ from config.def.h
 	@cp config.def.h $@
 
-monsterwm: ${OBJ}
+${WMNAME}: ${OBJ}
 	@echo CC -o $@
 	@${CC} -o $@ ${OBJ} ${LDFLAGS}
 
