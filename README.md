@@ -129,7 +129,7 @@ See other branches for patch and code.
 
 Currently:
 
- * [fib]            : adds fibanocci layout
+ * [fib]            : adds fibonacci layout
  * [monocleborders] : adds borders to the monocle layout
  * [showhide]       : adds a function to show and hide all windows on all desktops
  * [uselessgaps]    : adds gaps around every window on screen
