@@ -121,6 +121,25 @@ Build and install.
     # make clean install
 
 
+Patches
+-------
+
+Some extensions to the code are supported in the form of patches.
+See other branches for patch and code.
+
+Currently:
+
+ * [fib]            : adds fibanocci layout
+ * [monocleborders] : adds borders to the monocle layout
+ * [showhide]       : adds a function to show and hide all windows on all desktops
+ * [uselessgaps]    : adds gaps around every window on screen
+
+  [fib]:            https://github.com/c00kiemon5ter/monsterwm/tree/fib
+  [monocleborders]: https://github.com/c00kiemon5ter/monsterwm/tree/monocleborders
+  [showhide]:       https://github.com/c00kiemon5ter/monsterwm/tree/showhide
+  [uselessgaps]:    https://github.com/c00kiemon5ter/monsterwm/tree/uselessgaps
+
+
 Bugs
 ----
 
