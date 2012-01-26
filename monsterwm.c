@@ -564,14 +564,14 @@ void mousemotion(const Arg *arg) {
     if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
                      GrabModeAsync, None, None, CurrentTime) != GrabSuccess) return;
     int x, y, z, xw, yh; unsigned int v; Window w;
+    XWarpPointer(dis, None, current->win, 0, 0, 0, 0, wa.width, wa.height);
     XQueryPointer(dis, root, &w, &w, &x, &y, &z, &z, &v);
 
     XEvent ev;
     do {
         XMaskEvent(dis, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
         switch (ev.type) {
-            case ConfigureRequest:
-            case MapRequest:
+            case ConfigureRequest: case MapRequest:
                 events[ev.type](&ev);
                 break;
             case MotionNotify:
