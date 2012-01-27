@@ -166,8 +166,8 @@ static int previous_desktop = 0;
 static int growth = 0;
 static int mode = DEFAULT_MODE;
 static int master_size;
-static int wh; /* window area height - screen height minus the border size and panel height */
-static int ww; /* window area width - screen width minus the border size */
+static int wh; /* window area height - screen height minus the panel height */
+static int ww; /* window area width  - screen width */
 static int screen;
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int win_unfocus, win_focus;
@@ -460,11 +460,11 @@ void grid(int hh, int cy) {
     for (cols=0; cols <= n/2; cols++) if (cols*cols >= n) break; /* emulate square root */
     if (n == 5) cols = 2;
 
-    int rows = n/cols, cw = (cols ? ww/cols : ww), cn = 0, rn = 0, i = 0;
+    int rows = n/cols, cn = 0, rn = 0, i = 0, ch = hh - BORDER_WIDTH, cw = (ww - BORDER_WIDTH)/(cols?cols:1);
     for (client *c=head; c; c=c->next, i++) {
         if (c->isfullscrn || c->istransient || c->isfloating) { i--; continue; }
         if (i/rows + 1 > cols - n%cols) rows = n/cols + 1;
-        XMoveResizeWindow(dis, c->win, cn*cw, cy + rn*hh/rows, cw - BORDER_WIDTH, hh/rows - BORDER_WIDTH);
+        XMoveResizeWindow(dis, c->win, cn*cw, cy + rn*ch/rows, cw - BORDER_WIDTH, ch/rows - BORDER_WIDTH);
         if (++rn >= rows) { rn = 0; cn++; }
     }
 }
@@ -592,7 +592,7 @@ void mousemotion(const Arg *arg) {
 /* each window should cover all the available screen space */
 void monocle(int hh, int cy) {
     for (client *c=head; c; c=c->next) if (!c->isfullscrn && !c->isfloating && !c->istransient)
-        XMoveResizeWindow(dis, c->win, 0, cy, ww + BORDER_WIDTH, hh + BORDER_WIDTH);
+        XMoveResizeWindow(dis, c->win, 0, cy, ww, hh);
 }
 
 /* move the current client, to current->next
@@ -799,7 +799,7 @@ void setfullscreen(client *c, Bool fullscrn) {
     if (fullscrn != c->isfullscrn) XChangeProperty(dis, c->win,
             netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
             ((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN] : 0), fullscrn);
-    if (c->isfullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww+BORDER_WIDTH, wh+BORDER_WIDTH+PANEL_HEIGHT);
+    if (c->isfullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww, wh + PANEL_HEIGHT);
 }
 
 /* set initial values
@@ -813,8 +813,8 @@ void setup(void) {
     screen = DefaultScreen(dis);
     root = RootWindow(dis, screen);
 
-    ww = XDisplayWidth(dis,  screen) - BORDER_WIDTH;
-    wh = XDisplayHeight(dis, screen) - (SHOW_PANEL ? PANEL_HEIGHT : 0) - BORDER_WIDTH;
+    ww = XDisplayWidth(dis,  screen);
+    wh = XDisplayHeight(dis, screen) - (SHOW_PANEL ? PANEL_HEIGHT : 0);
     master_size = ((mode == BSTACK) ? wh : ww) * MASTER_SIZE;
     for (unsigned int i=0; i<DESKTOPS; i++) save_desktop(i);
 
@@ -907,23 +907,25 @@ void stack(int hh, int cy) {
      *     on the bottom of the screen.
      */
     if (c && n < 1) {
-        XMoveResizeWindow(dis, c->win, cx, cy, ww - BORDER_WIDTH, hh - BORDER_WIDTH);
+        XMoveResizeWindow(dis, c->win, cx, cy, ww - 2*BORDER_WIDTH, hh - 2*BORDER_WIDTH);
         return;
     } else if (c && n > 1) { d = (z - growth) % n + growth; z = (z - growth) / n; }
 
     /* tile the first non-floating, non-fullscreen window to cover the master area */
-    if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, cy, ww - BORDER_WIDTH, master_size - BORDER_WIDTH)
-                            : XMoveResizeWindow(dis, c->win, cx, cy, master_size - BORDER_WIDTH, hh - BORDER_WIDTH);
+    if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, cy, ww - 2*BORDER_WIDTH, master_size - BORDER_WIDTH)
+                            : XMoveResizeWindow(dis, c->win, cx, cy, master_size - BORDER_WIDTH, hh - 2*BORDER_WIDTH);
 
     /* tile the next non-floating, non-fullscreen stack window with growth/d */
     if (c) for (c=c->next; c && (c->isfullscrn || c->isfloating || c->istransient); c=c->next);
     if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, (cy += master_size),
-                            (cw = z - BORDER_WIDTH) + d, (ch = hh - master_size - BORDER_WIDTH))
+                              (cw =  z - BORDER_WIDTH)  - BORDER_WIDTH + d,
+                              (ch = hh - BORDER_WIDTH*2 - master_size))
                             : XMoveResizeWindow(dis, c->win, (cx += master_size), cy,
-                            (cw = ww - master_size - BORDER_WIDTH), (ch = z - BORDER_WIDTH) + d);
+                              (cw = ww - BORDER_WIDTH*2 - master_size),
+                              (ch =  z - BORDER_WIDTH)  - BORDER_WIDTH + d);
 
     /* tile the rest of the non-floating, non-fullscreen stack windows */
-    if (c) for (mode==BSTACK?(cx+=z+d):(cy+=z+d), c=c->next; c; c=c->next)
+    if (c) for (mode==BSTACK?(cx+=cw+d):(cy+=ch+d), c=c->next; c; c=c->next)
         if (!c->isfullscrn && !c->isfloating && !c->istransient) {
             XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
             (mode == BSTACK) ? (cx+=z) : (cy+=z);
