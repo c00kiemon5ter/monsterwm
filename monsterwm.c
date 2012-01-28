@@ -772,25 +772,25 @@ void run(void) {
 void save_desktop(int i) {
     if (i >= DESKTOPS) return;
     desktops[i].master_size = master_size;
-    desktops[i].mode = mode;
-    desktops[i].growth = growth;
-    desktops[i].head = head;
-    desktops[i].current = current;
-    desktops[i].showpanel = showpanel;
-    desktops[i].prevfocus = prevfocus;
+    desktops[i].mode        = mode;
+    desktops[i].growth      = growth;
+    desktops[i].head        = head;
+    desktops[i].current     = current;
+    desktops[i].showpanel   = showpanel;
+    desktops[i].prevfocus   = prevfocus;
 }
 
 /* set the specified desktop's properties */
 void select_desktop(int i) {
     if (i >= DESKTOPS) return;
     save_desktop(current_desktop);
-    master_size = desktops[i].master_size;
-    mode = desktops[i].mode;
-    growth = desktops[i].growth;
-    head = desktops[i].head;
-    current = desktops[i].current;
-    showpanel = desktops[i].showpanel;
-    prevfocus = desktops[i].prevfocus;
+    master_size     = desktops[i].master_size;
+    mode            = desktops[i].mode;
+    growth          = desktops[i].growth;
+    head            = desktops[i].head;
+    current         = desktops[i].current;
+    showpanel       = desktops[i].showpanel;
+    prevfocus       = desktops[i].prevfocus;
     current_desktop = i;
 }
 
