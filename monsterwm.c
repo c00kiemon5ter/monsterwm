@@ -515,7 +515,7 @@ void maprequest(XEvent *e) {
         for (unsigned int i=0; i<LENGTH(rules); i++)
             if (!strcmp(ch.res_class, rules[i].class) || !strcmp(ch.res_name, rules[i].class)) {
                 follow = rules[i].follow;
-                newdsk = rules[i].desktop;
+                newdsk = (rules[i].desktop < 0) ? current_desktop : rules[i].desktop;
                 floating = rules[i].floating;
                 break;
             }
