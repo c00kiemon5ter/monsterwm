@@ -161,13 +161,10 @@ static int xerrorstart();
 static Bool running = True;
 static Bool showpanel = SHOW_PANEL;
 static int retval = 0;
-static int current_desktop = 0;
-static int previous_desktop = 0;
-static int growth = 0;
+static int previous_desktop = 0, current_desktop = 0;
 static int mode = DEFAULT_MODE;
-static int master_size;
-static int wh; /* window area height - screen height minus the panel height */
-static int ww; /* window area width  - screen width */
+static int master_size, growth = 0;
+static int wh, ww; /* window area width/height - screen height minus the panel height */
 static int screen;
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int win_unfocus, win_focus;
@@ -180,15 +177,11 @@ static desktop desktops[DESKTOPS];
 
 /* events array - on new event, call the appropriate handling function */
 static void (*events[LASTEvent])(XEvent *e) = {
-    [ButtonPress]      = buttonpress,
-    [ClientMessage]    = clientmessage,
+    [KeyPress]         = keypress,     [EnterNotify]    = enternotify,
+    [MapRequest]       = maprequest,   [ClientMessage]  = clientmessage,
+    [ButtonPress]      = buttonpress,  [DestroyNotify]  = destroynotify,
+    [UnmapNotify]      = unmapnotify,  [PropertyNotify] = propertynotify,
     [ConfigureRequest] = configurerequest,
-    [DestroyNotify]    = destroynotify,
-    [EnterNotify]      = enternotify,
-    [KeyPress]         = keypress,
-    [MapRequest]       = maprequest,
-    [PropertyNotify]   = propertynotify,
-    [UnmapNotify]      = unmapnotify,
 };
 
 /* layout array - given the current layout mode, tile the windows
@@ -196,8 +189,8 @@ static void (*events[LASTEvent])(XEvent *e) = {
  * y (or cy) is the num of pixels from top to place the windows (y coordinate)
  */
 static void (*layout[MODES])(int h, int y) = {
-    [TILE]   = stack, [MONOCLE] = monocle,
-    [BSTACK] = stack, [GRID]    = grid,
+    [TILE] = stack, [BSTACK]  = stack,
+    [GRID] = grid,  [MONOCLE] = monocle,
 };
 
 /* create a new client and add the new window
@@ -213,7 +206,7 @@ client* addwindow(Window w) {
         for(t=head; t->next; t=t->next); /* get the last client */
         t->next = c;
     } else {
-        c->next = (t = head);
+        c->next = head;
         head = c;
     }
 
@@ -282,22 +275,19 @@ void cleanup(void) {
 void client_to_desktop(const Arg *arg) {
     if (arg->i == current_desktop || !current) return;
     int cd = current_desktop;
+    client *c = current;
 
-    Window w = current->win;
-    Bool wfloating = current->isfloating;
-    Bool wfullscrn = current->isfullscrn;
-    Bool transient = current->istransient;
-
-    XUnmapWindow(dis, current->win);
-    removeclient(current);
-
+    /* add the window to the new desktop keeping the client's properties */
     select_desktop(arg->i);
-    current = addwindow(w);
-    current->isfloating = wfloating;
-    current->isfullscrn = wfullscrn;
-    current->istransient = transient;
+    current = addwindow(c->win);
+    current->isfloating  = c->isfloating;
+    current->isfullscrn  = c->isfullscrn;
+    current->istransient = c->istransient;
 
+    /* remove the window and client from the current desktop */
     select_desktop(cd);
+    XUnmapWindow(dis, c->win);
+    removeclient(c);
     tile();
     update_current(current);
 
@@ -770,7 +760,7 @@ void run(void) {
 
 /* save specified desktop's properties */
 void save_desktop(int i) {
-    if (i >= DESKTOPS) return;
+    if (i < 0 || i >= DESKTOPS) return;
     desktops[i].master_size = master_size;
     desktops[i].mode        = mode;
     desktops[i].growth      = growth;
@@ -782,7 +772,7 @@ void save_desktop(int i) {
 
 /* set the specified desktop's properties */
 void select_desktop(int i) {
-    if (i >= DESKTOPS) return;
+    if (i < 0 || i >= DESKTOPS) return;
     save_desktop(current_desktop);
     master_size     = desktops[i].master_size;
     mode            = desktops[i].mode;
@@ -859,14 +849,13 @@ void sigchld() {
 
 /* execute a command */
 void spawn(const Arg *arg) {
-    if (fork() == 0) {
-        if (dis) close(ConnectionNumber(dis));
-        setsid();
-        execvp((char*)arg->com[0], (char**)arg->com);
-        fprintf(stderr, "error: execvp %s", (char *)arg->com[0]);
-        perror(" failed"); /* also prints the err msg */
-        exit(EXIT_SUCCESS);
-    }
+    if (fork()) return;
+    if (dis) close(ConnectionNumber(dis));
+    setsid();
+    execvp((char*)arg->com[0], (char**)arg->com);
+    fprintf(stderr, "error: execvp %s", (char *)arg->com[0]);
+    perror(" failed"); /* also prints the err msg */
+    exit(EXIT_SUCCESS);
 }
 
 /* arrange windows in normal or bottom stack tile */
