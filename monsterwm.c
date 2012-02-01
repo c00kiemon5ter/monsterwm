@@ -673,8 +673,9 @@ void move_up() {
  */
 void next_win() {
     if (!current || !head->next) return;
-    update_current((prevfocus = current)->next ? current->next : head);
+    current = (prevfocus = current)->next ? current->next : head;
     if (mode == MONOCLE) XMapWindow(dis, current->win);
+    update_current(current);
 }
 
 /* cyclic focus the previous window
