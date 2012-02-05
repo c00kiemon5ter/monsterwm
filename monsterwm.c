@@ -17,7 +17,7 @@
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 #define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
 
-enum { RESIZE, MOVE };
+enum { PREV = -1, NEXT = 1, RESIZE, MOVE };
 enum { TILE, MONOCLE, BSTACK, GRID, MODES };
 enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_ACTIVE, NET_COUNT };
@@ -137,7 +137,8 @@ static void quit(const Arg *arg);
 static void removeclient(client *c);
 static void resize_master(const Arg *arg);
 static void resize_stack(const Arg *arg);
-static void rotate_desktop(const Arg *arg);
+static void rotate(const Arg *arg);
+static void rotate_filled(const Arg *arg);
 static void run(void);
 static void save_desktop(int i);
 static void select_desktop(int i);
@@ -751,9 +752,16 @@ void resize_stack(const Arg *arg) {
     tile();
 }
 
-/* jump and focus the 'current + n' desktop */
-void rotate_desktop(const Arg *arg) {
-    change_desktop(&(Arg){.i = (current_desktop + DESKTOPS + arg->i) % DESKTOPS});
+/* jump and focus the next or previous desktop */
+void rotate(const Arg *arg) {
+    change_desktop(&(Arg){.i = (DESKTOPS + current_desktop + arg->i) % DESKTOPS});
+}
+
+/* jump and focus the next or previous desktop that has clients */
+void rotate_filled(const Arg *arg) {
+    int n = arg->i;
+    while (n < DESKTOPS && !desktops[(DESKTOPS + current_desktop + n) % DESKTOPS].head) (n += arg->i);
+    change_desktop(&(Arg){.i = (DESKTOPS + current_desktop + n) % DESKTOPS});
 }
 
 /* main event loop - on receival of an event call the appropriate event handler */
