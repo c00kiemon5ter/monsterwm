@@ -454,10 +454,10 @@ void keypress(XEvent *e) {
  */
 void killclient() {
     if (!current) return;
-    Atom *protocols; int n = 0;
-    if (XGetWMProtocols(dis, current->win, &protocols, &n)) while(n-- && protocols[n] != wmatoms[WM_DELETE_WINDOW]);
-    if (n) deletewindow(current->win);
-    else XKillClient(dis, current->win);
+    Atom *prot; int n = -1;
+    if (XGetWMProtocols(dis, current->win, &prot, &n)) while(!--n<0 && prot[n] != wmatoms[WM_DELETE_WINDOW]);
+    if (n < 0) XKillClient(dis, current->win);
+    else deletewindow(current->win);
     removeclient(current);
 }
 
