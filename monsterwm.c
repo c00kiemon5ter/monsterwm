@@ -916,7 +916,12 @@ void update_current(client *c) {
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32,
                 PropModeReplace, (unsigned char *)&current->win, 1);
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
-    XRaiseWindow(dis, current->win);
+
+    /* keep transient windows on top of regular windows */
+    int trans = 0;
+    for (c=head; c; c=c->next) if (c->istransient) trans = XRaiseWindow(dis, c->win);
+    if (!trans || current->isfloating) XRaiseWindow(dis, current->win);
+
     if (CLICK_TO_FOCUS) XUngrabButton(dis, Button1, None, current->win);
     XSync(dis, False);
 }
