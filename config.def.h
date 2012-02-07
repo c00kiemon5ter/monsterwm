@@ -32,7 +32,7 @@ static const AppRule rules[] = { \
 };
 
 /** commands **/
-static const char *termcmd[]  = { "uxterm", NULL };
+static const char *termcmd[]  = { "xterm", NULL };
 
 #define DESKTOPCHANGE(K,N) \
     {  MOD1,             K,              change_desktop, {.i = N}}, \
