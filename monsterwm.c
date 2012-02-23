@@ -535,6 +535,9 @@ void mousemotion(const Arg *arg) {
     XWarpPointer(dis, None, current->win, 0, 0, 0, 0, wa.width, wa.height);
     XQueryPointer(dis, root, &w, &w, &x, &y, &z, &z, &v);
 
+    if (current->isfullscrn) setfullscreen(current, False);
+    if (!current->isfloating) current->isfloating = True;
+
     XEvent ev;
     do {
         XMaskEvent(dis, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
@@ -550,7 +553,6 @@ void mousemotion(const Arg *arg) {
                 else if (arg->i == MOVE) XMoveWindow(dis, current->win, xw, yh);
                 break;
         }
-        current->isfloating = True;
     } while(ev.type != ButtonRelease);
     XUngrabPointer(dis, CurrentTime);
     update_current(current);
