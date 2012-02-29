@@ -892,22 +892,23 @@ void unmapnotify(XEvent *e) {
  * if no client is given update current
  * if current is NULL then delete the active window property
  *
- * a window should have borders in any case except if
- *  - the window is not floating or transient
- *  - the window is fullscreen
+ * a window should have borders in any case, except if
  *  - the window is the only window on screen
- *  - the mode is MONOCLE and non of the above applies
+ *  - the window is fullscreen
+ *  - the mode is MONOCLE and the window is not floating or transient
  */
 void update_current(client *c) {
     if (!c) {
         XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
         return;
     } else current = c;
+    if (c->isfullscrn || c->isfloating || c->istransient) XRaiseWindow(dis, c->win);
 
     for (c=head; c; c=c->next) {
         XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn ||
             (mode == MONOCLE && !c->isfloating && !c->istransient)) ? 0 : BORDER_WIDTH);
         XSetWindowBorder(dis, c->win, (current == c ? win_focus : win_unfocus));
+        if (current != c && !c->isfloating && !c->istransient) XLowerWindow(dis, c->win);
         if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
                 ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
     }
@@ -916,12 +917,6 @@ void update_current(client *c) {
                 PropModeReplace, (unsigned char *)&current->win, 1);
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
     if (CLICK_TO_FOCUS) XUngrabButton(dis, Button1, None, current->win);
-
-    /* keep transient and floating windows on top of regular windows */
-    Bool r = False;
-    if (current->isfloating || current->istransient) { XRaiseWindow(dis, current->win); r = True; }
-    else for (c=head; c; c=c->next) if (c->istransient || c->isfloating) r = XRaiseWindow(dis, c->win);
-    if (!r) XRaiseWindow(dis, current->win);
 
     XSync(dis, False);
 }
