@@ -226,11 +226,12 @@ void change_desktop(const Arg *arg) {
     previous_desktop = current_desktop;
     select_desktop(arg->i);
     tile();
-    if (mode == MONOCLE && current) XMapWindow(dis, current->win);
-    else for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
+    if (current) XMapWindow(dis, current->win);
+    for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
     update_current(current);
     select_desktop(previous_desktop);
-    for (client *c=head; c; c=c->next) XUnmapWindow(dis, c->win);
+    for (client *c=head; c; c=c->next) if (c != current) XUnmapWindow(dis, c->win);
+    if (current) XUnmapWindow(dis, current->win);
     select_desktop(arg->i);
     desktopinfo();
 }
@@ -654,7 +655,6 @@ void move_up() {
 void next_win() {
     if (!current || !head->next) return;
     current = (prevfocus = current)->next ? current->next : head;
-    if (mode == MONOCLE) XMapWindow(dis, current->win);
     update_current(current);
 }
 
@@ -665,7 +665,6 @@ void prev_win() {
     if (!current || !head->next) return;
     if (head == (prevfocus = current)) while (current->next) current=current->next;
     else for (client *t=head; t; t=t->next) if (t->next == current) { current = t; break; }
-    if (mode == MONOCLE) XMapWindow(dis, current->win);
     update_current(current);
 }
 
@@ -706,7 +705,6 @@ void removeclient(client *c) {
     current = (prevfocus && prevfocus != c) ? prevfocus : (*p) ? (prevfocus = *p) : (prevfocus = head);
     select_desktop(cd);
     tile();
-    if (mode == MONOCLE && cd == --nd && current) XMapWindow(dis, current->win);
     update_current(current);
     free(c);
 }
@@ -859,7 +857,7 @@ void stack(int hh, int cy) {
  * are the head
  */
 void swap_master() {
-    if (!current || !head->next || mode == MONOCLE) return;
+    if (!current || !head->next) return;
     if (current == head) move_down();
     else while (current != head) move_up();
     update_current(head);
@@ -869,7 +867,6 @@ void swap_master() {
 /* switch the tiling mode and reset all floating windows */
 void switch_mode(const Arg *arg) {
     if (mode == arg->i) for (client *c=head; c; c=c->next) c->isfloating = False;
-    if (mode == MONOCLE) for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
     mode = arg->i;
     tile();
     update_current(current);
@@ -908,8 +905,8 @@ void update_current(client *c) {
     } else current = c;
 
     for (c=head; c; c=c->next) {
-        XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn || (mode == MONOCLE
-                                && (!c->isfloating && !c->istransient))) ? 0 : BORDER_WIDTH);
+        XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn ||
+            (mode == MONOCLE && !c->isfloating && !c->istransient)) ? 0 : BORDER_WIDTH);
         XSetWindowBorder(dis, c->win, (current == c ? win_focus : win_unfocus));
         if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
                 ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
