@@ -298,8 +298,6 @@ void clientmessage(XEvent *e) {
           && ((unsigned)e->xclient.data.l[1] == netatoms[NET_FULLSCREEN]
            || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN]))
         setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscrn)));
-    tile();
-    update_current(c);
 }
 
 /* a configure request means that the window requested changes in its geometry
@@ -316,8 +314,6 @@ void configurerequest(XEvent *e) {
             ev->y, ev->width, ev->height, ev->border_width, ev->above, ev->detail });
         XSync(dis, False);
     }
-    tile();
-    if (c && c == current) update_current(c);
 }
 
 /* close the window */
@@ -737,6 +733,8 @@ void setfullscreen(client *c, Bool fullscrn) {
             netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
             ((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN] : 0), fullscrn);
     if (c->isfullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww, wh + PANEL_HEIGHT);
+    tile();
+    if (c && c == current) update_current(c);
 }
 
 /* set initial values
