@@ -146,6 +146,7 @@ static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
 static void removeclient(Client *c, Desktop *d);
 static void rotate(const Arg *arg);
+static void rotate_filled(const Arg *arg);
 static void run(void);
 static void setfullscreen(Client *c, Desktop *d, Bool fullscrn);
 static void setup(void);
@@ -941,6 +942,15 @@ void removeclient(Client *c, Desktop *d) {
  */
 void rotate(const Arg *arg) {
     change_desktop(&(Arg){.i = (DESKTOPS + currdeskidx + arg->i) % DESKTOPS});
+}
+
+/**
+ * jump and focus the next non-empty desktop
+ */
+void rotate_filled(const Arg *arg) {
+    int n = arg->i;
+    while (n < DESKTOPS && !desktops[(DESKTOPS + currdeskidx + n) % DESKTOPS].head) (n += arg->i);
+    change_desktop(&(Arg){.i = (DESKTOPS + currdeskidx + n) % DESKTOPS});
 }
 
 /**
