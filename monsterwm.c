@@ -176,8 +176,7 @@ static void (*events[LASTEvent])(XEvent *e) = {
  * y (or cy) is the num of pixels from top to place the windows (y coordinate)
  */
 static void (*layout[MODES])(int h, int y) = {
-    [TILE] = stack, [BSTACK]  = stack,
-    [GRID] = grid,  [MONOCLE] = monocle,
+    [TILE] = stack, [BSTACK] = stack, [GRID] = grid, [MONOCLE] = monocle,
 };
 
 /* create a new client and add the new window
@@ -808,44 +807,36 @@ void spawn(const Arg *arg) {
 
 /* arrange windows in normal or bottom stack tile */
 void stack(int hh, int cy) {
-    client *c;
-    int n, d = 0, z = (mode == BSTACK ? ww : hh), ma = (mode == BSTACK ? hh : ww) * MASTER_SIZE, cx = 0, cw, ch;
+    client *c = NULL; Bool b = mode == BSTACK;
+    int n = 0, d = 0, z = (b ? ww:hh), ma = (b ? hh:ww) * MASTER_SIZE;
 
-    /* count stack windows - start from head->next */
-    for (n=0, c=head->next; c; c=c->next) if (!c->isfullscrn && !c->isfloating && !c->istransient) ++n;
-
-    /* grab the first non-floating, non-fullscreen window and place it on master
-     * if it's a stack window, remove it from the stack count (--n)
-     */
-    for (c=head; c && (c->isfullscrn || c->isfloating || c->istransient); c=c->next, --n);
+    /* count stack windows and get first non-floating, non-fullscreen window */
+    for (client *t = head; t; t=t->next)
+        if (!t->isfullscrn && !t->isfloating && !t->istransient && c) ++n; else if (!c) c = t;
 
     /* if there is only one window, it should cover the available screen space
      * if there is only one stack window (n == 1) then we don't care about the adjustments
      * if more than one stack windows (n > 1) on screen then adjustments may be needed
-     *   - d is the num of pixels than remain when spliting the available width/height to the number of windows
-     *   - z is the clients' height/width
-     */
-    if (c && n < 1) {
-        XMoveResizeWindow(dis, c->win, cx, cy, ww - 2*BORDER_WIDTH, hh - 2*BORDER_WIDTH);
+     *   - d is the num of pixels than remain when spliting
+     *   the available width/height to the number of windows
+     *   - z is the clients' height/width */
+    if (!c) return; else if (!n) {
+        XMoveResizeWindow(dis, c->win, 0, cy, ww - 2*BORDER_WIDTH, hh - 2*BORDER_WIDTH);
         return;
-    } else if (c && n > 1) { d = z % n; z = z / n; }
+    } else if (n > 1) { d = z%n; z /= n; }
 
     /* tile the first non-floating, non-fullscreen window to cover the master area */
-    if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, cy, ww - 2*BORDER_WIDTH, ma - BORDER_WIDTH)
-                            : XMoveResizeWindow(dis, c->win, cx, cy, ma - BORDER_WIDTH, hh - 2*BORDER_WIDTH);
+    b ? XMoveResizeWindow(dis, c->win, 0, cy, ww - 2*BORDER_WIDTH, ma - BORDER_WIDTH)
+      : XMoveResizeWindow(dis, c->win, 0, cy, ma - BORDER_WIDTH, hh - 2*BORDER_WIDTH);
 
-    /* tile the next non-floating, non-fullscreen stack window and padd with d */
-    if (c) for (c=c->next; c && (c->isfullscrn || c->isfloating || c->istransient); c=c->next);
-    if (c) (mode == BSTACK) ? XMoveResizeWindow(dis, c->win, cx, (cy += ma),
-                              (cw = z - BORDER_WIDTH) - BORDER_WIDTH + d, (ch = hh - BORDER_WIDTH*2 - ma))
-                            : XMoveResizeWindow(dis, c->win, (cx += ma), cy,
-                              (cw = ww - BORDER_WIDTH*2 - ma), (ch = z - BORDER_WIDTH) - BORDER_WIDTH + d);
+    int cx = b ? 0:ma, cw = (b ? hh:ww) - 2*BORDER_WIDTH - ma, ch = z - BORDER_WIDTH;
 
-    /* tile the rest of the non-floating, non-fullscreen stack windows */
-    if (c) for (mode==BSTACK?(cx+=cw+d):(cy+=ch+d), c=c->next; c; c=c->next)
+    for (cy += b ? ma:0, c=c->next; c; c=c->next)
         if (!c->isfullscrn && !c->isfloating && !c->istransient) {
-            XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
-            (mode == BSTACK) ? (cx+=z) : (cy+=z);
+            if (!c->next) ch += d - BORDER_WIDTH;
+            b ? XMoveResizeWindow(dis, c->win, cx, cy, ch, cw)
+              : XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
+            b ? (cx += z) : (cy += z);
         }
 }
 
