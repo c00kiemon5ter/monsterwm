@@ -54,6 +54,7 @@ static Key keys[] = {
     {  MOD1|SHIFT,       XK_c,          killclient,        {NULL}},
     {  MOD1,             XK_j,          next_win,          {NULL}},
     {  MOD1,             XK_k,          prev_win,          {NULL}},
+    {  MOD1,             XK_Tab,        last_desktop,      {NULL}},
     {  MOD1,             XK_Return,     swap_master,       {NULL}},
     {  MOD1|SHIFT,       XK_j,          move_down,         {NULL}},
     {  MOD1|SHIFT,       XK_k,          move_up,           {NULL}},
