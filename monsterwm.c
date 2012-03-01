@@ -90,6 +90,7 @@ static void mousemotion(const Arg *arg);
 static void next_win();
 static void prev_win();
 static void quit(const Arg *arg);
+static void rotate(const Arg *arg);
 static void spawn(const Arg *arg);
 static void swap_master();
 static void switch_mode(const Arg *arg);
@@ -938,6 +939,13 @@ void removeclient(Client *c, Desktop *d) {
     if (!(c->isfloat || c->istrans) || (d->head && !d->head->next)) tile(d);
     free(c);
     desktopinfo();
+}
+
+/**
+ * jump and focus the next or previous desktop
+ */
+void rotate(const Arg *arg) {
+    change_desktop(&(Arg){.i = (DESKTOPS + currdeskidx + arg->i) % DESKTOPS});
 }
 
 /**
