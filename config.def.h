@@ -36,6 +36,9 @@ static const AppRule rules[] = { \
     { "Gimp",        0,    False,  True  },
 };
 
+/* helper for spawning shell commands */
+#define SHCMD(cmd) {.com = (const char*[]){"/bin/sh", "-c", cmd, NULL}}
+
 /**
  * custom commands
  * must always end with '.., NULL };'
