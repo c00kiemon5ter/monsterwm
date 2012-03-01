@@ -1101,6 +1101,7 @@ void setup(void) {
     XSync(dis, False);
 
     grabkeys();
+    if (DEFAULT_DESKTOP >= 0 && DEFAULT_DESKTOP < DESKTOPS) change_desktop(&(Arg){.i = DEFAULT_DESKTOP});
 }
 
 void sigchld(__attribute__((unused)) int sig) {
