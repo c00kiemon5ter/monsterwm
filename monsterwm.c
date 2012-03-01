@@ -80,6 +80,7 @@ typedef struct {
 /* exposed function prototypes sorted alphabetically */
 static void change_desktop(const Arg *arg);
 static void client_to_desktop(const Arg *arg);
+static void focusurgent();
 static void killclient();
 static void last_desktop();
 static void move_down();
@@ -561,6 +562,15 @@ void focus(Client *c, Desktop *d) {
 void focusin(XEvent *e) {
     Desktop *d = &desktops[currdeskidx];
     if (d->curr && d->curr->win != e->xfocus.window) focus(d->curr, d);
+}
+
+/**
+ * find and focus the first client which received
+ * an urgent hint in the current desktop
+ */
+void focusurgent(void) {
+    Desktop *d = &desktops[currdeskidx];
+    for (Client *c = d->head; c; c = c->next) if (c->isurgn) focus(c, d);
 }
 
 /**
