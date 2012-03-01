@@ -11,6 +11,7 @@
 
 /** generic settings **/
 #define MASTER_SIZE     0.52
+#define SHOW_PANEL      True      /* show panel by default on exec */
 #define TOP_PANEL       True      /* False mean panel is on bottom */
 #define PANEL_HEIGHT    18        /* 0 for no space for panel, thus no panel */
 #define DEFAULT_MODE    TILE      /* initial layout/mode: TILE MONOCLE BSTACK GRID FLOAT */
@@ -49,6 +50,7 @@ static const char *termcmd[] = { "xterm", NULL };
  */
 static Key keys[] = {
     /* modifier          key            function           argument */
+    {  MOD1,             XK_b,          togglepanel,       {NULL}},
     {  MOD1|SHIFT,       XK_c,          killclient,        {NULL}},
     {  MOD1,             XK_j,          next_win,          {NULL}},
     {  MOD1,             XK_k,          prev_win,          {NULL}},
