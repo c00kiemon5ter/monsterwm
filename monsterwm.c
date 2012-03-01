@@ -84,6 +84,7 @@ static void change_desktop(const Arg *arg);
 static void change_monitor(const Arg *arg);
 static void client_to_desktop(const Arg *arg);
 static void client_to_monitor(const Arg *arg);
+static void focusurgent();
 static void killclient();
 static void last_desktop();
 static void move_down();
@@ -640,6 +641,15 @@ void focus(Client *c, Desktop *d, Monitor *m) {
 void focusin(XEvent *e) {
     Monitor *m = &monitors[currmonidx]; Desktop *d = &m->desktops[m->currdeskidx];
     if (d->curr && d->curr->win != e->xfocus.window) focus(d->curr, d, m);
+}
+
+/**
+ * find and focus the first client which received
+ * an urgent hint in the current desktop in the current monitor
+ */
+void focusurgent(void) {
+    Desktop *d = &monitors[currmonidx].desktops[monitors[currmonidx].currdeskidx];
+    for (Client *c = d->head; c; c = c->next) if (c->isurgn) focus(c, d, &monitors[currmonidx]);
 }
 
 /**
