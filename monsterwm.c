@@ -95,6 +95,7 @@ static void next_win();
 static void prev_win();
 static void quit(const Arg *arg);
 static void rotate(const Arg *arg);
+static void rotate_filled(const Arg *arg);
 static void spawn(const Arg *arg);
 static void swap_master();
 static void switch_mode(const Arg *arg);
@@ -1032,6 +1033,16 @@ void removeclient(Client *c, Desktop *d, Monitor *m) {
  */
 void rotate(const Arg *arg) {
     change_desktop(&(Arg){.i = (DESKTOPS + monitors[currmonidx].currdeskidx + arg->i) % DESKTOPS});
+}
+
+/**
+ * jump and focus the next non-empty desktop
+ */
+void rotate_filled(const Arg *arg) {
+    Monitor *m = &monitors[currmonidx];
+    int n = arg->i;
+    while (n < DESKTOPS && !m->desktops[(DESKTOPS + m->currdeskidx + n) % DESKTOPS].head) (n += arg->i);
+    change_desktop(&(Arg){.i = (DESKTOPS + m->currdeskidx + n) % DESKTOPS});
 }
 
 /**
