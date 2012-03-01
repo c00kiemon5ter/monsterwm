@@ -125,6 +125,7 @@ static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
 static void focus(Client *c, Desktop *d);
 static void focusin(XEvent *e);
+static void focusurgent();
 static unsigned long getcolor(const char* color, const int screen);
 static void grabbuttons(Client *c);
 static void grabkeys(void);
@@ -555,6 +556,15 @@ void focusin(XEvent *e) {
 
     if (!wintoclient(e->xfocus.window, &c, &d)) return;
     else if (d->curr && e->xfocus.window != d->curr->win) focus(d->curr, d);
+}
+
+/**
+ * find and focus the first client which received
+ * an urgent hint in the current desktop
+ */
+void focusurgent(void) {
+    Desktop *d = &desktops[currdeskidx];
+    for (Client *c = d->head; c; c = c->next) if (c->isurgn) focus(c, d);
 }
 
 /**
