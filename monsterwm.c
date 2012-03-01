@@ -1003,6 +1003,7 @@ void setup(void) {
     XSync(dis, False);
 
     grabkeys();
+    change_desktop(&(Arg){.i = DEFAULT_DESKTOP});
 }
 
 void sigchld(__attribute__((unused)) int sig) {

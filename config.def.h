@@ -20,9 +20,10 @@
 #define FOLLOW_MOUSE    False     /* Focus the window the mouse just entered */
 #define CLICK_TO_FOCUS  False     /* Focus an unfocused window when clicked  */
 #define BORDER_WIDTH    2         /* window border width */
-#define FOCUS           "#ff950e" /* focused window border color   */
-#define UNFOCUS         "#444444" /* unfocused window border color */
-#define MINWSZ          50        /* minimum window size in pixels */
+#define FOCUS           "#ff950e" /* focused window border color    */
+#define UNFOCUS         "#444444" /* unfocused window border color  */
+#define MINWSZ          50        /* minimum window size in pixels  */
+#define DEFAULT_DESKTOP 0         /* the desktop to focus initially */
 #define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
 
 /**
