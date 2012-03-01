@@ -145,6 +145,7 @@ static void prev_win();
 static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
 static void removeclient(Client *c, Desktop *d);
+static void rotate(const Arg *arg);
 static void run(void);
 static void setfullscreen(Client *c, Desktop *d, Bool fullscrn);
 static void setup(void);
@@ -933,6 +934,13 @@ void removeclient(Client *c, Desktop *d) {
     if (!(c->isfloat || c->istrans) || (d->head && !d->head->next)) tile(d);
     free(c);
     desktopinfo();
+}
+
+/**
+ * jump and focus the next or previous desktop
+ */
+void rotate(const Arg *arg) {
+    change_desktop(&(Arg){.i = (DESKTOPS + currdeskidx + arg->i) % DESKTOPS});
 }
 
 /**
