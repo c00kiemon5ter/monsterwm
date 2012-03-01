@@ -91,6 +91,7 @@ static void quit();
 static void spawn(const Arg *arg);
 static void swap_master();
 static void switch_mode(const Arg *arg);
+static void togglepanel();
 
 #include "config.h"
 
@@ -121,10 +122,12 @@ typedef struct Client {
  * head - the start of the client list
  * curr - the currently highlighted window
  * prev - the client that previously had focus
+ * sbar - the visibility status of the panel/statusbar
  */
 typedef struct {
     int mode;
     Client *head, *curr, *prev;
+    Bool sbar;
 } Desktop;
 
 /* hidden function prototypes sorted alphabetically */
@@ -957,8 +960,9 @@ void setup(void) {
     ww = XDisplayWidth(dis,  screen);
     wh = XDisplayHeight(dis, screen) - PANEL_HEIGHT;
 
-    /* initialize mode for each desktop */
-    for (unsigned int d = 0; d < DESKTOPS; d++) desktops[d] = (Desktop){ .mode = DEFAULT_MODE };
+    /* initialize mode and panel visibility for each desktop */
+    for (unsigned int d = 0; d < DESKTOPS; d++)
+        desktops[d] = (Desktop){ .mode = DEFAULT_MODE, .sbar = SHOW_PANEL };
 
     /* get color for focused and unfocused client borders */
     win_focus = getcolor(FOCUS, screen);
@@ -1084,7 +1088,16 @@ void switch_mode(const Arg *arg) {
  */
 void tile(Desktop *d) {
     if (!d->head || d->mode == FLOAT) return; /* nothing to arange */
-    layout[d->head->next ? d->mode:MONOCLE](0, TOP_PANEL ? PANEL_HEIGHT:0, ww, wh, d);
+    layout[d->head->next ? d->mode:MONOCLE](0, TOP_PANEL && d->sbar ? PANEL_HEIGHT:0,
+                                                  ww, wh + (d->sbar ? 0:PANEL_HEIGHT), d);
+}
+
+/**
+ * toggle visibility state of the panel/bar
+ */
+void togglepanel(void) {
+    desktops[currdeskidx].sbar = !desktops[currdeskidx].sbar;
+    tile(&desktops[currdeskidx]);
 }
 
 /**
