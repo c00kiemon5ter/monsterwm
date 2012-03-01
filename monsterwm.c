@@ -299,9 +299,8 @@ void clientmessage(XEvent *e) {
           && ((unsigned)e->xclient.data.l[1] == netatoms[NET_FULLSCREEN]
            || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN]))
         setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscrn)));
-    else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) current = c;
     tile();
-    update_current(current);
+    update_current(c);
 }
 
 /* a configure request means that the window requested changes in its geometry
