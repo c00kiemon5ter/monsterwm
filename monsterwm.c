@@ -308,14 +308,12 @@ void clientmessage(XEvent *e) {
  * the gaps that otherwise could have been created
  */
 void configurerequest(XEvent *e) {
-    client *c = wintoclient(e->xconfigurerequest.window);
+    XConfigureRequestEvent *ev = &e->xconfigurerequest;
+    client *c = wintoclient(ev->window);
     if (c && c->isfullscrn) setfullscreen(c, True);
-    else { /* keeping the window happy costs 10 lines ..fuuuu! shrink them! */
-        XWindowChanges wc;                     wc.border_width = e->xconfigurerequest.border_width;
-        wc.x       = e->xconfigurerequest.x;     wc.width      = e->xconfigurerequest.width;
-        wc.y       = e->xconfigurerequest.y;     wc.height     = e->xconfigurerequest.height;
-        wc.sibling = e->xconfigurerequest.above; wc.stack_mode = e->xconfigurerequest.detail;
-        XConfigureWindow(dis, e->xconfigurerequest.window, e->xconfigurerequest.value_mask, &wc);
+    else {
+        XConfigureWindow(dis, ev->window, ev->value_mask, &(XWindowChanges){ ev->x,
+            ev->y, ev->width, ev->height, ev->border_width, ev->above, ev->detail });
         XSync(dis, False);
     }
     tile();
