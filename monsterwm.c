@@ -142,7 +142,7 @@ static void next_win();
 static Client* prevclient(Client *c, Desktop *d);
 static void prev_win();
 static void propertynotify(XEvent *e);
-static void quit();
+static void quit(const Arg *arg);
 static void removeclient(Client *c, Desktop *d);
 static void run(void);
 static void setfullscreen(Client *c, Desktop *d, Bool fullscrn);
@@ -175,7 +175,7 @@ static int xerrorstart(Display *dis, XErrorEvent *ee);
  * currdeskidx  - which desktop is currently active
  */
 static Bool running = True;
-static int wh, ww, currdeskidx = 0, prevdeskidx = 0;
+static int wh, ww, currdeskidx = 0, prevdeskidx = 0, retval = 0;
 static unsigned int numlockmask = 0, win_unfocus, win_focus;
 static Display *dis;
 static Window root;
@@ -900,7 +900,8 @@ void propertynotify(XEvent *e) {
  * to quit just stop receiving events
  * run is stopped and control is back to main
  */
-void quit(void) {
+void quit(const Arg *arg) {
+    retval = arg->i;
     running = False;
 }
 
@@ -1157,5 +1158,5 @@ int main(int argc, char *argv[]) {
     run();
     cleanup();
     XCloseDisplay(dis);
-    return 0;
+    return retval;
 }
