@@ -88,7 +88,7 @@ static void moveresize(const Arg *arg);
 static void mousemotion(const Arg *arg);
 static void next_win();
 static void prev_win();
-static void quit();
+static void quit(const Arg *arg);
 static void spawn(const Arg *arg);
 static void swap_master();
 static void switch_mode(const Arg *arg);
@@ -178,7 +178,7 @@ static int xerrorstart(Display *dis, XErrorEvent *ee);
  * currdeskidx  - which desktop is currently active
  */
 static Bool running = True;
-static int wh, ww, currdeskidx, prevdeskidx;
+static int wh, ww, currdeskidx, prevdeskidx, retval;
 static unsigned int numlockmask, win_unfocus, win_focus;
 static Display *dis;
 static Window root;
@@ -905,7 +905,8 @@ void propertynotify(XEvent *e) {
  * to quit just stop receiving events
  * run is stopped and control is back to main
  */
-void quit(void) {
+void quit(const Arg *arg) {
+    retval = arg->i;
     running = False;
 }
 
@@ -1161,7 +1162,7 @@ int main(int argc, char *argv[]) {
     run();
     cleanup();
     XCloseDisplay(dis);
-    return 0;
+    return retval;
 }
 
 /* vim: set expandtab ts=4 sts=4 sw=4 : */
