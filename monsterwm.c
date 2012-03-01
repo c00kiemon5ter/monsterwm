@@ -81,6 +81,7 @@ typedef struct {
 static void change_desktop(const Arg *arg);
 static void client_to_desktop(const Arg *arg);
 static void killclient();
+static void last_desktop();
 static void move_down();
 static void move_up();
 static void moveresize(const Arg *arg);
@@ -177,7 +178,7 @@ static int xerrorstart(Display *dis, XErrorEvent *ee);
  * currdeskidx  - which desktop is currently active
  */
 static Bool running = True;
-static int wh, ww, currdeskidx;
+static int wh, ww, currdeskidx, prevdeskidx;
 static unsigned int numlockmask, win_unfocus, win_focus;
 static Display *dis;
 static Window root;
@@ -262,7 +263,7 @@ void buttonpress(XEvent *e) {
  */
 void change_desktop(const Arg *arg) {
     if (arg->i == currdeskidx || arg->i < 0 || arg->i >= DESKTOPS) return;
-    Desktop *d = &desktops[currdeskidx], *n = &desktops[(currdeskidx = arg->i)];
+    Desktop *d = &desktops[(prevdeskidx = currdeskidx)], *n = &desktops[(currdeskidx = arg->i)];
     if (n->curr) XMapWindow(dis, n->curr->win);
     for (Client *c = n->head; c; c = c->next) XMapWindow(dis, c->win);
     XChangeWindowAttributes(dis, root, CWEventMask, &(XSetWindowAttributes){.do_not_propagate_mask = SubstructureNotifyMask});
@@ -654,6 +655,13 @@ void killclient(void) {
     if (n < 0) { XKillClient(dis, d->curr->win); removeclient(d->curr, d); }
     else deletewindow(d->curr->win);
     if (prot) XFree(prot);
+}
+
+/**
+ * focus the previously/last focused desktop
+ */
+void last_desktop(void) {
+    change_desktop(&(Arg){.i = prevdeskidx});
 }
 
 /**
