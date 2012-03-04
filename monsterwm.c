@@ -16,6 +16,7 @@
 #define LENGTH(x)       (sizeof(x)/sizeof(*x))
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 #define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
+#define ISFFT(c)        (c->isfullscrn || c->isfloating || c->istransient)
 
 enum { PREV = -1, NEXT = 1, RESIZE, MOVE };
 enum { TILE, MONOCLE, BSTACK, GRID, MODES };
@@ -401,14 +402,14 @@ void grabkeys(void) {
 
 /* arrange windows in a grid */
 void grid(int hh, int cy) {
-    int n = 0, cols = 0;
-    for (client *c = head; c; c=c->next) if (!c->istransient && !c->isfullscrn && !c->isfloating) ++n;
+    int n = 0, cols = 0, cn = 0, rn = 0, i = 0;
+    for (client *c = head; c; c=c->next) if (!ISFFT(c)) ++n;
     for (cols=0; cols <= n/2; cols++) if (cols*cols >= n) break; /* emulate square root */
     if (n == 5) cols = 2;
 
-    int rows = n/cols, cn = 0, rn = 0, i = 0, ch = hh - BORDER_WIDTH, cw = (ww - BORDER_WIDTH)/(cols?cols:1);
+    int rows = n/cols, ch = hh - BORDER_WIDTH, cw = (ww - BORDER_WIDTH)/(cols?cols:1);
     for (client *c=head; c; c=c->next, i++) {
-        if (c->isfullscrn || c->istransient || c->isfloating) { i--; continue; }
+        if (ISFFT(c)) { i--; continue; }
         if (i/rows + 1 > cols - n%cols) rows = n/cols + 1;
         XMoveResizeWindow(dis, c->win, cn*cw, cy + rn*ch/rows, cw - BORDER_WIDTH, ch/rows - BORDER_WIDTH);
         if (++rn >= rows) { rn = 0; cn++; }
@@ -531,8 +532,7 @@ void mousemotion(const Arg *arg) {
 
 /* each window should cover all the available screen space */
 void monocle(int hh, int cy) {
-    for (client *c=head; c; c=c->next) if (!c->isfullscrn && !c->isfloating && !c->istransient)
-        XMoveResizeWindow(dis, c->win, 0, cy, ww, hh);
+    for (client *c=head; c; c=c->next) if (!ISFFT(c)) XMoveResizeWindow(dis, c->win, 0, cy, ww, hh);
 }
 
 /* move the current client, to current->next
@@ -780,12 +780,11 @@ void spawn(const Arg *arg) {
 
 /* arrange windows in normal or bottom stack tile */
 void stack(int hh, int cy) {
-    client *c = NULL; Bool b = mode == BSTACK;
+    client *c = NULL, *t = NULL; Bool b = mode == BSTACK;
     int n = 0, d = 0, z = (b ? ww:hh), ma = (b ? hh:ww) * MASTER_SIZE;
 
-    /* count stack windows and get first non-floating, non-fullscreen window */
-    for (client *t = head; t; t=t->next)
-        if (!t->isfullscrn && !t->isfloating && !t->istransient && c) ++n; else if (!c) c = t;
+    /* count stack windows and grab first non-floating, non-fullscreen window */
+    for (t = head; t; t=t->next) if (!ISFFT(t)) { if (c) ++n; else c = t; }
 
     /* if there is only one window, it should cover the available screen space
      * if there is only one stack window (n == 1) then we don't care about the adjustments
