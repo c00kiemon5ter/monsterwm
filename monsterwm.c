@@ -90,6 +90,7 @@ static void mousemotion(const Arg *arg);
 static void next_win();
 static void prev_win();
 static void quit(const Arg *arg);
+static void resize_master(const Arg *arg);
 static void rotate(const Arg *arg);
 static void rotate_filled(const Arg *arg);
 static void spawn(const Arg *arg);
@@ -122,6 +123,7 @@ typedef struct Client {
 /**
  * properties of each desktop
  *
+ * masz - the size of the master area
  * mode - the desktop's tiling layout mode
  * head - the start of the client list
  * curr - the currently highlighted window
@@ -129,7 +131,7 @@ typedef struct Client {
  * sbar - the visibility status of the panel/statusbar
  */
 typedef struct {
-    int mode;
+    int mode, masz;
     Client *head, *curr, *prev;
     Bool sbar;
 } Desktop;
@@ -943,6 +945,18 @@ void removeclient(Client *c, Desktop *d) {
 }
 
 /**
+ * resize the master size
+ * we should check for window size limits for both master and
+ * stack clients. the size of a window can't be less than MINWSZ
+ */
+void resize_master(const Arg *arg) {
+    Desktop *d = &desktops[currdeskidx];
+    int msz = (d->mode == BSTACK ? wh:ww) * MASTER_SIZE + (d->masz += arg->i);
+    if (msz >= MINWSZ && (d->mode == BSTACK ? wh:ww) - msz >= MINWSZ) tile(d);
+    else d->masz -= arg->i; /* reset master area size */
+}
+
+/**
  * jump and focus the next or previous desktop
  */
 void rotate(const Arg *arg) {
@@ -1064,13 +1078,13 @@ void spawn(const Arg *arg) {
  */
 void stack(int x, int y, int w, int h, const Desktop *d) {
     Client *c = NULL, *t = NULL; Bool b = (d->mode == BSTACK);
-    int n = 0, p = 0, z = (b ? w:h), ma = (b ? h:w) * MASTER_SIZE;
+    int n = 0, p = 0, z = (b ? w:h), ma = (b ? h:w) * MASTER_SIZE + d->masz;
 
     /* count stack windows and grab first non-floating, non-fullscreen window */
     for (t = d->head; t; t = t->next) if (!ISFFT(t)) { if (c) ++n; else c = t; }
 
     /* if there is only one window, it should cover the available screen space
-     * if there is only one stack window (n == 1) then we don't care about the adjustments
+     * if there is only one stack window (n == 1) then we don't care about growth
      * if more than one stack windows (n > 1) on screen then adjustments may be needed
      *   - p is the num of pixels than remain when spliting
      *   the available width/height to the number of windows
