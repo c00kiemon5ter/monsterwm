@@ -803,13 +803,14 @@ void stack(int hh, int cy) {
 
     int cx = b ? 0:ma, cw = (b ? hh:ww) - 2*BORDER_WIDTH - ma, ch = z - BORDER_WIDTH;
 
-    for (cy += b ? ma:0, c=c->next; c; c=c->next)
-        if (!c->isfullscrn && !c->isfloating && !c->istransient) {
-            if (!c->next) ch += d - BORDER_WIDTH;
-            b ? XMoveResizeWindow(dis, c->win, cx, cy, ch, cw)
-              : XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
-            b ? (cx += z) : (cy += z);
-        }
+    for (cy += b ? ma:0, c=c->next; c; c=c->next) {
+        if (ISFFT(c)) continue;
+        for (t=c->next; t && ISFFT(t); t=t->next);
+        if (!t) ch += d - BORDER_WIDTH; /* add remaining space to last window */
+        b ? XMoveResizeWindow(dis, c->win, cx, cy, ch, cw)
+          : XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
+        b ? (cx += z) : (cy += z);
+    }
 }
 
 /* swap master window with current or
