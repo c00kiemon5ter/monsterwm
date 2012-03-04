@@ -856,28 +856,31 @@ void unmapnotify(XEvent *e) {
  * a window should have borders in any case, except if
  *  - the window is the only window on screen
  *  - the window is fullscreen
- *  - the mode is MONOCLE and the window is not floating or transient
- */
+ *  - the mode is MONOCLE and the window is not floating or transient */
 void update_current(client *c) {
-    if (!c) {
-        XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
-        return;
-    } else current = c;
-    if (c->isfullscrn || c->isfloating || c->istransient) XRaiseWindow(dis, c->win);
+    if (!c) { XDeleteProperty(dis, root, netatoms[NET_ACTIVE]); return; }
 
-    for (c=head; c; c=c->next) {
+    /* unset previous active window border color and grab mouse events
+     * all windows should be below current, except the floating ones */
+    XWindowChanges wc;
+    for (wc.sibling = (current = c)->win, c=head; c; c=c->next) {
+        XSetWindowBorder(dis, c->win, c == current ? win_focus:win_unfocus);
         XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn ||
-            (mode == MONOCLE && !c->isfloating && !c->istransient)) ? 0 : BORDER_WIDTH);
-        XSetWindowBorder(dis, c->win, (current == c ? win_focus : win_unfocus));
-        if (current != c && !c->isfloating && !c->istransient) XLowerWindow(dis, c->win);
+                                           (mode==MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
+        wc.stack_mode = c->isfloating || c->istransient ? Above:Below;
+        XConfigureWindow(dis, c->win, CWSibling|CWStackMode, &wc);
         if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
-                ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+              ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
     }
 
+    /* raise the current window if floating or fullscreen and ungrab mouse
+     * events. give input focus and set _NET_ACTIVE_WINDOW property on it */
+    if (ISFFT(current)) XRaiseWindow(dis, current->win);
+    if (CLICK_TO_FOCUS) XUngrabButton(dis, Button1, None, current->win);
+    XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32,
                 PropModeReplace, (unsigned char *)&current->win, 1);
-    XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
-    if (CLICK_TO_FOCUS) XUngrabButton(dis, Button1, None, current->win);
+    XConfigureWindow(dis, current->win, CWSibling|CWStackMode, &wc);
 
     XSync(dis, False);
 }
