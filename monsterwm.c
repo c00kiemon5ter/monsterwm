@@ -51,8 +51,7 @@ typedef struct {
  * arg      - the argument to the function
  */
 typedef struct {
-    unsigned int mask;
-    unsigned int button;
+    unsigned int mask, button;
     void (*func)(const Arg *);
     const Arg arg;
 } Button;
@@ -96,8 +95,7 @@ typedef struct {
 typedef struct {
     const char *class;
     const int desktop;
-    const Bool follow;
-    const Bool floating;
+    const Bool follow, floating;
 } AppRule;
 
 /* function prototypes sorted alphabetically */
@@ -151,11 +149,9 @@ static int xerrorstart();
 static Bool running = True;
 static int previous_desktop = 0, current_desktop = 0;
 static int mode = DEFAULT_MODE;
-static int wh, ww; /* window area width/height - screen height minus the panel height */
-static int screen;
+static int screen, wh, ww; /* window area width/height - screen height minus the panel height */
 static int (*xerrorxlib)(Display *, XErrorEvent *);
-static unsigned int win_unfocus, win_focus;
-static unsigned int numlockmask = 0; /* dynamic key lock mask */
+static unsigned int numlockmask = 0, win_unfocus, win_focus;
 static Display *dis;
 static Window root;
 static client *head, *prevfocus, *current;
@@ -172,16 +168,14 @@ static void (*events[LASTEvent])(XEvent *e) = {
 };
 
 /* layout array - given the current layout mode, tile the windows
- * h (or hh) is the avaible height that windows have to expand
- * y (or cy) is the num of pixels from top to place the windows (y coordinate)
- */
+ * h (or hh) - avaible height that windows have to expand
+ * y (or cy) - offset from top to place the windows (reserved by the panel) */
 static void (*layout[MODES])(int h, int y) = {
     [TILE] = stack, [BSTACK] = stack, [GRID] = grid, [MONOCLE] = monocle,
 };
 
 /* create a new client and add the new window
- * window should notify of property change events
- */
+ * window should notify of property change events */
 client* addwindow(Window w) {
     client *c, *t;
     if (!(c = (client *)calloc(1, sizeof(client))))
@@ -215,11 +209,12 @@ void buttonpress(XEvent *e) {
 }
 
 /* focus another desktop
+ *
  * to avoid flickering
  * first map the new windows
- * if the layout mode is fullscreen map only one window
- * then unmap previous windows
- */
+ * first the current window and then all other
+ * then unmap the old windows
+ * first all others then the current */
 void change_desktop(const Arg *arg) {
     if (arg->i == current_desktop) return;
     previous_desktop = current_desktop;
@@ -237,9 +232,7 @@ void change_desktop(const Arg *arg) {
 
 /* remove all windows in all desktops by sending a delete message */
 void cleanup(void) {
-    Window root_return;
-    Window parent_return;
-    Window *children;
+    Window root_return, parent_return, *children;
     unsigned int nchildren;
 
     XUngrabKey(dis, AnyKey, AnyModifier, root);
@@ -257,8 +250,7 @@ void cleanup(void) {
  * if defined change focus to the new desktop
  *
  * keep in mind that current pointer might
- * change with each select_desktop() invocation
- */
+ * change with each select_desktop() invocation */
 void client_to_desktop(const Arg *arg) {
     if (arg->i == current_desktop || !current) return;
     int cd = current_desktop;
@@ -282,16 +274,16 @@ void client_to_desktop(const Arg *arg) {
     desktopinfo();
 }
 
-/* check if window requested fullscreen or activation
- * To change the state of a mapped window, a client MUST
+/* To change the state of a mapped window, a client MUST
  * send a _NET_WM_STATE client message to the root window
  * message_type must be _NET_WM_STATE
  *   data.l[0] is the action to be taken
  *   data.l[1] is the property to alter three actions:
- *     remove/unset _NET_WM_STATE_REMOVE=0
- *     add/set _NET_WM_STATE_ADD=1,
- *     toggle _NET_WM_STATE_TOGGLE=2
- */
+ *   - remove/unset _NET_WM_STATE_REMOVE=0
+ *   - add/set _NET_WM_STATE_ADD=1,
+ *   - toggle _NET_WM_STATE_TOGGLE=2
+ *
+ * check if window requested fullscreen or activation */
 void clientmessage(XEvent *e) {
     client *c = wintoclient(e->xclient.window);
     if (c && e->xclient.message_type         == netatoms[NET_WM_STATE]
@@ -301,17 +293,16 @@ void clientmessage(XEvent *e) {
 }
 
 /* a configure request means that the window requested changes in its geometry
- * state. if the window is fullscreen discard and fill the screen, else set the
+ * state. if the window is fullscreen discard and fill the screen else set the
  * appropriate values as requested, and tile the window again so that it fills
- * the gaps that otherwise could have been created
- */
+ * the gaps that otherwise could have been created */
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     client *c = wintoclient(ev->window);
     if (c && c->isfullscrn) setfullscreen(c, True);
     else {
-        XConfigureWindow(dis, ev->window, ev->value_mask, &(XWindowChanges){ ev->x,
-            ev->y, ev->width, ev->height, ev->border_width, ev->above, ev->detail });
+        XConfigureWindow(dis, ev->window, ev->value_mask, &(XWindowChanges){ev->x,
+            ev->y, ev->width, ev->height, ev->border_width, ev->above, ev->detail});
         XSync(dis, False);
     }
 }
@@ -339,8 +330,7 @@ void deletewindow(Window w) {
  *   whether the desktop is the current focused (1) or not (0)
  *   whether any client in that desktop has received an urgent hint
  *
- * once the info is collected, immediately flush the stream
- */
+ * once the info is collected, immediately flush the stream */
 void desktopinfo(void) {
     Bool urgent = False;
     int cd = current_desktop, n=0, d=0;
@@ -353,8 +343,7 @@ void desktopinfo(void) {
 }
 
 /* a destroy notification is received when a window is being closed
- * on receival, remove the appropriate client that held that window
- */
+ * on receival, remove the appropriate client that held that window */
 void destroynotify(XEvent *e) {
     client *c = wintoclient(e->xdestroywindow.window);
     if (c) removeclient(c);
@@ -362,8 +351,7 @@ void destroynotify(XEvent *e) {
 }
 
 /* print a message on standard error stream
- * and exit with failure exit code
- */
+ * and exit with failure exit code */
 void die(const char *errstr, ...) {
     va_list ap;
     va_start(ap, errstr);
@@ -374,8 +362,7 @@ void die(const char *errstr, ...) {
 
 /* when the mouse enters a window's borders
  * the window, if notifying of such events (EnterWindowMask)
- * will notify the wm and will get focus
- */
+ * will notify the wm and will get focus */
 void enternotify(XEvent *e) {
     if (!FOLLOW_MOUSE) return;
     client *c = wintoclient(e->xcrossing.window);
@@ -384,14 +371,10 @@ void enternotify(XEvent *e) {
 }
 
 /* get a pixel with the requested color
- * to fill some window area - borders
- */
+ * to fill some window area - borders */
 unsigned long getcolor(const char* color) {
-    Colormap map = DefaultColormap(dis, screen);
-    XColor c;
-
-    if (!XAllocNamedColor(dis, map, color, &c, &c))
-        die("error: cannot allocate color '%s'\n", c);
+    XColor c; Colormap map = DefaultColormap(dis, screen);
+    if (!XAllocNamedColor(dis, map, color, &c, &c)) die("error: cannot allocate color '%s'\n", c);
     return c.pixel;
 }
 
@@ -434,17 +417,14 @@ void grid(int hh, int cy) {
 
 /* on the press of a key check to see if there's a binded function to call */
 void keypress(XEvent *e) {
-    KeySym keysym;
-    keysym = XKeycodeToKeysym(dis, (KeyCode)e->xkey.keycode, 0);
-
+    KeySym keysym = XKeycodeToKeysym(dis, (KeyCode)e->xkey.keycode, 0);
     for (unsigned int i=0; i<LENGTH(keys); i++)
-        if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(e->xkey.state) && keys[i].func)
-            keys[i].func(&keys[i].arg);
+        if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(e->xkey.state)
+                   && keys[i].func) keys[i].func(&keys[i].arg);
 }
 
 /* explicitly kill a client - close the highlighted window
- * send a delete message and remove the client
- */
+ * send a delete message and remove the client */
 void killclient() {
     if (!current) return;
     Atom *prot; int n = -1;
@@ -462,10 +442,9 @@ void killclient() {
  * create a client for the window, that client will always be current.
  * check for transient state, and fullscreen state and the appropriate values.
  * if the desktop in which the window was spawned is the current desktop then
- * display the window, else, if set, focus the new desktop.
- */
+ * display the window, else, if set, focus the new desktop. */
 void maprequest(XEvent *e) {
-    static XWindowAttributes wa;
+    static XWindowAttributes wa; Window w;
     if (XGetWindowAttributes(dis, e->xmaprequest.window, &wa) && wa.override_redirect) return;
     if (wintoclient(e->xmaprequest.window)) return;
 
@@ -476,7 +455,7 @@ void maprequest(XEvent *e) {
         for (unsigned int i=0; i<LENGTH(rules); i++)
             if (!strcmp(ch.res_class, rules[i].class) || !strcmp(ch.res_name, rules[i].class)) {
                 follow = rules[i].follow;
-                newdsk = (rules[i].desktop < 0) ? current_desktop : rules[i].desktop;
+                newdsk = (rules[i].desktop < 0) ? current_desktop:rules[i].desktop;
                 floating = rules[i].floating;
                 break;
             }
@@ -487,7 +466,6 @@ void maprequest(XEvent *e) {
     prevfocus = current;
     current = addwindow(e->xmaprequest.window);
 
-    Window w;
     current->istransient = XGetTransientForHint(dis, current->win, &w);
     current->isfloating = floating || current->istransient;
 
@@ -515,8 +493,7 @@ void maprequest(XEvent *e) {
  * if the received event is a map request or a configure request call the
  * appropriate handler, and stop listening for other events.
  * Ungrab the poitner and event handling is passed back to run() function.
- * Once a window has been moved or resized, it's marked as floating.
- */
+ * Once a window has been moved or resized, it's marked as floating. */
 void mousemotion(const Arg *arg) {
     if (!current) return;
     static XWindowAttributes wa;
@@ -539,8 +516,8 @@ void mousemotion(const Arg *arg) {
                 events[ev.type](&ev);
                 break;
             case MotionNotify:
-                xw = (arg->i == MOVE ? wa.x : wa.width)  + ev.xmotion.x - x;
-                yh = (arg->i == MOVE ? wa.y : wa.height) + ev.xmotion.y - y;
+                xw = (arg->i == MOVE ? wa.x:wa.width)  + ev.xmotion.x - x;
+                yh = (arg->i == MOVE ? wa.y:wa.height) + ev.xmotion.y - y;
                 if (arg->i == RESIZE) XResizeWindow(dis, current->win,
                         xw>MINWSZ?xw:wa.width, yh>MINWSZ?yh:wa.height);
                 else if (arg->i == MOVE) XMoveWindow(dis, current->win, xw, yh);
@@ -559,36 +536,40 @@ void monocle(int hh, int cy) {
 }
 
 /* move the current client, to current->next
- * and current->next to current client's position
- */
+ * and current->next to current client's position */
 void move_down() {
     if (!current || !head->next) return;
 
     /* p is previous, n is next, if current is head n is last, c is current */
-    client *p = NULL, *n = (current->next) ? current->next : head;
+    client *p = NULL, *n = (current->next) ? current->next:head;
     for (p=head; p && p->next != current; p=p->next);
-    /* if there's a previous client then p->next should be what's after c
+    /*
+     * if there's a previous client then p->next should be what's after c
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
      */
     if (p) p->next = current->next;
-    /* else if no p client, then c is head, swapping with n should update head
+    /*
+     * else if no p client, then c is head, swapping with n should update head
      * [c]->[n]->..  ==>  [n]->[c]->..
      *  ^head              ^head
      */
     else head = n;
-    /* if c is the last client, c will be the current head
+    /*
+     * if c is the last client, c will be the current head
      * [n]->..->[p]->[c]->NULL  ==>  [c]->[n]->..->[p]->NULL
      *  ^head                         ^head
      * else c will take the place of n, so c-next will be n->next
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
      */
-    current->next = (current->next) ? n->next : n;
-    /* if c was swapped with n then they now point to the same ->next. n->next should be c
+    current->next = (current->next) ? n->next:n;
+    /*
+     * if c was swapped with n then they now point to the same ->next. n->next should be c
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->..  ==>  ..->[p]->[n]->[c]->..
      *                                        [c]-^
      */
     if (current->next == n->next) n->next = current;
-    /* else c is the last client and n is head,
+    /*
+     * else c is the last client and n is head,
      * so c will be move to be head, no need to update n->next
      * [n]->..->[p]->[c]->NULL  ==>  [c]->[n]->..->[p]->NULL
      *  ^head                         ^head
@@ -599,9 +580,8 @@ void move_down() {
     update_current(current);
 }
 
-/* move the current client, to the previous from current
- * and the previous from  current to current client's position
- */
+/* move the current client, to the previous from current and
+ * the previous from  current to current client's position */
 void move_up() {
     if (!current || !head->next) return;
 
@@ -610,49 +590,51 @@ void move_up() {
     for (p=head; p->next && p->next != current; p=p->next);
     /* pp is previous from p, or null if current is head and thus p is last */
     if (p->next) for (pp=head; pp; pp=pp->next) if (pp->next == p) break;
-    /* if p has a previous client then the next client should be current (current is c)
+    /*
+     * if p has a previous client then the next client should be current (current is c)
      * ..->[pp]->[p]->[c]->..  ==>  ..->[pp]->[c]->[p]->..
      */
     if (pp) pp->next = current;
-    /* if p doesn't have a previous client, then p might be head, so head must change to c
+    /*
+     * if p doesn't have a previous client, then p might be head, so head must change to c
      * [p]->[c]->..  ==>  [c]->[p]->..
      *  ^head              ^head
      * if p is not head, then c is head (and p is last), so the new head is next of c
      * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
      *  ^head         ^last           ^head         ^last
      */
-    else head = (current == head) ? current->next : current;
-    /* next of p should be next of c
+    else head = (current == head) ? current->next:current;
+    /*
+     * next of p should be next of c
      * ..->[pp]->[p]->[c]->[n]->..  ==>  ..->[pp]->[c]->[p]->[n]->..
      * except if c was head (now c->next is head), so next of p should be c
      * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
      *  ^head         ^last           ^head         ^last
      */
-    p->next = (current->next == head) ? current : current->next;
-    /* next of c should be p
+    p->next = (current->next == head) ? current:current->next;
+    /*
+     * next of c should be p
      * ..->[pp]->[p]->[c]->[n]->..  ==>  ..->[pp]->[c]->[p]->[n]->..
      * except if c was head (now c->next is head), so c is must be last
      * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
      *  ^head         ^last           ^head         ^last
      */
-    current->next = (current->next == head) ? NULL : p;
+    current->next = (current->next == head) ? NULL:p;
 
     tile();
     update_current(current);
 }
 
 /* cyclic focus the next window
- * if the window is the last on stack, focus head
- */
+ * if the window is the last on stack, focus head */
 void next_win() {
     if (!current || !head->next) return;
-    current = (prevfocus = current)->next ? current->next : head;
+    current = (prevfocus = current)->next ? current->next:head;
     update_current(current);
 }
 
 /* cyclic focus the previous window
- * if the window is the head, focus the last stack window
- */
+ * if the window is the head, focus the last stack window */
 void prev_win() {
     if (!current || !head->next) return;
     if (head == (prevfocus = current)) while (current->next) current=current->next;
@@ -661,8 +643,7 @@ void prev_win() {
 }
 
 /* property notify is called when one of the window's properties
- * is changed, such as an urgent hint is received
- */
+ * is changed, such as an urgent hint is received */
 void propertynotify(XEvent *e) {
     client *c = wintoclient(e->xproperty.window);
     if (!c || e->xproperty.atom != XA_WM_HINTS) return;
@@ -673,8 +654,7 @@ void propertynotify(XEvent *e) {
 }
 
 /* to quit just stop receiving events
- * run() is stopped and control is back to main()
- */
+ * run() is stopped and control is back to main() */
 void quit() {
     running = False;
 }
@@ -686,8 +666,7 @@ void quit() {
  *
  * keep in mind that the current set and the current update may
  * differ. current pointer changes in every select_desktop()
- * invocation.
- */
+ * invocation. */
 void removeclient(client *c) {
     client **p = NULL;
     int nd = 0, cd = current_desktop;
@@ -731,7 +710,7 @@ void select_desktop(int i) {
 void setfullscreen(client *c, Bool fullscrn) {
     if (fullscrn != c->isfullscrn) XChangeProperty(dis, c->win,
             netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
-            ((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN] : 0), fullscrn);
+            ((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN]:0), fullscrn);
     if (c->isfullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww, wh + PANEL_HEIGHT);
     tile();
     if (c && c == current) update_current(c);
@@ -740,8 +719,7 @@ void setfullscreen(client *c, Bool fullscrn) {
 /* set initial values
  * root window - screen height/width - atoms - xerror handler
  * set masks for reporting events handled by the wm
- * and propagate the suported net atoms
- */
+ * and propagate the suported net atoms */
 void setup(void) {
     sigchld();
 
@@ -756,10 +734,9 @@ void setup(void) {
     win_unfocus = getcolor(UNFOCUS);
 
     XModifierKeymap *modmap = XGetModifierMapping(dis);
-    for (int k=0; k<8; k++)
-        for (int j=0; j<modmap->max_keypermod; j++)
-            if (modmap->modifiermap[modmap->max_keypermod*k + j] == XKeysymToKeycode(dis, XK_Num_Lock))
-                numlockmask = (1 << k);
+    for (int k=0; k<8; k++) for (int j=0; j<modmap->max_keypermod; j++)
+        if (modmap->modifiermap[modmap->max_keypermod*k + j] == XKeysymToKeycode(dis, XK_Num_Lock))
+            numlockmask = (1 << k);
     XFreeModifiermap(modmap);
 
     /* set up atoms for dialog/notification windows */
@@ -840,8 +817,7 @@ void stack(int hh, int cy) {
  * if current is head swap with next
  * if current is not head, then head
  * is behind us, so move_up until we
- * are the head
- */
+ * are the head */
 void swap_master() {
     if (!current || !head->next) return;
     if (current == head) move_down();
@@ -866,8 +842,7 @@ void tile(void) {
 }
 
 /* windows that request to unmap should lose their
- * client, so no invisible windows exist on screen
- */
+ * client, so no invisible windows exist on screen */
 void unmapnotify(XEvent *e) {
     client *c = wintoclient(e->xunmap.window);
     if (c && e->xunmap.send_event) removeclient(c);
@@ -919,7 +894,7 @@ client* wintoclient(Window w) {
 
 /* There's no way to check accesses to destroyed windows, thus those cases are
  * ignored (especially on UnmapNotify's). Other types of errors call Xlibs
- * default error handler, which may call exit through xerrorlib.  */
+ * default error handler, which may call exit through xerrorlib. */
 int xerror(Display *dis, XErrorEvent *ee) {
     if (ee->error_code == BadWindow   || (ee->error_code == BadAccess && ee->request_code == X_GrabKey)
     || (ee->error_code == BadMatch    && (ee->request_code == X_SetInputFocus
