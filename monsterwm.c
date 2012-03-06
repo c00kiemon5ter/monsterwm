@@ -124,6 +124,7 @@ static void move_down();
 static void move_up();
 static void mousemotion(const Arg *arg);
 static void next_win();
+static client* prev_client();
 static void prev_win();
 static void propertynotify(XEvent *e);
 static void quit();
@@ -178,18 +179,13 @@ static void (*layout[MODES])(int h, int y) = {
 /* create a new client and add the new window
  * window should notify of property change events */
 client* addwindow(Window w) {
-    client *c, *t;
+    client *c, *t = prev_client(head);
     if (!(c = (client *)calloc(1, sizeof(client))))
         die("error: could not calloc() %u bytes\n", sizeof(client));
 
     if (!head) head = c;
-    else if (ATTACH_ASIDE) {
-        for(t=head; t->next; t=t->next); /* get the last client */
-        t->next = c;
-    } else {
-        c->next = head;
-        head = c;
-    }
+    else if (!ATTACH_ASIDE) { c->next = head; head = c; }
+    else if (t) t->next = c; else head->next = c;
 
     XSelectInput(dis, (c->win = w), PropertyChangeMask|(FOLLOW_MOUSE?EnterWindowMask:0));
     return c;
@@ -250,26 +246,23 @@ void cleanup(void) {
  * add the window to the new desktop
  * if defined change focus to the new desktop
  *
- * keep in mind that current pointer might
- * change with each select_desktop() invocation */
+ * keep in mind that current pointer changes
+ * with each select_desktop() invocation */
 void client_to_desktop(const Arg *arg) {
-    if (arg->i == current_desktop || !current) return;
+    if (!current || arg->i == current_desktop) return;
     int cd = current_desktop;
-    client *c = current;
+    client *p = prev_client(current), *c = current;
 
-    /* add the window to the new desktop keeping the client's properties */
     select_desktop(arg->i);
-    current = addwindow(c->win);
-    current->isfloating  = c->isfloating;
-    current->isfullscrn  = c->isfullscrn;
-    current->istransient = c->istransient;
+    client *l = prev_client(head);
+    update_current(l ? (l->next = c) : head ? (head->next = c) : (head = c));
 
-    /* remove the window and client from the current desktop */
     select_desktop(cd);
+    if (c == head || !p) head = c->next; else p->next = c->next;
+    c->next = NULL;
     XUnmapWindow(dis, c->win);
-    removeclient(c);
     tile();
-    update_current(current);
+    update_current(prevfocus && prevfocus != c ? prevfocus:head);
 
     if (FOLLOW_WINDOW) change_desktop(arg);
     desktopinfo();
@@ -462,24 +455,23 @@ void maprequest(XEvent *e) {
     if (ch.res_name) XFree(ch.res_name);
 
     select_desktop(newdsk);
-    prevfocus = current;
-    current = addwindow(e->xmaprequest.window);
+    client *c = addwindow(e->xmaprequest.window);
 
-    current->istransient = XGetTransientForHint(dis, current->win, &w);
-    current->isfloating = floating || current->istransient;
+    c->istransient = XGetTransientForHint(dis, c->win, &w);
+    c->isfloating = floating || c->istransient;
 
     int di; unsigned long dl; unsigned char *state = NULL; Atom da;
-    if (XGetWindowProperty(dis, current->win, netatoms[NET_WM_STATE], 0L, sizeof da,
+    if (XGetWindowProperty(dis, c->win, netatoms[NET_WM_STATE], 0L, sizeof da,
                     False, XA_ATOM, &da, &di, &dl, &dl, &state) == Success && state)
-        setfullscreen(current, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
+        setfullscreen(c, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
     if (state) XFree(state);
 
     select_desktop(cd);
     if (cd == newdsk) {
         tile();
-        XMapWindow(dis, current->win);
-        update_current(current);
-        grabbuttons(current);
+        XMapWindow(dis, c->win);
+        update_current(c);
+        grabbuttons(c);
     } else if (follow) change_desktop(&(Arg){.i = newdsk});
     desktopinfo();
 }
@@ -536,22 +528,18 @@ void monocle(int hh, int cy) {
 /* move the current client, to current->next
  * and current->next to current client's position */
 void move_down() {
-    if (!current || !head->next) return;
-
-    /* p is previous, n is next, if current is head n is last, c is current */
+    /* p is previous, c is current, n is next, if current is head n is last */
     client *p = NULL, *n = (current->next) ? current->next:head;
-    for (p=head; p && p->next != current; p=p->next);
+    if (!(p = prev_client(current))) return;
     /*
-     * if there's a previous client then p->next should be what's after c
-     * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
-     */
-    if (p) p->next = current->next;
-    /*
-     * else if no p client, then c is head, swapping with n should update head
+     * if c is head, swapping with n should update head to n
      * [c]->[n]->..  ==>  [n]->[c]->..
      *  ^head              ^head
+     *
+     * else there is a previous client and p->next should be what's after c
+     * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
      */
-    else head = n;
+    if (current == head) head = n; else p->next = current->next;
     /*
      * if c is the last client, c will be the current head
      * [n]->..->[p]->[c]->NULL  ==>  [c]->[n]->..->[p]->NULL
@@ -564,36 +552,28 @@ void move_down() {
      * if c was swapped with n then they now point to the same ->next. n->next should be c
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->..  ==>  ..->[p]->[n]->[c]->..
      *                                        [c]-^
-     */
-    if (current->next == n->next) n->next = current;
-    /*
+     *
      * else c is the last client and n is head,
      * so c will be move to be head, no need to update n->next
      * [n]->..->[p]->[c]->NULL  ==>  [c]->[n]->..->[p]->NULL
      *  ^head                         ^head
      */
-    else head = current;
-
+    if (current->next == n->next) n->next = current; else head = current;
     tile();
-    update_current(current);
 }
 
 /* move the current client, to the previous from current and
  * the previous from  current to current client's position */
 void move_up() {
-    if (!current || !head->next) return;
-
     client *pp = NULL, *p;
     /* p is previous from current or last if current is head */
-    for (p=head; p->next && p->next != current; p=p->next);
+    if (!(p = prev_client(current))) return;
     /* pp is previous from p, or null if current is head and thus p is last */
-    if (p->next) for (pp=head; pp; pp=pp->next) if (pp->next == p) break;
+    if (p->next) for (pp=head; pp && pp->next != p; pp=pp->next);
     /*
      * if p has a previous client then the next client should be current (current is c)
      * ..->[pp]->[p]->[c]->..  ==>  ..->[pp]->[c]->[p]->..
-     */
-    if (pp) pp->next = current;
-    /*
+     *
      * if p doesn't have a previous client, then p might be head, so head must change to c
      * [p]->[c]->..  ==>  [c]->[p]->..
      *  ^head              ^head
@@ -601,7 +581,7 @@ void move_up() {
      * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
      *  ^head         ^last           ^head         ^last
      */
-    else head = (current == head) ? current->next:current;
+    if (pp) pp->next = current; else head = (current == head) ? current->next:current;
     /*
      * next of p should be next of c
      * ..->[pp]->[p]->[c]->[n]->..  ==>  ..->[pp]->[c]->[p]->[n]->..
@@ -618,26 +598,28 @@ void move_up() {
      *  ^head         ^last           ^head         ^last
      */
     current->next = (current->next == head) ? NULL:p;
-
     tile();
-    update_current(current);
 }
 
 /* cyclic focus the next window
  * if the window is the last on stack, focus head */
 void next_win() {
     if (!current || !head->next) return;
-    current = (prevfocus = current)->next ? current->next:head;
-    update_current(current);
+    update_current(current->next ? current->next:head);
+}
+
+/* get the previous client from the given
+ * if no such client, return NULL */
+client* prev_client(client *c) {
+    if (!c || !head->next) return NULL;
+    client *p; for (p=head; p->next && p->next != c; p=p->next);
+    return p;
 }
 
 /* cyclic focus the previous window
  * if the window is the head, focus the last stack window */
 void prev_win() {
-    if (!current || !head->next) return;
-    if (head == (prevfocus = current)) while (current->next) current=current->next;
-    else for (client *t=head; t; t=t->next) if (t->next == current) { current = t; break; }
-    update_current(current);
+    update_current(prev_client(current));
 }
 
 /* property notify is called when one of the window's properties
@@ -658,24 +640,22 @@ void quit() {
 }
 
 /* remove the specified client
- * the previous client must point to the next client of the given
- * the removing client can be on any desktop, so we must return
- * back the current focused desktop
  *
- * keep in mind that the current set and the current update may
- * differ. current pointer changes in every select_desktop()
- * invocation. */
+ * notice: the removing client can be on any desktop,
+ * we must return back to the current focused desktop.
+ * if the removing client was the current one, current must be set to
+ * NULL, otherwise prevfocus gets a wrong value by update_current. */
 void removeclient(client *c) {
     client **p = NULL;
     int nd = 0, cd = current_desktop;
     for (Bool found = False; nd<DESKTOPS && !found; nd++)
         for (select_desktop(nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
-    current = (prevfocus && prevfocus != c) ? prevfocus : (*p) ? (prevfocus = *p) : (prevfocus = head);
-    select_desktop(cd);
-    tile();
-    update_current(current);
     free(c);
+    if (c == current) current = NULL;
+    update_current((prevfocus && prevfocus != c) ? prevfocus:*p ? *p:head);
+    tile();
+    select_desktop(cd);
 }
 
 /* main event loop - on receival of an event call the appropriate event handler */
@@ -845,38 +825,33 @@ void unmapnotify(XEvent *e) {
     desktopinfo();
 }
 
-/* update client - set highlighted borders and active window
- * if no client is given update current
- * if current is NULL then delete the active window property
+/* update client
+ * highlight borders and set active window and input focus
+ * if given current is NULL then delete the active window property
  *
  * a window should have borders in any case, except if
  *  - the window is the only window on screen
  *  - the window is fullscreen
  *  - the mode is MONOCLE and the window is not floating or transient */
 void update_current(client *c) {
-    if (!c) { XDeleteProperty(dis, root, netatoms[NET_ACTIVE]); return; }
+    if ((prevfocus = current)) XSetWindowBorder(dis, prevfocus->win, win_unfocus);
+    if (!(current = c)) { XDeleteProperty(dis, root, netatoms[NET_ACTIVE]); return; }
 
-    /* unset previous active window border color and grab mouse events
-     * all windows should be below current, except the floating ones */
     XWindowChanges wc;
-    for (wc.sibling = (current = c)->win, c=head; c; c=c->next) {
-        XSetWindowBorder(dis, c->win, c == current ? win_focus:win_unfocus);
+    if (!c->isfloating && !c->istransient) for (wc.sibling = c->win, c=head; c; c=c->next) {
         XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn ||
                                            (mode==MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
-        wc.stack_mode = c->isfloating || c->istransient ? Above:Below;
+        wc.stack_mode = (c->isfloating || c->istransient) ? Above:Below;
         XConfigureWindow(dis, c->win, CWSibling|CWStackMode, &wc);
         if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
               ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
-    }
+    } else XRaiseWindow(dis, current->win);
 
-    /* raise the current window if floating or fullscreen and ungrab mouse
-     * events. give input focus and set _NET_ACTIVE_WINDOW property on it */
-    if (ISFFT(current)) XRaiseWindow(dis, current->win);
-    if (CLICK_TO_FOCUS) XUngrabButton(dis, Button1, None, current->win);
+    XSetWindowBorder(dis, current->win, win_focus);
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32,
                 PropModeReplace, (unsigned char *)&current->win, 1);
-    XConfigureWindow(dis, current->win, CWSibling|CWStackMode, &wc);
+    if (CLICK_TO_FOCUS) XUngrabButton(dis, Button1, None, current->win);
 
     XSync(dis, False);
 }
