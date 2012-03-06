@@ -60,12 +60,12 @@ typedef struct {
 /* a client is a wrapper to a window that additionally
  * holds some properties for that window
  *
- * next        - the client after this one, or NULL if the current is the only or last client
- * isurgent    - the window received an urgent hint
- * istransient - the window is transient
- * isfullscrn  - the window is fullscreen
- * isfloating  - the window is floating
- * win         - the window
+ * next        - the client after this one, or NULL if the current is the last client
+ * isurgent    - set when the window received an urgent hint
+ * istransient - set when the window is transient
+ * isfullscrn  - set when the window is fullscreen
+ * isfloating  - set when the window is floating
+ * win         - the window this client is representing
  *
  * istransient is separate from isfloating as floating window can be reset
  * to their tiling positions, while the transients will always be floating
@@ -300,12 +300,11 @@ void clientmessage(XEvent *e) {
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     client *c = wintoclient(ev->window);
-    if (c && c->isfullscrn) setfullscreen(c, True);
-    else {
+    if (!c || !c->isfullscrn) {
         XConfigureWindow(dis, ev->window, ev->value_mask, &(XWindowChanges){ev->x,
             ev->y, ev->width, ev->height, ev->border_width, ev->above, ev->detail});
         XSync(dis, False);
-    }
+    } else setfullscreen(c, True);
 }
 
 /* close the window */
@@ -402,14 +401,14 @@ void grabkeys(void) {
 
 /* arrange windows in a grid */
 void grid(int hh, int cy) {
-    int n = 0, cols = 0, cn = 0, rn = 0, i = 0;
+    int n = 0, cols = 0, cn = 0, rn = 0, i = -1;
     for (client *c = head; c; c=c->next) if (!ISFFT(c)) ++n;
     for (cols=0; cols <= n/2; cols++) if (cols*cols >= n) break; /* emulate square root */
     if (n == 5) cols = 2;
 
     int rows = n/cols, ch = hh - BORDER_WIDTH, cw = (ww - BORDER_WIDTH)/(cols?cols:1);
-    for (client *c=head; c; c=c->next, i++) {
-        if (ISFFT(c)) { i--; continue; }
+    for (client *c=head; c; c=c->next) {
+        if (ISFFT(c)) continue; else ++i;
         if (i/rows + 1 > cols - n%cols) rows = n/cols + 1;
         XMoveResizeWindow(dis, c->win, cn*cw, cy + rn*ch/rows, cw - BORDER_WIDTH, ch/rows - BORDER_WIDTH);
         if (++rn >= rows) { rn = 0; cn++; }
@@ -430,8 +429,7 @@ void killclient() {
     if (!current) return;
     Atom *prot; int n = -1;
     if (XGetWMProtocols(dis, current->win, &prot, &n)) while(!--n<0 && prot[n] != wmatoms[WM_DELETE_WINDOW]);
-    if (n < 0) XKillClient(dis, current->win);
-    else deletewindow(current->win);
+    if (n < 0) XKillClient(dis, current->win); else deletewindow(current->win);
     removeclient(current);
 }
 
@@ -520,14 +518,14 @@ void mousemotion(const Arg *arg) {
                 xw = (arg->i == MOVE ? wa.x:wa.width)  + ev.xmotion.x - x;
                 yh = (arg->i == MOVE ? wa.y:wa.height) + ev.xmotion.y - y;
                 if (arg->i == RESIZE) XResizeWindow(dis, current->win,
-                        xw>MINWSZ?xw:wa.width, yh>MINWSZ?yh:wa.height);
+                   xw>MINWSZ ? xw:wa.width, yh>MINWSZ ? yh:wa.height);
                 else if (arg->i == MOVE) XMoveWindow(dis, current->win, xw, yh);
                 break;
         }
     } while(ev.type != ButtonRelease);
     XUngrabPointer(dis, CurrentTime);
-    update_current(current);
     tile();
+    update_current(current);
 }
 
 /* each window should cover all the available screen space */
@@ -781,7 +779,7 @@ void spawn(const Arg *arg) {
 /* arrange windows in normal or bottom stack tile */
 void stack(int hh, int cy) {
     client *c = NULL, *t = NULL; Bool b = mode == BSTACK;
-    int n = 0, d = 0, z = (b ? ww:hh), ma = (b ? hh:ww) * MASTER_SIZE;
+    int n = 0, d = 0, z = b ? ww:hh, ma = (b ? hh:ww) * MASTER_SIZE;
 
     /* count stack windows and grab first non-floating, non-fullscreen window */
     for (t = head; t; t=t->next) if (!ISFFT(t)) { if (c) ++n; else c = t; }
@@ -798,8 +796,8 @@ void stack(int hh, int cy) {
     } else if (n > 1) { d = z%n; z /= n; }
 
     /* tile the first non-floating, non-fullscreen window to cover the master area */
-    b ? XMoveResizeWindow(dis, c->win, 0, cy, ww - 2*BORDER_WIDTH, ma - BORDER_WIDTH)
-      : XMoveResizeWindow(dis, c->win, 0, cy, ma - BORDER_WIDTH, hh - 2*BORDER_WIDTH);
+    if (b) XMoveResizeWindow(dis, c->win, 0, cy, ww - 2*BORDER_WIDTH, ma - BORDER_WIDTH);
+    else   XMoveResizeWindow(dis, c->win, 0, cy, ma - BORDER_WIDTH, hh - 2*BORDER_WIDTH);
 
     int cx = b ? 0:ma, cw = (b ? hh:ww) - 2*BORDER_WIDTH - ma, ch = z - BORDER_WIDTH;
 
@@ -807,9 +805,8 @@ void stack(int hh, int cy) {
         if (ISFFT(c)) continue;
         for (t=c->next; t && ISFFT(t); t=t->next);
         if (!t) ch += d - BORDER_WIDTH; /* add remaining space to last window */
-        b ? XMoveResizeWindow(dis, c->win, cx, cy, ch, cw)
-          : XMoveResizeWindow(dis, c->win, cx, cy, cw, ch);
-        b ? (cx += z) : (cy += z);
+        if (b) { XMoveResizeWindow(dis, c->win, cx, cy, ch, cw); cx += z; }
+        else   { XMoveResizeWindow(dis, c->win, cx, cy, cw, ch); cy += z; }
     }
 }
 
@@ -823,7 +820,6 @@ void swap_master() {
     if (current == head) move_down();
     else while (current != head) move_up();
     update_current(head);
-    tile();
 }
 
 /* switch the tiling mode and reset all floating windows */
