@@ -216,7 +216,6 @@ void change_desktop(const Arg *arg) {
     if (arg->i == current_desktop) return;
     previous_desktop = current_desktop;
     select_desktop(arg->i);
-    tile();
     if (current) XMapWindow(dis, current->win);
     for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
     update_current(current);
@@ -261,7 +260,6 @@ void client_to_desktop(const Arg *arg) {
     if (c == head || !p) head = c->next; else p->next = c->next;
     c->next = NULL;
     XUnmapWindow(dis, c->win);
-    tile();
     update_current(prevfocus && prevfocus != c ? prevfocus:head);
 
     if (FOLLOW_WINDOW) change_desktop(arg);
@@ -516,7 +514,6 @@ void mousemotion(const Arg *arg) {
         }
     } while(ev.type != ButtonRelease);
     XUngrabPointer(dis, CurrentTime);
-    tile();
     update_current(current);
 }
 
@@ -654,7 +651,6 @@ void removeclient(client *c) {
     free(c);
     if (c == current) current = NULL;
     update_current((prevfocus && prevfocus != c) ? prevfocus:*p ? *p:head);
-    tile();
     select_desktop(cd);
 }
 
@@ -806,7 +802,6 @@ void swap_master() {
 void switch_mode(const Arg *arg) {
     if (mode == arg->i) for (client *c=head; c; c=c->next) c->isfloating = False;
     mode = arg->i;
-    tile();
     update_current(current);
     desktopinfo();
 }
@@ -846,6 +841,7 @@ void update_current(client *c) {
         if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
               ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
     } else XRaiseWindow(dis, current->win);
+    tile();
 
     XSetWindowBorder(dis, current->win, win_focus);
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
