@@ -827,29 +827,32 @@ void unmapnotify(XEvent *e) {
  *  - the window is fullscreen
  *  - the mode is MONOCLE and the window is not floating or transient */
 void update_current(client *c) {
-    if ((prevfocus = current)) XSetWindowBorder(dis, prevfocus->win, win_unfocus);
-    if (!(current = c)) { XDeleteProperty(dis, root, netatoms[NET_ACTIVE]); return; }
+    if (!c) {
+        XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
+        current = prevfocus = NULL;
+        return;
+    } else if (c == prevfocus) { current = prevfocus; prevfocus = prev_client(current);
+    } else if (c != current) { prevfocus = current; current = c; }
 
     XWindowChanges wc;
-    if (current->isfloating || current->istransient) {
-        XSetWindowBorderWidth(dis, current->win, BORDER_WIDTH);
-        XRaiseWindow(dis, current->win);
-    } else for (wc.sibling = current->win, c=head; c; c=c->next) {
+    for (wc.sibling = current->win, c=head; c; c=c->next) {
+        XSetWindowBorder(dis, c->win, c == current ? win_focus:win_unfocus);
         XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn ||
-                                           (mode==MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
+                             (mode==MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
+        if (current->isfloating || current->istransient) continue;
         wc.stack_mode = (c->isfloating || c->istransient) ? Above:Below;
         XConfigureWindow(dis, c->win, CWSibling|CWStackMode, &wc);
         if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
               ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
     }
-    tile();
 
-    XSetWindowBorder(dis, current->win, win_focus);
+    if (current->isfloating || current->istransient) XRaiseWindow(dis, current->win);
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32,
                 PropModeReplace, (unsigned char *)&current->win, 1);
     if (CLICK_TO_FOCUS) XUngrabButton(dis, Button1, None, current->win);
 
+    tile();
     XSync(dis, False);
 }
 
