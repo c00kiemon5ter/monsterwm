@@ -452,25 +452,23 @@ void maprequest(XEvent *e) {
     if (ch.res_class) XFree(ch.res_class);
     if (ch.res_name) XFree(ch.res_name);
 
-    select_desktop(newdsk);
+    if (cd != newdsk) select_desktop(newdsk);
     client *c = addwindow(e->xmaprequest.window);
-
     c->istransient = XGetTransientForHint(dis, c->win, &w);
     c->isfloating = floating || c->istransient;
 
     int di; unsigned long dl; unsigned char *state = NULL; Atom da;
     if (XGetWindowProperty(dis, c->win, netatoms[NET_WM_STATE], 0L, sizeof da,
-                    False, XA_ATOM, &da, &di, &dl, &dl, &state) == Success && state)
+              False, XA_ATOM, &da, &di, &dl, &dl, &state) == Success && state)
         setfullscreen(c, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
     if (state) XFree(state);
 
+    update_current(c);
+    grabbuttons(c);
     select_desktop(cd);
-    if (cd == newdsk) {
-        tile();
-        XMapWindow(dis, c->win);
-        update_current(c);
-        grabbuttons(c);
-    } else if (follow) change_desktop(&(Arg){.i = newdsk});
+    if (cd == newdsk) { XMapWindow(dis, c->win); update_current(c); }
+    else if (follow) change_desktop(&(Arg){.i = newdsk});
+
     desktopinfo();
 }
 
