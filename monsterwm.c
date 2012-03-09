@@ -260,7 +260,7 @@ void client_to_desktop(const Arg *arg) {
     if (c == head || !p) head = c->next; else p->next = c->next;
     c->next = NULL;
     XUnmapWindow(dis, c->win);
-    update_current(prevfocus && prevfocus != c ? prevfocus:head);
+    update_current(prevfocus);
 
     if (FOLLOW_WINDOW) change_desktop(arg);
     desktopinfo();
@@ -614,7 +614,7 @@ client* prev_client(client *c) {
 /* cyclic focus the previous window
  * if the window is the head, focus the last stack window */
 void prev_win() {
-    update_current(prev_client(current));
+    update_current(prev_client(prevfocus = current));
 }
 
 /* property notify is called when one of the window's properties
@@ -646,9 +646,8 @@ void removeclient(client *c) {
     for (Bool found = False; nd<DESKTOPS && !found; nd++)
         for (select_desktop(nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
-    free(c);
-    if (c == current) current = NULL;
-    update_current((prevfocus && prevfocus != c) ? prevfocus:*p ? *p:head);
+    free(c); c = NULL;
+    update_current(prevfocus);
     select_desktop(cd);
 }
 
