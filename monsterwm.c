@@ -496,6 +496,7 @@ void mousemotion(const Arg *arg) {
 
     if (current->isfullscrn) setfullscreen(current, False);
     if (!current->isfloating) current->isfloating = True;
+    update_current(current);
 
     XEvent ev;
     do {
@@ -514,7 +515,6 @@ void mousemotion(const Arg *arg) {
         }
     } while(ev.type != ButtonRelease);
     XUngrabPointer(dis, CurrentTime);
-    update_current(current);
 }
 
 /* each window should cover all the available screen space */
