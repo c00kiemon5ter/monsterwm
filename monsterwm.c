@@ -296,6 +296,7 @@ void configurerequest(XEvent *e) {
             ev->y, ev->width, ev->height, ev->border_width, ev->above, ev->detail});
         XSync(dis, False);
     } else setfullscreen(c, True);
+    tile();
 }
 
 /* close the window */
@@ -683,8 +684,7 @@ void setfullscreen(client *c, Bool fullscrn) {
             netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
             ((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN]:0), fullscrn);
     if (c->isfullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww, wh + PANEL_HEIGHT);
-    tile();
-    if (c && c == current) update_current(c);
+    update_current(c);
 }
 
 /* set initial values
