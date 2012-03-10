@@ -331,7 +331,7 @@ void desktopinfo(void) {
         fprintf(stdout, "%d:%d:%d:%d:%d%c", d, n, mode, current_desktop == cd, urgent, d+1==DESKTOPS?'\n':' ');
     }
     fflush(stdout);
-    select_desktop(cd);
+    if (cd != d-1) select_desktop(cd);
 }
 
 /* a destroy notification is received when a window is being closed
@@ -466,7 +466,7 @@ void maprequest(XEvent *e) {
 
     update_current(c);
     grabbuttons(c);
-    select_desktop(cd);
+    if (cd != newdsk) select_desktop(cd);
     if (cd == newdsk) { XMapWindow(dis, c->win); update_current(c); }
     else if (follow) change_desktop(&(Arg){.i = newdsk});
 
@@ -649,7 +649,7 @@ void removeclient(client *c) {
     *p = c->next;
     free(c); c = NULL;
     update_current(prevfocus);
-    select_desktop(cd);
+    if (cd != nd-1) select_desktop(cd);
 }
 
 /* main event loop - on receival of an event call the appropriate event handler */
@@ -861,7 +861,7 @@ client* wintoclient(Window w) {
     int d = 0, cd = current_desktop;
     for (Bool found = False; d<DESKTOPS && !found; ++d)
         for (select_desktop(d), c=head; c && !(found = (w == c->win)); c=c->next);
-    select_desktop(cd);
+    if (cd != d-1) select_desktop(cd);
     return c;
 }
 
