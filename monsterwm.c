@@ -200,7 +200,7 @@ void buttonpress(XEvent *e) {
     for (unsigned int i=0; i<LENGTH(buttons); i++)
         if (buttons[i].func && buttons[i].button == e->xbutton.button &&
             CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state)) {
-            update_current(c);
+            if (current != c) update_current(c);
             buttons[i].func(&(buttons[i].arg));
         }
 }
@@ -218,11 +218,11 @@ void change_desktop(const Arg *arg) {
     select_desktop(arg->i);
     if (current) XMapWindow(dis, current->win);
     for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
-    update_current(current);
     select_desktop(previous_desktop);
     for (client *c=head; c; c=c->next) if (c != current) XUnmapWindow(dis, c->win);
     if (current) XUnmapWindow(dis, current->win);
     select_desktop(arg->i);
+    tile(); update_current(current);
     desktopinfo();
 }
 
@@ -240,13 +240,9 @@ void cleanup(void) {
 }
 
 /* move a client to another desktop
- * store the client's window
- * remove the client
- * add the window to the new desktop
- * if defined change focus to the new desktop
  *
- * keep in mind that current pointer changes
- * with each select_desktop() invocation */
+ * remove the current client from the current desktop's client list
+ * and add it as last client of the new desktop's client list */
 void client_to_desktop(const Arg *arg) {
     if (!current || arg->i == current_desktop) return;
     int cd = current_desktop;
@@ -254,7 +250,7 @@ void client_to_desktop(const Arg *arg) {
 
     select_desktop(arg->i);
     client *l = prev_client(head);
-    update_current(l ? (l->next = c) : head ? (head->next = c) : (head = c));
+    update_current(l ? (l->next = c):head ? (head->next = c):(head = c));
 
     select_desktop(cd);
     if (c == head || !p) head = c->next; else p->next = c->next;
@@ -262,7 +258,7 @@ void client_to_desktop(const Arg *arg) {
     XUnmapWindow(dis, c->win);
     update_current(prevfocus);
 
-    if (FOLLOW_WINDOW) change_desktop(arg);
+    if (FOLLOW_WINDOW) change_desktop(arg); else tile();
     desktopinfo();
 }
 
@@ -282,6 +278,9 @@ void clientmessage(XEvent *e) {
           && ((unsigned)e->xclient.data.l[1] == netatoms[NET_FULLSCREEN]
            || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN]))
         setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscrn)));
+    //FIXME c may be on another desktop
+    //else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) update_current(c);
+    tile();
 }
 
 /* a configure request means that the window requested changes in its geometry
@@ -464,11 +463,10 @@ void maprequest(XEvent *e) {
         setfullscreen(c, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
     if (state) XFree(state);
 
-    update_current(c);
-    grabbuttons(c);
     if (cd != newdsk) select_desktop(cd);
-    if (cd == newdsk) { XMapWindow(dis, c->win); update_current(c); }
+    if (cd == newdsk) { tile(); XMapWindow(dis, c->win); update_current(c); }
     else if (follow) change_desktop(&(Arg){.i = newdsk});
+    grabbuttons(c);
 
     desktopinfo();
 }
@@ -495,7 +493,7 @@ void mousemotion(const Arg *arg) {
 
     if (current->isfullscrn) setfullscreen(current, False);
     if (!current->isfloating) current->isfloating = True;
-    update_current(current);
+    tile(); update_current(current);
 
     XEvent ev;
     do {
@@ -684,8 +682,8 @@ void setfullscreen(client *c, Bool fullscrn) {
     if (fullscrn != c->isfullscrn) XChangeProperty(dis, c->win,
             netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
             ((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN]:0), fullscrn);
-    if (c->isfullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww, wh + PANEL_HEIGHT);
-    update_current(c);
+    if (fullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww, wh + PANEL_HEIGHT);
+    XConfigureWindow(dis, c->win, CWBorderWidth, &(XWindowChanges){0,0,0,0,fullscrn?0:BORDER_WIDTH,0,0});
 }
 
 /* set initial values
@@ -800,7 +798,7 @@ void swap_master() {
 void switch_mode(const Arg *arg) {
     if (mode == arg->i) for (client *c=head; c; c=c->next) c->isfloating = False;
     mode = arg->i;
-    update_current(current);
+    tile(); update_current(current);
     desktopinfo();
 }
 
@@ -852,7 +850,6 @@ void update_current(client *c) {
                 PropModeReplace, (unsigned char *)&current->win, 1);
     if (CLICK_TO_FOCUS) XUngrabButton(dis, Button1, None, current->win);
 
-    tile();
     XSync(dis, False);
 }
 
