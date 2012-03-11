@@ -637,19 +637,20 @@ void quit() {
 
 /* remove the specified client
  *
- * notice: the removing client can be on any desktop,
+ * note, the removing client can be on any desktop,
  * we must return back to the current focused desktop.
- * if the removing client was the current one, current must be set to
- * NULL, otherwise prevfocus gets a wrong value by update_current. */
+ * if c was the previously focused, prevfocus must be updated
+ * else if c was the current one, current must be updated. */
 void removeclient(client *c) {
     client **p = NULL;
     int nd = 0, cd = current_desktop;
     for (Bool found = False; nd<DESKTOPS && !found; nd++)
         for (select_desktop(nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
+    if (c == prevfocus) prevfocus = prev_client(current);
+    if (c == current || !head->next) update_current(prevfocus);
     free(c); c = NULL;
-    update_current(prevfocus);
-    if (cd != nd-1) select_desktop(cd);
+    if (cd == nd -1) tile(); else select_desktop(cd);
 }
 
 /* main event loop - on receival of an event call the appropriate event handler */
@@ -826,11 +827,11 @@ void unmapnotify(XEvent *e) {
  *  - the window is fullscreen
  *  - the mode is MONOCLE and the window is not floating or transient */
 void update_current(client *c) {
-    if (!c) {
+    if (!head) {
         XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
         current = prevfocus = NULL;
         return;
-    } else if (c == prevfocus) { current = prevfocus; prevfocus = prev_client(current);
+    } else if (c == prevfocus) { prevfocus = prev_client(current = prevfocus ? prevfocus:head);
     } else if (c != current) { prevfocus = current; current = c; }
 
     XWindowChanges wc;
