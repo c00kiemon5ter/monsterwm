@@ -613,6 +613,7 @@ client* prev_client(client *c) {
 /* cyclic focus the previous window
  * if the window is the head, focus the last stack window */
 void prev_win() {
+    if (!current || !head->next) return;
     update_current(prev_client(prevfocus = current));
 }
 
