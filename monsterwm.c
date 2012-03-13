@@ -7,9 +7,8 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <X11/keysym.h>
+#include <X11/XKBlib.h>
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
 
@@ -408,7 +407,7 @@ void grid(int hh, int cy) {
 
 /* on the press of a key check to see if there's a binded function to call */
 void keypress(XEvent *e) {
-    KeySym keysym = XKeycodeToKeysym(dis, (KeyCode)e->xkey.keycode, 0);
+    KeySym keysym = XkbKeycodeToKeysym(dis, e->xkey.keycode, 0, 0);
     for (unsigned int i=0; i<LENGTH(keys); i++)
         if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(e->xkey.state)
                    && keys[i].func) keys[i].func(&keys[i].arg);
