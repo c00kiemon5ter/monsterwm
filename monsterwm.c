@@ -272,13 +272,13 @@ void client_to_desktop(const Arg *arg) {
  *
  * check if window requested fullscreen or activation */
 void clientmessage(XEvent *e) {
-    client *c = wintoclient(e->xclient.window);
+    client *t = NULL, *c = wintoclient(e->xclient.window);
     if (c && e->xclient.message_type         == netatoms[NET_WM_STATE]
           && ((unsigned)e->xclient.data.l[1] == netatoms[NET_FULLSCREEN]
            || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN]))
         setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscrn)));
-    //FIXME c may be on another desktop
-    //else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) update_current(c);
+    else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) for (t=head; t && t!=c; t=t->next);
+    if (t) update_current(c);
     tile();
 }
 
