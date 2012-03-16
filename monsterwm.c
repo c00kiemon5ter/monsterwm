@@ -565,12 +565,15 @@ void focusin(XEvent *e) {
 }
 
 /**
- * find and focus the first client which received
- * an urgent hint in the current desktop
+ * find and focus the first client that received an urgent hint
+ * first look in the current desktop then on other desktops
  */
 void focusurgent(void) {
-    Desktop *d = &desktops[currdeskidx];
-    for (Client *c = d->head; c; c = c->next) if (c->isurgn) focus(c, d);
+    Client *c = NULL;
+    int d = -1;
+    for (c = desktops[currdeskidx].head; c && !c->isurgn; c = c->next);
+    while (!c && d < DESKTOPS-1) for (c = desktops[++d].head; c && !c->isurgn; c = c->next);
+    if (c) { if (d != -1) change_desktop(&(Arg){.i = d}); focus(c, &desktops[currdeskidx]); }
 }
 
 /**
