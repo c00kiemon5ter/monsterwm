@@ -17,7 +17,7 @@
 #define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
 #define ISFFT(c)        (c->isfullscrn || c->isfloating || c->istransient)
 
-enum { PREV = -1, NEXT = 1, RESIZE, MOVE };
+enum { RESIZE, MOVE };
 enum { TILE, MONOCLE, BSTACK, GRID, MODES };
 enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_ACTIVE, NET_COUNT };
@@ -149,8 +149,7 @@ static int xerrorstart();
 
 static Bool running = True;
 static int previous_desktop = 0, current_desktop = 0;
-static int mode = DEFAULT_MODE;
-static int screen, wh, ww; /* window area width/height - screen height minus the panel height */
+static int screen, wh, ww, mode = DEFAULT_MODE;
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0, win_unfocus, win_focus;
 static Display *dis;
