@@ -441,7 +441,7 @@ void maprequest(XEvent *e) {
     XClassHint ch = {0, 0};
     if (XGetClassHint(dis, e->xmaprequest.window, &ch))
         for (unsigned int i=0; i<LENGTH(rules); i++)
-            if (!strcmp(ch.res_class, rules[i].class) || !strcmp(ch.res_name, rules[i].class)) {
+            if (strstr(ch.res_class, rules[i].class) || strstr(ch.res_name, rules[i].class)) {
                 follow = rules[i].follow;
                 newdsk = (rules[i].desktop < 0) ? current_desktop:rules[i].desktop;
                 floating = rules[i].floating;
