@@ -815,9 +815,16 @@ void unmapnotify(XEvent *e) {
     desktopinfo();
 }
 
-/* update client
- * highlight borders and set active window and input focus
+/* highlight borders and set active window and input focus
  * if given current is NULL then delete the active window property
+ *
+ * stack order by client properties, top to bottom:
+ *  - current when floating or transient
+ *  - floating or trancient windows
+ *  - current when tiled
+ *  - current when fullscreen
+ *  - fullscreen windows
+ *  - tiled windows
  *
  * a window should have borders in any case, except if
  *  - the window is the only window on screen
@@ -831,19 +838,19 @@ void update_current(client *c) {
     } else if (c == prevfocus) { prevfocus = prev_client(current = prevfocus ? prevfocus:head);
     } else if (c != current) { prevfocus = current; current = c; }
 
-    XWindowChanges wc;
-    for (wc.sibling = current->win, c=head; c; c=c->next) {
+    /* num of n:all fl:fullscreen ft:floating/transient windows */
+    int n = 0, fl = 0, ft = 0;
+    for (c = head; c; c = c->next, ++n) if (ISFFT(c)) { fl++; if (!c->isfullscrn) ft++; }
+    Window w[n];
+    w[(current->isfloating||current->istransient) ? 0 : ft] = current->win;
+    for (fl += !ISFFT(current) ? 1:0, c = head; c; c = c->next) {
         XSetWindowBorder(dis, c->win, c == current ? win_focus:win_unfocus);
-        XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn ||
-                             (mode==MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
-        if (current->isfloating || current->istransient) continue;
-        wc.stack_mode = (c->isfloating || c->istransient) ? Above:Below;
-        XConfigureWindow(dis, c->win, CWSibling|CWStackMode, &wc);
-        if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
-              ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+        XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn
+                    || (mode == MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
+        if (c != current) w[c->isfullscrn ? --fl : ISFFT(c) ? --ft : --n] = c->win;
     }
+    XRestackWindows(dis, w, LENGTH(w));
 
-    if (current->isfloating || current->istransient) XRaiseWindow(dis, current->win);
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32,
                 PropModeReplace, (unsigned char *)&current->win, 1);
