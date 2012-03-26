@@ -111,6 +111,7 @@ static void togglepanel();
  * isfloat - set when the window is floating
  * istrans - set when the window is transient
  * win     - the window this client is representing
+ * title   - the window title
  *
  * istrans is separate from isfloat as floating windows can be reset to
  * their tiling positions, while the transients will always be floating
@@ -119,6 +120,7 @@ typedef struct Client {
     struct Client *next;
     Bool isurgn, isfull, isfloat, istrans;
     Window win;
+    char title[256];
 } Client;
 
 /**
@@ -423,8 +425,9 @@ void desktopinfo(void) {
 
     for (int w = 0, i = 0; i < DESKTOPS; i++, w = 0, urgent = False) {
         for (d = &desktops[i], c = d->head; c; urgent |= c->isurgn, ++w, c = c->next);
-        printf("%d:%d:%d:%d:%d%c", i, w, d->mode, i == currdeskidx, urgent, i == DESKTOPS-1 ? '\n':' ');
+        printf("%d:%d:%d:%d:%d%c", i, w, d->mode, i == currdeskidx, urgent, (i < DESKTOPS - 1) ? ' ':'|');
     }
+    printf("%s\n", desktops[currdeskidx].curr ? desktops[currdeskidx].curr->title : "");
     fflush(stdout);
 }
 
@@ -553,6 +556,7 @@ void focus(Client *c, Desktop *d) {
                     PropModeReplace, (unsigned char *)&d->curr->win, 1);
 
     XSync(dis, False);
+    desktopinfo();
 }
 
 /**
@@ -724,6 +728,13 @@ void maprequest(XEvent *e) {
                 False, XA_ATOM, &a, &i, &l, &l, &state) == Success && state)
         setfullscreen(c, d, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
     if (state) XFree(state);
+
+    XTextProperty name;
+    XGetTextProperty(dis, c->win, &name, XA_WM_NAME);
+    if (name.nitems && name.encoding == XA_STRING)
+        strncpy(c->title, (char *)name.value, sizeof(c->title) - 1);
+    c->title[sizeof(c->title) - 1] = '\0';
+    if (name.value) XFree(name.value);
 
     if (currdeskidx == newdsk) { if (!ISFFT(c)) tile(d); XMapWindow(dis, c->win); }
     else if (follow) change_desktop(&(Arg){.i = newdsk});
@@ -911,12 +922,20 @@ void prev_win(void) {
  */
 void propertynotify(XEvent *e) {
     Desktop *d = NULL; Client *c = NULL;
-    if (e->xproperty.atom != XA_WM_HINTS || !wintoclient(e->xproperty.window, &c, &d)) return;
+    if (!wintoclient(e->xproperty.window, &c, &d)) return;
 
-    XWMHints *wmh = XGetWMHints(dis, c->win);
-    c->isurgn = (c != desktops[currdeskidx].curr && wmh && (wmh->flags & XUrgencyHint));
-
-    if (wmh) XFree(wmh);
+    if (e->xproperty.atom == XA_WM_HINTS) {
+        XWMHints *wmh = XGetWMHints(dis, c->win);
+        c->isurgn = (c != desktops[currdeskidx].curr && wmh && (wmh->flags & XUrgencyHint));
+        if (wmh) XFree(wmh);
+    } else if (e->xproperty.atom == XA_WM_NAME) {
+        XTextProperty name;
+        XGetTextProperty(dis, c->win, &name, XA_WM_NAME);
+        if (name.nitems && name.encoding == XA_STRING)
+            strncpy(c->title, (char *)name.value, sizeof(c->title) - 1);
+        c->title[sizeof(c->title) - 1] = '\0';
+        if (name.value) XFree(name.value);
+    }
     desktopinfo();
 }
 
