@@ -1026,7 +1026,7 @@ void setup(void) {
 
     /* initialize mode and panel visibility for each desktop */
     for (unsigned int d = 0; d < DESKTOPS; d++)
-        desktops[d] = (Desktop){ .mode = DEFAULT_MODE, .sbar = SHOW_PANEL };
+        desktops[d] = (Desktop){ .mode = initlayouts[d], .sbar = SHOW_PANEL };
 
     /* get color for focused and unfocused client borders */
     win_focus = getcolor(FOCUS, screen);
