@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <err.h>
 #include <stdarg.h>
 #include <unistd.h>
 #include <string.h>
@@ -16,6 +17,7 @@
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 #define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
 #define ISFFT(c)        (c->isfullscrn || c->isfloating || c->istransient)
+#define USAGE           "usage: monsterwm [-h] [-v]"
 
 enum { RESIZE, MOVE };
 enum { TILE, MONOCLE, BSTACK, GRID, MODES };
@@ -109,7 +111,6 @@ static void configurerequest(XEvent *e);
 static void deletewindow(Window w);
 static void desktopinfo(void);
 static void destroynotify(XEvent *e);
-static void die(const char* errstr, ...);
 static void enternotify(XEvent *e);
 static unsigned long getcolor(const char* color);
 static void grabbuttons(client *c);
@@ -178,8 +179,7 @@ static void (*layout[MODES])(int h, int y) = {
  * window should notify of property change events */
 client* addwindow(Window w) {
     client *c, *t = prev_client(head);
-    if (!(c = (client *)calloc(1, sizeof(client))))
-        die("error: could not calloc() %u bytes\n", sizeof(client));
+    if (!(c = (client *)calloc(1, sizeof(client)))) err(EXIT_FAILURE, "cannot allocate client");
 
     if (!head) head = c;
     else if (!ATTACH_ASIDE) { c->next = head; head = c; }
@@ -339,16 +339,6 @@ void destroynotify(XEvent *e) {
     desktopinfo();
 }
 
-/* print a message on standard error stream
- * and exit with failure exit code */
-void die(const char *errstr, ...) {
-    va_list ap;
-    va_start(ap, errstr);
-    vfprintf(stderr, errstr, ap);
-    va_end(ap);
-    exit(EXIT_FAILURE);
-}
-
 /* when the mouse enters a window's borders
  * the window, if notifying of such events (EnterWindowMask)
  * will notify the wm and will get focus */
@@ -363,7 +353,7 @@ void enternotify(XEvent *e) {
  * to fill some window area - borders */
 unsigned long getcolor(const char* color) {
     XColor c; Colormap map = DefaultColormap(dis, screen);
-    if (!XAllocNamedColor(dis, map, color, &c, &c)) die("error: cannot allocate color '%s'\n", c);
+    if (!XAllocNamedColor(dis, map, color, &c, &c)) err(EXIT_FAILURE, "cannot allocate color");
     return c.pixel;
 }
 
@@ -732,7 +722,7 @@ void setup(void) {
 
 void sigchld() {
     if (signal(SIGCHLD, sigchld) == SIG_ERR)
-        die("error: can't install SIGCHLD handler\n");
+        err(EXIT_FAILURE, "cannot install SIGCHLD handler");
     while(0 < waitpid(-1, NULL, WNOHANG));
 }
 
@@ -884,16 +874,16 @@ int xerror(Display *dis, XErrorEvent *ee) {
 }
 
 int xerrorstart() {
-    die("error: another window manager is already running\n");
-    return -1;
+    err(EXIT_FAILURE, "another window manager is already running");
 }
 
 int main(int argc, char *argv[]) {
-    if (argc == 2 && strcmp("-v", argv[1]) == 0) {
-        fprintf(stdout, "%s-%s\n", WMNAME, VERSION);
-        return EXIT_SUCCESS;
-    } else if (argc != 1) die("usage: %s [-v]\n", WMNAME);
-    if (!(dis = XOpenDisplay(NULL))) die("error: cannot open display\n");
+    if (argc == 2 && argv[1][0] == '-') switch (argv[1][1]) {
+        case 'v': errx(EXIT_SUCCESS, "%s - by c00kiemon5ter >:3 omnomnomnom", VERSION);
+        case 'h': errx(EXIT_SUCCESS, "%s", USAGE);
+        default: errx(EXIT_FAILURE, "%s", USAGE);
+    } else if (argc != 1) errx(EXIT_FAILURE, "%s", USAGE);
+    if (!(dis = XOpenDisplay(NULL))) errx(EXIT_FAILURE, "cannot open display");
     setup();
     desktopinfo(); /* zero out every desktop on (re)start */
     run();
