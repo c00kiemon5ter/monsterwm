@@ -732,9 +732,7 @@ void spawn(const Arg *arg) {
     if (dis) close(ConnectionNumber(dis));
     setsid();
     execvp((char*)arg->com[0], (char**)arg->com);
-    fprintf(stderr, "error: execvp %s", (char *)arg->com[0]);
-    perror(" failed"); /* also prints the err msg */
-    exit(EXIT_SUCCESS);
+    err(EXIT_SUCCESS, "execvp %s", (char *)arg->com[0]);
 }
 
 /* arrange windows in normal or bottom stack tile */
