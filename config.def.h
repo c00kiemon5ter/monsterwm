@@ -59,6 +59,7 @@ static Key keys[] = {
     {  MOD1,             XK_b,          togglepanel,       {NULL}},
     {  MOD1,             XK_BackSpace,  focusurgent,       {NULL}},
     {  MOD1|SHIFT,       XK_c,          killclient,        {NULL}},
+    {  MOD4,             XK_c,          centerwindow,      {NULL}},
     {  MOD1,             XK_j,          next_win,          {NULL}},
     {  MOD1,             XK_k,          prev_win,          {NULL}},
     {  MOD1,             XK_h,          resize_master,     {.i = -10}}, /* decrease size in px */

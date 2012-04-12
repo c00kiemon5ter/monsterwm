@@ -79,6 +79,7 @@ typedef struct {
 
 /* exposed function prototypes sorted alphabetically */
 static void change_desktop(const Arg *arg);
+static void centerwindow();
 static void client_to_desktop(const Arg *arg);
 static void focusurgent();
 static void killclient();
@@ -279,6 +280,18 @@ void change_desktop(const Arg *arg) {
     XChangeWindowAttributes(dis, root, CWEventMask, &(XSetWindowAttributes){.event_mask = ROOTMASK});
     if (n->head) { tile(n); focus(n->curr, n); }
     desktopinfo();
+}
+
+/**
+ * place the current window in the center of the screen floating
+ */
+void centerwindow(void) {
+    XWindowAttributes wa;
+    Desktop *d = &desktops[currdeskidx];
+    if (!d->curr || !XGetWindowAttributes(dis, d->curr->win, &wa)) return;
+    if (!d->curr->isfloat && !d->curr->istrans) { d->curr->isfloat = True; tile(d); }
+    XRaiseWindow(dis, d->curr->win);
+    XMoveWindow(dis, d->curr->win, (ww - wa.width)/2, (wh - wa.height)/2);
 }
 
 /**
