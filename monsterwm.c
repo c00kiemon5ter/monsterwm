@@ -31,6 +31,7 @@ enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_ACTIVE, NET_COUNT };
 typedef union {
     const char** com;
     const int i;
+    const void *v;
 } Arg;
 
 /* a key struct represents a combination of
@@ -122,6 +123,7 @@ static void maprequest(XEvent *e);
 static void monocle(int h, int y);
 static void move_down();
 static void move_up();
+static void moveresize(const Arg *arg);
 static void mousemotion(const Arg *arg);
 static void next_win();
 static client* prev_client(client *c);
@@ -581,6 +583,15 @@ void move_up(void) {
      */
     current->next = (current->next == head) ? NULL:p;
     tile();
+}
+
+/* move and resize a window with the keyboard */
+void moveresize(const Arg *arg) {
+    XWindowAttributes wa;
+    if (!current || !XGetWindowAttributes(dis, current->win, &wa)) return;
+    if (!current->isfloating) { current->isfloating = True; tile(); }
+    XMoveResizeWindow(dis, current->win, wa.x + ((int *)arg->v)[0], wa.y + ((int *)arg->v)[1],
+                               wa.width  + ((int *)arg->v)[2], wa.height + ((int *)arg->v)[3]);
 }
 
 /* cyclic focus the next window
