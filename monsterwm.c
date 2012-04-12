@@ -383,7 +383,7 @@ void grid(int hh, int cy) {
     int n = 0, cols = 0, cn = 0, rn = 0, i = -1;
     for (client *c = head; c; c=c->next) if (!ISFFT(c)) ++n;
     for (cols=0; cols <= n/2; cols++) if (cols*cols >= n) break; /* emulate square root */
-    if (n == 5) cols = 2;
+    if (n == 0) return; else if (n == 5) cols = 2;
 
     int rows = n/cols, ch = hh - BORDER_WIDTH, cw = (ww - BORDER_WIDTH)/(cols?cols:1);
     for (client *c=head; c; c=c->next) {
