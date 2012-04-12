@@ -792,7 +792,7 @@ void switch_mode(const Arg *arg) {
 /* tile all windows of current desktop - call the handler tiling function */
 void tile(void) {
     if (!head) return; /* nothing to arange */
-    layout[head->next ? mode : MONOCLE](wh, TOP_PANEL ? PANEL_HEIGHT : 0);
+    layout[head->next ? mode:MONOCLE](wh, TOP_PANEL ? PANEL_HEIGHT:0);
 }
 
 /* windows that request to unmap should lose their
@@ -830,12 +830,12 @@ void update_current(client *c) {
     int n = 0, fl = 0, ft = 0;
     for (c = head; c; c = c->next, ++n) if (ISFFT(c)) { fl++; if (!c->isfullscrn) ft++; }
     Window w[n];
-    w[(current->isfloating||current->istransient) ? 0 : ft] = current->win;
+    w[(current->isfloating||current->istransient) ? 0:ft] = current->win;
     for (fl += !ISFFT(current) ? 1:0, c = head; c; c = c->next) {
         XSetWindowBorder(dis, c->win, c == current ? win_focus:win_unfocus);
         XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn
                     || (mode == MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
-        if (c != current) w[c->isfullscrn ? --fl : ISFFT(c) ? --ft : --n] = c->win;
+        if (c != current) w[c->isfullscrn ? --fl:ISFFT(c) ? --ft:--n] = c->win;
     }
     XRestackWindows(dis, w, LENGTH(w));
 
