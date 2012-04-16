@@ -404,7 +404,7 @@ void keypress(XEvent *e) {
 
 /* explicitly kill a client - close the highlighted window
  * send a delete message and remove the client */
-void killclient() {
+void killclient(void) {
     if (!current) return;
     Atom *prot; int n = -1;
     if (XGetWMProtocols(dis, current->win, &prot, &n)) while(!--n<0 && prot[n] != wmatoms[WM_DELETE_WINDOW]);
@@ -509,7 +509,7 @@ void monocle(int hh, int cy) {
 
 /* move the current client, to current->next
  * and current->next to current client's position */
-void move_down() {
+void move_down(void) {
     /* p is previous, c is current, n is next, if current is head n is last */
     client *p = NULL, *n = (current->next) ? current->next:head;
     if (!(p = prev_client(current))) return;
@@ -546,7 +546,7 @@ void move_down() {
 
 /* move the current client, to the previous from current and
  * the previous from  current to current client's position */
-void move_up() {
+void move_up(void) {
     client *pp = NULL, *p;
     /* p is previous from current or last if current is head */
     if (!(p = prev_client(current))) return;
@@ -585,7 +585,7 @@ void move_up() {
 
 /* cyclic focus the next window
  * if the window is the last on stack, focus head */
-void next_win() {
+void next_win(void) {
     if (!current || !head->next) return;
     update_current(current->next ? current->next:head);
 }
@@ -600,7 +600,7 @@ client* prev_client(client *c) {
 
 /* cyclic focus the previous window
  * if the window is the head, focus the last stack window */
-void prev_win() {
+void prev_win(void) {
     if (!current || !head->next) return;
     update_current(prev_client(prevfocus = current));
 }
@@ -618,7 +618,7 @@ void propertynotify(XEvent *e) {
 
 /* to quit just stop receiving events
  * run() is stopped and control is back to main() */
-void quit() {
+void quit(void) {
     running = False;
 }
 
@@ -774,7 +774,7 @@ void stack(int hh, int cy) {
  * if current is not head, then head
  * is behind us, so move_up until we
  * are the head */
-void swap_master() {
+void swap_master(void) {
     if (!current || !head->next) return;
     if (current == head) move_down();
     else while (current != head) move_up();
@@ -871,7 +871,7 @@ int xerror(Display *dis, XErrorEvent *ee) {
     return xerrorxlib(dis, ee);
 }
 
-int xerrorstart() {
+int xerrorstart(void) {
     err(EXIT_FAILURE, "another window manager is already running");
 }
 
