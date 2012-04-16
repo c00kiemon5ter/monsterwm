@@ -124,7 +124,7 @@ static void move_down();
 static void move_up();
 static void mousemotion(const Arg *arg);
 static void next_win();
-static client* prev_client();
+static client* prev_client(client *c);
 static void prev_win();
 static void propertynotify(XEvent *e);
 static void quit();
