@@ -19,7 +19,7 @@
 #define ISFFT(c)        (c->isfullscrn || c->isfloating || c->istransient)
 
 enum { RESIZE, MOVE };
-enum { TILE, MONOCLE, BSTACK, GRID, MODES };
+enum { TILE, MONOCLE, BSTACK, GRID, FLOAT, MODES };
 enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_ACTIVE, NET_COUNT };
 
@@ -801,7 +801,7 @@ void switch_mode(const Arg *arg) {
 
 /* tile all windows of current desktop - call the handler tiling function */
 void tile(void) {
-    if (!head) return; /* nothing to arange */
+    if (!head || mode == FLOAT) return; /* nothing to arange */
     layout[head->next ? mode:MONOCLE](wh, TOP_PANEL ? PANEL_HEIGHT:0);
 }
 

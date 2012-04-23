@@ -51,6 +51,7 @@ static key keys[] = {
     {  MOD1|SHIFT,       XK_m,          switch_mode,       {.i = MONOCLE}},
     {  MOD1|SHIFT,       XK_b,          switch_mode,       {.i = BSTACK}},
     {  MOD1|SHIFT,       XK_g,          switch_mode,       {.i = GRID}},
+    {  MOD1|SHIFT,       XK_f,          switch_mode,       {.i = FLOAT}},
     {  MOD1|CONTROL,     XK_q,          quit,              {NULL}},
     {  MOD1|SHIFT,       XK_Return,     spawn,             {.com = termcmd}},
     {  MOD4,             XK_Down,       moveresize,        {.v = (int []){   0,  25,   0,   0 }}}, /* move up    */
