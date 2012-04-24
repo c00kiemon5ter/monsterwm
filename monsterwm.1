@@ -5,52 +5,126 @@ monsterwm \- minimal and dynamic tiling window manager
 .B monsterwm
 .RB [ \-v ]
 .SH DESCRIPTION
-monsterwm is a very minimal, lightweight, tiny but monsterous, dynamic tiling
-window manager with floating mode support. It will try to stay as small as
-possible.
+.I monsterwm
+is a minimal, lightweight, tiny but monsterous, dynamic tiling window manager.
 .P
 .SH MODES
-It allows the "normal" method of tiling window managers (with the new window as
-the master) and with the new window opened at the bottom of the stack
+.I monsterwm
+comes with four tiling layouts by default plus the floating mode.
+It allows the usual method of tiling window managers, with the new window as
+the master window, but also provides the ability to have the new window opened
+as the last window (at the bottom) of the stack.
 .P
-.B monsterwm
-three other modes available:
-.I Bottom stack
-where the slave clients (the smaller "windows") are tiled beneath the master.
-.I Grid mode
-where, once there are four or more cliens in a workspace, they are all
-equally divided into a grid.
-.I Monocle mode
-or fullscreen mode, where the clients take up the entire workspace, and additional
-clients are hidden behind the current shown window.
-.I Floating mode
-where, windows can move and be resized freely in the screen space. Windows
-retain their floating status until the user switches to a tiling mode.
+the available modes:
+.TP
+.B Tile stack
+the stack clients are tiled on the side of master.
+.TP
+.B Bottom stack
+the stack clients are tiled beneath the master.
+.TP
+.B Grid mode
+clients are tiled in a grid, equaly sharing and dividing the screen space
+.TP
+.B Monocle mode
+also known as fullscreen or max mode, where the clients take up the entire
+screen space. Other clients are hidden behind the current shown window.
+On this layout, fullscreen clients don't need and don't have borders.
+You can change that behavior with the
+.I monocleborders
+patch, in the corresponding branch.
+.TP
+.B Floating mode
+windows can move and be resized freely in the screen space, like on a stacking
+window manager. Windows retain their floating status until the user switches
+to a tiling mode.
 .SH OPTIONS
 .TP
 .B \-v
 prints version information to standard output, then exits.
 .SH USAGE
 .SS Status bar
-monsterwm does not provide a status bar. Consistent with the Unix philosophy,
-monsterwm provides information to the status bar or panel of choice via text.
+.P
+.I monsterwm
+does not provide a status bar. Consistent with the Unix philosophy,
+.I monsterwm
+provides information to the status bar or panel of choice via ouputing
+text with information about the state of the windows.
+.P
+the available settings in
+.I config.h
+for the panel/status bar, are:
+.TP
+.B SHOW_PANEL
+whether the panel should be visible or hidden by default
+.TP
+.B TOP_PANEL
+whether the panel should be on top or bottom of the screen
+.TP
+.B PANEL_HEIGHT
+how much space should be left for use by the panel. Set to
+.B 0
+to disable the panel completely.
 .SS Keyboard and mouse commands
 All of
 .I monsterwm's
 commands can be customized by editing
 .I config.h
-and recompiling. The default key-bindings include:
-.TP
-.B Mod1\-Shift\-Return
-Start
-.BR xterm (1).
-.TP
-.B Mod4\-v
-Start
-.BR dmenu (1).
+and recompiling.
+.P
+The default keyboard-bindings include:
 .TP
 .B Mod1\-b
 Toggles the panel on and off.
+.TP
+.B Mod1\-Backspace
+Focus the window with an urgent hint.
+Focus the appropriate desktop if needed.
+.TP
+.B Mod1\-Shift\-c
+Close focused window.
+.TP
+.B Mod1\-j
+Focus next window.
+.TP
+.B Mod1\-k
+Focus previous window.
+.TP
+.B Mod1\-l
+Increase master area size.
+.TP
+.B Mod1\-h
+Decrease master area size.
+.TP
+.B Mod1\-o
+Shrink the size of the first stack window.
+.TP
+.B Mod1\-p
+Grow the size of the first stack window.
+.TP
+.B Mod1\-Ctrl\-h
+focus the previous desktop.
+.TP
+.B Mod1\-Ctrl\-l
+focus the next desktop.
+.TP
+.B Mod1\-Shift\-h
+focus the previous desktop that has windows open.
+.TP
+.B Mod1\-Shift\-l
+focus the next desktop that has windows open.
+.TP
+.B Mod1\-Tab
+Toggles to the last selected desktop.
+.TP
+.B Mod1\-Return
+Swaps the focused window to/from master area (tiled layouts only).
+.TP
+.B Mod1\-Shift\-j
+Move the focussed window down the stack
+.TP
+.B Mod1\-Shift\-k
+Move the focussed window up the stack
 .TP
 .B Mod1\-Shift\-t
 Sets tiled layout.
@@ -64,46 +138,43 @@ Sets bottom stack layout
 .B Mod1\-Shift\-g
 Sets grid layout
 .TP
-.B Mod1\-j
-Focus next window.
+.B Mod1\-Shift\-f
+Sets float layout
 .TP
-.B Mod1\-k
-Focus previous window.
-.TP
-.B Mod1\-Shift\-j
-Move the focussed window down the stack
-.TP
-.B Mod1\-Shift\-k
-Move the focussed window up the stack
-.TP
-.B Mod1\-l
-Increase master area size.
-.TP
-.B Mod1\-h
-Decrease master area size.
-.TP
-.B Mod1\-Return
-Swaps the focused window to/from master area (tiled layouts only).
-.TP
-.B Mod1\-Shift\-{Left,Right}
-Rotate to the next/previous desktop
-.TP
-.B Mod1\-Shift\-c
-Close focused window.
-.TP
-.B Mod1\-Tab
-Toggles to the last selected desktop.
+.B Mod1\-Shift\-r
+Quit with exit value 0 (usefull for restarts of the wm).
 .TP
 .B Mod1\-Shift\-q
-Quit monsterwm.
+Quit with exit value 1 (differentiate quit from restart).
+.TP
+.B Mod1\-Shift\-Return
+Start
+.BR xterm (1).
+.TP
+.B Mod4\-v
+Start
+.BR dmenu (1).
+.TP
+.B MOD4\-{Down,Up,Right,Left} Arrow
+move the current window to the corresponding direction.
+.TP
+.B MOD4\-Shift\-{Down,Up,Right,Left} Arrow
+resize the current window to the corresponding direction.
 .TP
 .B Mod1\-F{1..n}
 Move to the nth workspace. By default,
 .I monsterwm
 is configured with four workspaces.
+The setting in
+.I config.h
+.B FOLLOW_WINDOW
+defines whether the focus should change on
+the new desktop, where the window moved to.
 .TP
 .B Mod1\-Shift\-F{1..n}
 Move focused window to nth workspace.
+.P
+The default mouse-bindings include:
 .TP
 .B Mod1\-Button1
 Dragging the mouse will move the selected window
@@ -114,20 +185,77 @@ Dragging the mouse will resize the selected window
 .B Mod4\-Button3
 will bring up
 .I dmenu
-.TP
-.SH CUSTOMIZATION
+.SS Customization
 .I monsterwm
 is customized by copying
 .I config.def.h
 to
 .I config.h
 and (re)compiling the source code.
+.P
+settings among others covered above include:
+.TP
+.B MASTER_SIZE
+set the size of the master area that
+will be used by the master window
+.TP
+.B DEFAULT_MODE
+set the default tiling mode to be active on startup
+.TP
+.B ATTACH_ASIDE
+whether new stack clients should spawn as the master window,
+or the last stack window
+.TP
+.B FOLLOW_MOUSE
+whether to focus the window the mouse just entered
+.TP
+.B FOLLOW_WINDOW
+whether to follow the window to the new desktop where it moved
+.TP
+.B CLICK_TO_FOCUS
+whether an action on a window (eg clicking, or scrolling)
+will give the window focus. Disabling this gives the user
+the ability to, for example, look up things on a web browser
+but not lose focus from the terminal etc.
+.TP
+.B BORDER_WIDTH
+the width of the borders the windows have
+.TP
+.B FOCUS / UNFOCUS
+the colors for the borders of focused and unfocused windows
+.TP
+.B DESKTOPS
+the number of desktops to use
+.TP
+.B DEFAULT_DESKTOP
+which desktop to focus by default
+.TP
+.B MINWSZ
+the minimum window size allowed. Prevents over resizing with
+the mouse or keyboard (eg resizing the master area)
+.P
+users can set
+.B rules
+on applications, by matching their
+.B class
+or
+.B instance
+name. The rules can specify on which
+.B desktop
+the application should start (or
+.B -1
+to signify the current desktop), whether the
+.B focus
+should change to that desktop, when the application starts
+and whether the application should start on
+.B floating
+or tiled mode.
 .SH SEE ALSO
 .BR dmenu (1)
 .SH BUGS
 .I monsterwm
 is under active development. Please report all bugs to the author.
 .SH AUTHOR
-Ivan Kanakarakis <ivan.kanak at gmail.com>
+Ivan c00kiemon5ter Kanakarakis <ivan.kanak at gmail.com>
 
 
