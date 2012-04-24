@@ -17,7 +17,6 @@
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 #define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
 #define ISFFT(c)        (c->isfullscrn || c->isfloating || c->istransient)
-#define USAGE           "usage: monsterwm [-h] [-v]"
 
 enum { RESIZE, MOVE };
 enum { TILE, MONOCLE, BSTACK, GRID, MODES };
@@ -887,11 +886,9 @@ int xerrorstart(void) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc == 2 && argv[1][0] == '-') switch (argv[1][1]) {
-        case 'v': errx(EXIT_SUCCESS, "%s - by c00kiemon5ter >:3 omnomnomnom", VERSION);
-        case 'h': errx(EXIT_SUCCESS, "%s", USAGE);
-        default: errx(EXIT_FAILURE, "%s", USAGE);
-    } else if (argc != 1) errx(EXIT_FAILURE, "%s", USAGE);
+    if (argc == 2 && !strncmp(argv[1], "-v", 3))
+        errx(EXIT_SUCCESS, "version-%s - by c00kiemon5ter >:3 omnomnomnom", VERSION);
+    else if (argc != 1) errx(EXIT_FAILURE, "%s", "usage: man monsterwm");
     if (!(dis = XOpenDisplay(NULL))) errx(EXIT_FAILURE, "cannot open display");
     setup();
     desktopinfo(); /* zero out every desktop on (re)start */
