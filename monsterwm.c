@@ -846,6 +846,8 @@ void update_current(client *c) {
         XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn
                     || (mode == MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
         if (c != current) w[c->isfullscrn ? --fl:ISFFT(c) ? --ft:--n] = c->win;
+        if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
+               ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
     }
     XRestackWindows(dis, w, LENGTH(w));
 
