@@ -112,6 +112,7 @@ static void deletewindow(Window w);
 static void desktopinfo(void);
 static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
+static void focusin(XEvent *e);
 static unsigned long getcolor(const char* color);
 static void grabbuttons(client *c);
 static void grabkeys(void);
@@ -166,7 +167,7 @@ static void (*events[LASTEvent])(XEvent *e) = {
     [MapRequest]       = maprequest,   [ClientMessage]  = clientmessage,
     [ButtonPress]      = buttonpress,  [DestroyNotify]  = destroynotify,
     [UnmapNotify]      = unmapnotify,  [PropertyNotify] = propertynotify,
-    [ConfigureRequest] = configurerequest,
+    [ConfigureRequest] = configurerequest,    [FocusIn] = focusin,
 };
 
 /* layout array - given the current layout mode, tile the windows
@@ -186,7 +187,7 @@ client* addwindow(Window w) {
     else if (!ATTACH_ASIDE) { c->next = head; head = c; }
     else if (t) t->next = c; else head->next = c;
 
-    XSelectInput(dis, (c->win = w), PropertyChangeMask|(FOLLOW_MOUSE?EnterWindowMask:0));
+    XSelectInput(dis, (c->win = w), PropertyChangeMask|FocusChangeMask|(FOLLOW_MOUSE?EnterWindowMask:0));
     return c;
 }
 
@@ -235,7 +236,6 @@ void cleanup(void) {
     for (unsigned int i = 0; i<nchildren; i++) deletewindow(children[i]);
     if (children) XFree(children);
     XSync(dis, False);
-    XSetInputFocus(dis, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
 
 /* move a client to another desktop
@@ -348,6 +348,15 @@ void enternotify(XEvent *e) {
     client *c = wintoclient(e->xcrossing.window);
     if (c && e->xcrossing.mode   == NotifyNormal
           && e->xcrossing.detail != NotifyInferior) update_current(c);
+}
+
+/* dont give focus to any client except current
+ * some apps explicitly call XSetInputFocus suchs
+ * as tabbed and chromium, resulting in loss of
+ * input (mouse/kbd) focus from the current and
+ * highlighted client - this gives focus back */
+void focusin(XEvent *e) {
+    if (current && current->win != e->xfocus.window) update_current(current);
 }
 
 /* get a pixel with the requested color
