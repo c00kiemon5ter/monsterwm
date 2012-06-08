@@ -481,13 +481,13 @@ void maprequest(XEvent *e) {
 void mousemotion(const Arg *arg) {
     if (!current) return;
     static XWindowAttributes wa;
-    XGetWindowAttributes(dis, current->win, &wa);
+    if (!XGetWindowAttributes(dis, current->win, &wa)) return;
 
     if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
                      GrabModeAsync, None, None, CurrentTime) != GrabSuccess) return;
-    int x, y, z, xw, yh; unsigned int v; Window w;
-    XWarpPointer(dis, None, current->win, 0, 0, 0, 0, wa.width, wa.height);
-    XQueryPointer(dis, root, &w, &w, &x, &y, &z, &z, &v);
+    if (arg->i == RESIZE) XWarpPointer(dis, None, current->win, 0, 0, 0, 0, wa.width, wa.height);
+    int rx, ry, c, xw, yh; unsigned int m; Window w;
+    XQueryPointer(dis, root, &w, &w, &rx, &ry, &c, &c, &m);
 
     if (current->isfullscrn) setfullscreen(current, False);
     if (!current->isfloating) current->isfloating = True;
@@ -501,8 +501,8 @@ void mousemotion(const Arg *arg) {
                 events[ev.type](&ev);
                 break;
             case MotionNotify:
-                xw = (arg->i == MOVE ? wa.x:wa.width)  + ev.xmotion.x - x;
-                yh = (arg->i == MOVE ? wa.y:wa.height) + ev.xmotion.y - y;
+                xw = (arg->i == MOVE ? wa.x:wa.width)  + ev.xmotion.x - rx;
+                yh = (arg->i == MOVE ? wa.y:wa.height) + ev.xmotion.y - ry;
                 if (arg->i == RESIZE) XResizeWindow(dis, current->win,
                    xw>MINWSZ ? xw:wa.width, yh>MINWSZ ? yh:wa.height);
                 else if (arg->i == MOVE) XMoveWindow(dis, current->win, xw, yh);
