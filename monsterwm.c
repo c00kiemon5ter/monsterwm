@@ -764,16 +764,38 @@ void mousemotion(const Arg *arg) {
 
     if (!d->curr->isfloat && !d->curr->istrans) { d->curr->isfloat = True; tile(d); focus(d->curr, d); }
 
+    /* init rectangle properties */
+    XGCValues gv = { .function = GXinvert, .subwindow_mode = IncludeInferiors, .line_width = BORDER_WIDTH };
+    GC gc = XCreateGC(dis, root, GCFunction|GCSubwindowMode|GCLineWidth, &gv);
+
+    /* draw rectangle */
+    if (arg->i == MOVE) XDrawRectangle(dis, root, gc, xw = wa.x, yh = wa.y, wa.width, wa.height);
+    else XDrawRectangle(dis, root, gc, wa.x, wa.y, xw = wa.width, yh = wa.height);
+
     do {
         XMaskEvent(dis, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
         if (ev.type == MotionNotify) {
+            /* clear rectangle from prev position */
+            if (arg->i == MOVE) XDrawRectangle(dis, root, gc, xw, yh, wa.width, wa.height);
+            else if (arg->i == RESIZE) XDrawRectangle(dis, root, gc, wa.x, wa.y, xw, yh);
+
             xw = (arg->i == MOVE ? wa.x:wa.width)  + ev.xmotion.x - rx;
             yh = (arg->i == MOVE ? wa.y:wa.height) + ev.xmotion.y - ry;
-            if (arg->i == RESIZE) XResizeWindow(dis, d->curr->win,
-                    xw > MINWSZ ? xw:wa.width, yh > MINWSZ ? yh:wa.height);
-            else if (arg->i == MOVE) XMoveWindow(dis, d->curr->win, xw, yh);
+
+            /* draw rectangle in new position */
+            if (arg->i == MOVE) XDrawRectangle(dis, root, gc, xw, yh, wa.width, wa.height);
+            else if (arg->i == RESIZE) XDrawRectangle(dis, root, gc, wa.x, wa.y, xw, yh);
         } else if (ev.type == ConfigureRequest || ev.type == MapRequest) events[ev.type](&ev);
     } while (ev.type != ButtonRelease);
+
+    /* clear rectangle from last position */
+    if (arg->i == MOVE) XDrawRectangle(dis, root, gc, xw, yh, wa.width, wa.height);
+    else if (arg->i == RESIZE) XDrawRectangle(dis, root, gc, wa.x, wa.y, xw, yh);
+
+    /* actually move/resize the window to the new position/size */
+    if (arg->i == RESIZE) XResizeWindow(dis, d->curr->win,
+            xw > MINWSZ ? xw:wa.width, yh > MINWSZ ? yh:wa.height);
+    else if (arg->i == MOVE) XMoveWindow(dis, d->curr->win, xw, yh);
 
     XUngrabPointer(dis, CurrentTime);
 }
