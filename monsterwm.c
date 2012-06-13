@@ -818,8 +818,7 @@ void tile(void) {
  * client, so no invisible windows exist on screen */
 void unmapnotify(XEvent *e) {
     client *c = wintoclient(e->xunmap.window);
-    if (c && e->xunmap.send_event) removeclient(c);
-    desktopinfo();
+    if (c && e->xunmap.send_event) { removeclient(c); desktopinfo(); }
 }
 
 /* highlight borders and set active window and input focus
