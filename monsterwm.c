@@ -323,13 +323,13 @@ void deletewindow(Window w) {
  * once the info is collected, immediately flush the stream */
 void desktopinfo(void) {
     Bool urgent = False;
-    int cd = current_desktop, n=0, d=0;
-    for (client *c; d<DESKTOPS; d++) {
-        for (select_desktop(d), c=head, n=0, urgent=False; c; c=c->next, ++n) if (c->isurgent) urgent = True;
-        fprintf(stdout, "%d:%d:%d:%d:%d%c", d, n, mode, current_desktop == cd, urgent, d+1==DESKTOPS?'\n':' ');
+    int cd = current_desktop, n=0, nd=-1;
+    for (client *c; nd<DESKTOPS-1;) {
+        for (select_desktop(++nd), c=head, n=0, urgent=False; c; c=c->next, ++n) if (c->isurgent) urgent = True;
+        fprintf(stdout, "%d:%d:%d:%d:%d%c", nd, n, mode, current_desktop == cd, urgent, nd==DESKTOPS-1?'\n':' ');
     }
     fflush(stdout);
-    if (cd != d-1) select_desktop(cd);
+    if (cd != nd) select_desktop(cd);
 }
 
 /* a destroy notification is received when a window is being closed
@@ -648,14 +648,14 @@ void quit(void) {
  * else if c was the current one, current must be updated. */
 void removeclient(client *c) {
     client **p = NULL;
-    int nd = 0, cd = current_desktop;
-    for (Bool found = False; nd<DESKTOPS && !found; nd++)
-        for (select_desktop(nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
+    int nd = -1, cd = current_desktop;
+    for (Bool found = False; nd<DESKTOPS-1 && !found;)
+        for (select_desktop(++nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
     if (c == prevfocus) prevfocus = prev_client(current);
     if (c == current || (head && !head->next)) update_current(prevfocus);
     free(c); c = NULL;
-    if (cd == nd -1) tile(); else select_desktop(cd);
+    if (cd == nd) tile(); else select_desktop(cd);
 }
 
 /* main event loop - on receival of an event call the appropriate event handler */
@@ -869,10 +869,10 @@ void update_current(client *c) {
 /* find to which client the given window belongs to */
 client* wintoclient(Window w) {
     client *c = NULL;
-    int d = 0, cd = current_desktop;
-    for (Bool found = False; d<DESKTOPS && !found; ++d)
-        for (select_desktop(d), c=head; c && !(found = (w == c->win)); c=c->next);
-    if (cd != d-1) select_desktop(cd);
+    int nd = -1, cd = current_desktop;
+    for (Bool found = False; nd<DESKTOPS-1 && !found;)
+        for (select_desktop(++nd), c=head; c && !(found = (w == c->win)); c=c->next);
+    if (cd != nd) select_desktop(cd);
     return c;
 }
 
