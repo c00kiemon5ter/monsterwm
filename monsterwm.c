@@ -642,9 +642,9 @@ void quit(void) {
 
 /* remove the specified client
  *
- * note, the removing client can be on any desktop,
- * we must return back to the current focused desktop.
- * if c was the previously focused, prevfocus must be updated
+ * note: the removing client can be on any desktop!
+ * we must always return back to the current focused desktop
+ * if c was ther prevfocus client, prevfocus must be updated
  * else if c was the current one, current must be updated. */
 void removeclient(client *c) {
     client **p = NULL;
@@ -653,7 +653,7 @@ void removeclient(client *c) {
         for (select_desktop(nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
     if (c == prevfocus) prevfocus = prev_client(current);
-    if (c == current || !head->next) update_current(prevfocus);
+    if (c == current || (head && !head->next)) update_current(prevfocus);
     free(c); c = NULL;
     if (cd == nd -1) tile(); else select_desktop(cd);
 }
