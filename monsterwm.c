@@ -426,11 +426,11 @@ void killclient(void) {
  * if the window has override_redirect flag set then it should not be handled
  * by the wm. if the window already has a client then there is nothing to do.
  *
- * get the window class and name instance and try to match against an app rule.
- * create a client for the window, that client will always be current.
- * check for transient state, and fullscreen state and the appropriate values.
- * if the desktop in which the window was spawned is the current desktop then
- * display the window, else, if set, focus the new desktop. */
+ * match window class and/or install name against an app rule.
+ * create a new client for the window and add it to the appropriate desktop
+ * set the floating, transient and fullscreen state of the client
+ * if the desktop in which the window is to be spawned is the current desktop
+ * then display/map the window, else, if follow is set, focus the new desktop. */
 void maprequest(XEvent *e) {
     static XWindowAttributes wa; Window w;
     if (XGetWindowAttributes(dis, e->xmaprequest.window, &wa) && wa.override_redirect) return;
@@ -442,8 +442,8 @@ void maprequest(XEvent *e) {
     if (XGetClassHint(dis, e->xmaprequest.window, &ch))
         for (unsigned int i=0; i<LENGTH(rules); i++)
             if (strstr(ch.res_class, rules[i].class) || strstr(ch.res_name, rules[i].class)) {
-                follow = rules[i].follow;
                 newdsk = (rules[i].desktop < 0) ? current_desktop:rules[i].desktop;
+                follow = rules[i].follow;
                 floating = rules[i].floating;
                 break;
             }
@@ -452,8 +452,7 @@ void maprequest(XEvent *e) {
 
     if (cd != newdsk) select_desktop(newdsk);
     client *c = addwindow(e->xmaprequest.window);
-    c->istransient = XGetTransientForHint(dis, c->win, &w);
-    c->isfloating = floating || c->istransient;
+    c->isfloating = floating || (c->istransient = XGetTransientForHint(dis, c->win, &w));
 
     int di; unsigned long dl; unsigned char *state = NULL; Atom da;
     if (XGetWindowProperty(dis, c->win, netatoms[NET_WM_STATE], 0L, sizeof da,
