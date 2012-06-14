@@ -887,7 +887,7 @@ int xerror(Display *dis, XErrorEvent *ee) {
     || (ee->error_code == BadDrawable && (ee->request_code == X_PolyFillRectangle
     || ee->request_code == X_CopyArea ||  ee->request_code == X_PolySegment
                                       ||  ee->request_code == X_PolyText8))) return 0;
-    fprintf(stderr, "error: xerror: request code: %d, error code: %d\n", ee->request_code, ee->error_code);
+    warn("error: xerror: request code: %d, error code: %d", ee->request_code, ee->error_code);
     return xerrorxlib(dis, ee);
 }
 
