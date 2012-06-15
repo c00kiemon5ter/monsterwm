@@ -461,10 +461,10 @@ void maprequest(XEvent *e) {
         setfullscreen(c, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
     if (state) XFree(state);
 
-    update_current(c);
     if (cd != newdsk) select_desktop(cd);
     if (cd == newdsk) { if (!c->isfloating) tile(); XMapWindow(dis, c->win); }
     else if (follow) change_desktop(&(Arg){.i = newdsk});
+    if (follow || cd == newdsk) update_current(c);
     grabbuttons(c);
 
     desktopinfo();
