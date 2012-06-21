@@ -453,7 +453,8 @@ void maprequest(XEvent *e) {
 
     if (cd != newdsk) select_desktop(newdsk);
     client *c = addwindow(e->xmaprequest.window);
-    c->isfloating = floating || (c->istransient = XGetTransientForHint(dis, c->win, &w));
+    c->istransient = XGetTransientForHint(dis, c->win, &w);
+    c->isfloating = floating || mode == FLOAT || c->istransient;
 
     int di; unsigned long dl; unsigned char *state = NULL; Atom da;
     if (XGetWindowProperty(dis, c->win, netatoms[NET_WM_STATE], 0L, sizeof da,
@@ -802,8 +803,8 @@ void swap_master(void) {
 
 /* switch the tiling mode and reset all floating windows */
 void switch_mode(const Arg *arg) {
-    if (mode == arg->i) for (client *c=head; c; c=c->next) c->isfloating = False;
-    mode = arg->i;
+    if (mode == arg->i && mode != FLOAT) for (client *c=head; c; c=c->next) c->isfloating = False;
+    if ((mode = arg->i) == FLOAT) for (client *c=head; c; c=c->next) c->isfloating = True;
     tile(); update_current(current);
     desktopinfo();
 }
