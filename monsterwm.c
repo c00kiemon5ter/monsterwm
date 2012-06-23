@@ -371,6 +371,12 @@ unsigned long getcolor(const char* color) {
 /* set the given client to listen to button events (presses / releases) */
 void grabbuttons(client *c) {
     unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
+
+    if (CLICK_TO_FOCUS) for (unsigned int m=0; m<LENGTH(modifiers); m++)
+        if (c != current) XGrabButton(dis, Button1, modifiers[m], c->win, False,
+                          BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
+        else XUngrabButton(dis, Button1, modifiers[m], c->win);
+
     for (unsigned int b=0; b<LENGTH(buttons); b++)
         for (unsigned int m=0; m<LENGTH(modifiers); m++)
             XGrabButton(dis, buttons[b].button, buttons[b].mask|modifiers[m], c->win,
@@ -466,7 +472,6 @@ void maprequest(XEvent *e) {
     if (cd == newdsk) { if (!c->isfloating) tile(); XMapWindow(dis, c->win); }
     else if (follow) change_desktop(&(Arg){.i = newdsk});
     if (follow || cd == newdsk) update_current(c);
-    grabbuttons(c);
 
     desktopinfo();
 }
@@ -836,7 +841,17 @@ void unmapnotify(XEvent *e) {
  * a window should have borders in any case, except if
  *  - the window is the only window on screen
  *  - the window is fullscreen
- *  - the mode is MONOCLE and the window is not floating or transient */
+ *  - the mode is MONOCLE and the window is not floating or transient
+ *
+ * finally button events are grabbed for the new client. There
+ * is no need for button events to be grabbed again, except if
+ * CLICK_TO_FOCUS is set, in which case the grabbing of Button1
+ * must be updated, so Button1 clicks are available to the
+ * active window / current client.
+ * this is a compromise. we could grab the buttons for the new
+ * client on maprequest(), but since we will be calling this
+ * function anyway, we can just grab the buttons for the current
+ * client that may be the new client. */
 void update_current(client *c) {
     if (!head) {
         XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
@@ -855,15 +870,13 @@ void update_current(client *c) {
         XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn
                     || (mode == MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
         if (c != current) w[c->isfullscrn ? --fl:ISFFT(c) ? --ft:--n] = c->win;
-        if (CLICK_TO_FOCUS) XGrabButton(dis, Button1, None, c->win, True,
-               ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+        if (CLICK_TO_FOCUS || c == current) grabbuttons(c);
     }
     XRestackWindows(dis, w, LENGTH(w));
 
     XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32,
                 PropModeReplace, (unsigned char *)&current->win, 1);
-    if (CLICK_TO_FOCUS) XUngrabButton(dis, Button1, None, current->win);
 
     XSync(dis, False);
 }
