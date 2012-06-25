@@ -39,7 +39,7 @@ static const char *termcmd[] = { "xterm", NULL };
     {  MOD1|ShiftMask,   K,              client_to_desktop, {.i = N}},
 
 /** Shortcuts **/
-static key keys[] = {
+static Key keys[] = {
     /* modifier          key            function           argument */
     {  MOD1|SHIFT,       XK_c,          killclient,        {NULL}},
     {  MOD1,             XK_j,          next_win,          {NULL}},

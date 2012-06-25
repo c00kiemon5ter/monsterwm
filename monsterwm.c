@@ -44,7 +44,7 @@ typedef struct {
     KeySym keysym;
     void (*func)(const Arg *);
     const Arg arg;
-} key;
+} Key;
 
 /* a button struct represents a combination of
  * mask     - a modifier mask
