@@ -126,7 +126,7 @@ static void move_up();
 static void moveresize(const Arg *arg);
 static void mousemotion(const Arg *arg);
 static void next_win();
-static client* prev_client(client *c);
+static client* prevclient(client *c);
 static void prev_win();
 static void propertynotify(XEvent *e);
 static void quit();
@@ -180,7 +180,7 @@ static void (*layout[MODES])(int h, int y) = {
 /* create a new client and add the new window
  * window should notify of property change events */
 client* addwindow(Window w) {
-    client *c, *t = prev_client(head);
+    client *c, *t = prevclient(head);
     if (!(c = (client *)calloc(1, sizeof(client)))) err(EXIT_FAILURE, "cannot allocate client");
 
     if (!head) head = c;
@@ -245,10 +245,10 @@ void cleanup(void) {
 void client_to_desktop(const Arg *arg) {
     if (!current || arg->i == current_desktop) return;
     int cd = current_desktop;
-    client *p = prev_client(current), *c = current;
+    client *p = prevclient(current), *c = current;
 
     select_desktop(arg->i);
-    client *l = prev_client(head);
+    client *l = prevclient(head);
     update_current(l ? (l->next = c):head ? (head->next = c):(head = c));
 
     select_desktop(cd);
@@ -528,7 +528,7 @@ void monocle(int hh, int cy) {
 void move_down(void) {
     /* p is previous, c is current, n is next, if current is head n is last */
     client *p = NULL, *n = (current->next) ? current->next:head;
-    if (!(p = prev_client(current))) return;
+    if (!(p = prevclient(current))) return;
     /*
      * if c is head, swapping with n should update head to n
      * [c]->[n]->..  ==>  [n]->[c]->..
@@ -565,7 +565,7 @@ void move_down(void) {
 void move_up(void) {
     client *pp = NULL, *p;
     /* p is previous from current or last if current is head */
-    if (!(p = prev_client(current))) return;
+    if (!(p = prevclient(current))) return;
     /* pp is previous from p, or null if current is head and thus p is last */
     if (p->next) for (pp=head; pp && pp->next != p; pp=pp->next);
     /*
@@ -617,7 +617,7 @@ void next_win(void) {
 
 /* get the previous client from the given
  * if no such client, return NULL */
-client* prev_client(client *c) {
+client* prevclient(client *c) {
     if (!c || !head->next) return NULL;
     client *p; for (p=head; p->next && p->next != c; p=p->next);
     return p;
@@ -627,7 +627,7 @@ client* prev_client(client *c) {
  * if the window is the head, focus the last stack window */
 void prev_win(void) {
     if (!current || !head->next) return;
-    update_current(prev_client(prevfocus = current));
+    update_current(prevclient(prevfocus = current));
 }
 
 /* property notify is called when one of the window's properties
@@ -659,7 +659,7 @@ void removeclient(client *c) {
     for (Bool found = False; nd<DESKTOPS-1 && !found;)
         for (select_desktop(++nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
-    if (c == prevfocus) prevfocus = prev_client(current);
+    if (c == prevfocus) prevfocus = prevclient(current);
     if (c == current || (head && !head->next)) update_current(prevfocus);
     if (cd != nd) select_desktop(cd); else if (!c->isfloating && !c->istransient) tile();
     free(c); c = NULL;
@@ -857,7 +857,7 @@ void update_current(client *c) {
         XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
         current = prevfocus = NULL;
         return;
-    } else if (c == prevfocus) { prevfocus = prev_client(current = prevfocus ? prevfocus:head);
+    } else if (c == prevfocus) { prevfocus = prevclient(current = prevfocus ? prevfocus:head);
     } else if (c != current) { prevfocus = current; current = c; }
 
     /* num of n:all fl:fullscreen ft:floating/transient windows */
