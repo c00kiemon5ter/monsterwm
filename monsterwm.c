@@ -651,8 +651,8 @@ void quit(void) {
  *
  * note: the removing client can be on any desktop!
  * we must always return back to the current focused desktop
- * if c was ther prevfocus client, prevfocus must be updated
- * else if c was the current one, current must be updated. */
+ * if c was the previous client, previous must be updated.
+ * if c was the current client, current must be updated. */
 void removeclient(client *c) {
     client **p = NULL;
     int nd = -1, cd = current_desktop;
