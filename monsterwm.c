@@ -112,6 +112,7 @@ static void deletewindow(Window w);
 static void desktopinfo(void);
 static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
+static void focus(Client *c);
 static void focusin(XEvent *e);
 static unsigned long getcolor(const char* color);
 static void grabbuttons(client *c);
@@ -142,7 +143,6 @@ static void stack(int h, int y);
 static void swap_master();
 static void switch_mode(const Arg *arg);
 static void tile(void);
-static void update_current(client *c);
 static void unmapnotify(XEvent *e);
 static client* wintoclient(Window w);
 static int xerror(Display *dis, XErrorEvent *ee);
@@ -195,12 +195,12 @@ client* addwindow(Window w) {
 void buttonpress(XEvent *e) {
     client *c = wintoclient(e->xbutton.window);
     if (!c) return;
-    if (CLICK_TO_FOCUS && current != c && e->xbutton.button == Button1) update_current(c);
+    if (CLICK_TO_FOCUS && current != c && e->xbutton.button == Button1) focus(c);
 
     for (unsigned int i=0; i<LENGTH(buttons); i++)
         if (buttons[i].func && buttons[i].button == e->xbutton.button &&
             CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state)) {
-            if (current != c) update_current(c);
+            if (current != c) focus(c);
             buttons[i].func(&(buttons[i].arg));
         }
 }
@@ -222,7 +222,7 @@ void change_desktop(const Arg *arg) {
     for (client *c=head; c; c=c->next) if (c != current) XUnmapWindow(dis, c->win);
     if (current) XUnmapWindow(dis, current->win);
     selectdesktop(arg->i);
-    tile(); update_current(current);
+    tile(); focus(current);
     desktopinfo();
 }
 
@@ -249,13 +249,13 @@ void client_to_desktop(const Arg *arg) {
 
     selectdesktop(arg->i);
     client *l = prevclient(head);
-    update_current(l ? (l->next = c):head ? (head->next = c):(head = c));
+    focus(l ? (l->next = c):head ? (head->next = c):(head = c));
 
     selectdesktop(cd);
     if (c == head || !p) head = c->next; else p->next = c->next;
     c->next = NULL;
     XUnmapWindow(dis, c->win);
-    update_current(prevfocus);
+    focus(prevfocus);
 
     if (FOLLOW_WINDOW) change_desktop(arg);
     else if (!c->isfloating && !c->istransient) tile();
@@ -280,7 +280,7 @@ void clientmessage(XEvent *e) {
         setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscrn)));
         tile();
     } else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) for (t=head; t && t!=c; t=t->next);
-    if (t) update_current(c);
+    if (t) focus(c);
 }
 
 /* a configure request means that the window requested changes in its geometry
@@ -348,7 +348,61 @@ void enternotify(XEvent *e) {
     if (!FOLLOW_MOUSE) return;
     client *c = wintoclient(e->xcrossing.window);
     if (c && e->xcrossing.mode   == NotifyNormal
-          && e->xcrossing.detail != NotifyInferior) update_current(c);
+          && e->xcrossing.detail != NotifyInferior) focus(c);
+}
+
+/* highlight borders and set active window and input focus
+ * if given current is NULL then delete the active window property
+ *
+ * stack order by client properties, top to bottom:
+ *  - current when floating or transient
+ *  - floating or trancient windows
+ *  - current when tiled
+ *  - current when fullscreen
+ *  - fullscreen windows
+ *  - tiled windows
+ *
+ * a window should have borders in any case, except if
+ *  - the window is the only window on screen
+ *  - the window is fullscreen
+ *  - the mode is MONOCLE and the window is not floating or transient
+ *
+ * finally button events are grabbed for the new client. There
+ * is no need for button events to be grabbed again, except if
+ * CLICK_TO_FOCUS is set, in which case the grabbing of Button1
+ * must be updated, so Button1 clicks are available to the
+ * active window / current client.
+ * this is a compromise. we could grab the buttons for the new
+ * client on maprequest(), but since we will be calling this
+ * function anyway, we can just grab the buttons for the current
+ * client that may be the new client. */
+void focus(client *c) {
+    if (!head) {
+        XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
+        current = prevfocus = NULL;
+        return;
+    } else if (c == prevfocus) { prevfocus = prevclient(current = prevfocus ? prevfocus:head);
+    } else if (c != current) { prevfocus = current; current = c; }
+
+    /* num of n:all fl:fullscreen ft:floating/transient windows */
+    int n = 0, fl = 0, ft = 0;
+    for (c = head; c; c = c->next, ++n) if (ISFFT(c)) { fl++; if (!c->isfullscrn) ft++; }
+    Window w[n];
+    w[(current->isfloating||current->istransient) ? 0:ft] = current->win;
+    for (fl += !ISFFT(current) ? 1:0, c = head; c; c = c->next) {
+        XSetWindowBorder(dis, c->win, c == current ? win_focus:win_unfocus);
+        XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn
+                    || (mode == MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
+        if (c != current) w[c->isfullscrn ? --fl:ISFFT(c) ? --ft:--n] = c->win;
+        if (CLICK_TO_FOCUS || c == current) grabbuttons(c);
+    }
+    XRestackWindows(dis, w, LENGTH(w));
+
+    XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
+    XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32,
+                PropModeReplace, (unsigned char *)&current->win, 1);
+
+    XSync(dis, False);
 }
 
 /* dont give focus to any client except current
@@ -357,7 +411,7 @@ void enternotify(XEvent *e) {
  * input (mouse/kbd) focus from the current and
  * highlighted client - this gives focus back */
 void focusin(XEvent *e) {
-    if (current && current->win != e->xfocus.window) update_current(current);
+    if (current && current->win != e->xfocus.window) focus(current);
 }
 
 /* get a pixel with the requested color
@@ -471,7 +525,7 @@ void maprequest(XEvent *e) {
     if (cd != newdsk) selectdesktop(cd);
     if (cd == newdsk) { if (!c->isfloating) tile(); XMapWindow(dis, c->win); }
     else if (follow) change_desktop(&(Arg){.i = newdsk});
-    if (follow || cd == newdsk) update_current(c);
+    if (follow || cd == newdsk) focus(c);
 
     desktopinfo();
 }
@@ -612,7 +666,7 @@ void moveresize(const Arg *arg) {
  * if the window is the last on stack, focus head */
 void next_win(void) {
     if (!current || !head->next) return;
-    update_current(current->next ? current->next:head);
+    focus(current->next ? current->next:head);
 }
 
 /* get the previous client from the given
@@ -627,7 +681,7 @@ client* prevclient(client *c) {
  * if the window is the head, focus the last stack window */
 void prev_win(void) {
     if (!current || !head->next) return;
-    update_current(prevclient(prevfocus = current));
+    focus(prevclient(prevfocus = current));
 }
 
 /* property notify is called when one of the window's properties
@@ -660,7 +714,7 @@ void removeclient(client *c) {
         for (selectdesktop(++nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
     if (c == prevfocus) prevfocus = prevclient(current);
-    if (c == current || (head && !head->next)) update_current(prevfocus);
+    if (c == current || (head && !head->next)) focus(prevfocus);
     if (cd != nd) selectdesktop(cd); else if (!c->isfloating && !c->istransient) tile();
     free(c); c = NULL;
 }
@@ -803,14 +857,14 @@ void swap_master(void) {
     if (!current || !head->next) return;
     if (current == head) move_down();
     else while (current != head) move_up();
-    update_current(head);
+    focus(head);
 }
 
 /* switch the tiling mode and reset all floating windows */
 void switch_mode(const Arg *arg) {
     if (mode == arg->i && mode != FLOAT) for (client *c=head; c; c=c->next) c->isfloating = False;
     if ((mode = arg->i) == FLOAT) for (client *c=head; c; c=c->next) c->isfloating = True;
-    tile(); update_current(current);
+    tile(); focus(current);
     desktopinfo();
 }
 
@@ -825,60 +879,6 @@ void tile(void) {
 void unmapnotify(XEvent *e) {
     client *c = wintoclient(e->xunmap.window);
     if (c && e->xunmap.send_event) { removeclient(c); desktopinfo(); }
-}
-
-/* highlight borders and set active window and input focus
- * if given current is NULL then delete the active window property
- *
- * stack order by client properties, top to bottom:
- *  - current when floating or transient
- *  - floating or trancient windows
- *  - current when tiled
- *  - current when fullscreen
- *  - fullscreen windows
- *  - tiled windows
- *
- * a window should have borders in any case, except if
- *  - the window is the only window on screen
- *  - the window is fullscreen
- *  - the mode is MONOCLE and the window is not floating or transient
- *
- * finally button events are grabbed for the new client. There
- * is no need for button events to be grabbed again, except if
- * CLICK_TO_FOCUS is set, in which case the grabbing of Button1
- * must be updated, so Button1 clicks are available to the
- * active window / current client.
- * this is a compromise. we could grab the buttons for the new
- * client on maprequest(), but since we will be calling this
- * function anyway, we can just grab the buttons for the current
- * client that may be the new client. */
-void update_current(client *c) {
-    if (!head) {
-        XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
-        current = prevfocus = NULL;
-        return;
-    } else if (c == prevfocus) { prevfocus = prevclient(current = prevfocus ? prevfocus:head);
-    } else if (c != current) { prevfocus = current; current = c; }
-
-    /* num of n:all fl:fullscreen ft:floating/transient windows */
-    int n = 0, fl = 0, ft = 0;
-    for (c = head; c; c = c->next, ++n) if (ISFFT(c)) { fl++; if (!c->isfullscrn) ft++; }
-    Window w[n];
-    w[(current->isfloating||current->istransient) ? 0:ft] = current->win;
-    for (fl += !ISFFT(current) ? 1:0, c = head; c; c = c->next) {
-        XSetWindowBorder(dis, c->win, c == current ? win_focus:win_unfocus);
-        XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn
-                    || (mode == MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
-        if (c != current) w[c->isfullscrn ? --fl:ISFFT(c) ? --ft:--n] = c->win;
-        if (CLICK_TO_FOCUS || c == current) grabbuttons(c);
-    }
-    XRestackWindows(dis, w, LENGTH(w));
-
-    XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
-    XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32,
-                PropModeReplace, (unsigned char *)&current->win, 1);
-
-    XSync(dis, False);
 }
 
 /* find to which client the given window belongs to */
