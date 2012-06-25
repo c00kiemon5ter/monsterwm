@@ -151,7 +151,7 @@ static int xerrorstart();
 #include "config.h"
 
 static Bool running = True;
-static int prevdeskidx = 0, current_desktop = 0;
+static int prevdeskidx = 0, currdeskidx = 0;
 static int screen, wh, ww, mode = DEFAULT_MODE;
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0, win_unfocus, win_focus;
@@ -213,8 +213,8 @@ void buttonpress(XEvent *e) {
  * then unmap the old windows
  * first all others then the current */
 void change_desktop(const Arg *arg) {
-    if (arg->i == current_desktop) return;
-    prevdeskidx = current_desktop;
+    if (arg->i == currdeskidx) return;
+    prevdeskidx = currdeskidx;
     selectdesktop(arg->i);
     if (current) XMapWindow(dis, current->win);
     for (Client *c=head; c; c=c->next) XMapWindow(dis, c->win);
@@ -243,8 +243,8 @@ void cleanup(void) {
  * remove the current client from the current desktop's client list
  * and add it as last client of the new desktop's client list */
 void client_to_desktop(const Arg *arg) {
-    if (!current || arg->i == current_desktop) return;
-    int cd = current_desktop;
+    if (!current || arg->i == currdeskidx) return;
+    int cd = currdeskidx;
     Client *p = prevclient(current), *c = current;
 
     selectdesktop(arg->i);
@@ -324,10 +324,10 @@ void deletewindow(Window w) {
  * once the info is collected, immediately flush the stream */
 void desktopinfo(void) {
     Bool urgent = False;
-    int cd = current_desktop, n=0, nd=-1;
+    int cd = currdeskidx, n=0, nd=-1;
     for (Client *c; nd<DESKTOPS-1;) {
         for (selectdesktop(++nd), c=head, n=0, urgent=False; c; c=c->next, ++n) if (c->isurgent) urgent = True;
-        fprintf(stdout, "%d:%d:%d:%d:%d%c", nd, n, mode, current_desktop == cd, urgent, nd==DESKTOPS-1?'\n':' ');
+        fprintf(stdout, "%d:%d:%d:%d:%d%c", nd, n, mode, currdeskidx == cd, urgent, nd==DESKTOPS-1?'\n':' ');
     }
     fflush(stdout);
     if (cd != nd) selectdesktop(cd);
@@ -498,12 +498,12 @@ void maprequest(XEvent *e) {
     if (wintoclient(e->xmaprequest.window)) return;
 
     Bool follow = False, floating = False;
-    int cd = current_desktop, newdsk = current_desktop;
+    int cd = currdeskidx, newdsk = currdeskidx;
     XClassHint ch = {0, 0};
     if (XGetClassHint(dis, e->xmaprequest.window, &ch))
         for (unsigned int i=0; i<LENGTH(rules); i++)
             if (strstr(ch.res_class, rules[i].class) || strstr(ch.res_name, rules[i].class)) {
-                newdsk = (rules[i].desktop < 0) ? current_desktop:rules[i].desktop;
+                newdsk = (rules[i].desktop < 0) ? currdeskidx:rules[i].desktop;
                 follow = rules[i].follow;
                 floating = rules[i].floating;
                 break;
@@ -709,7 +709,7 @@ void quit(void) {
  * if c was the current client, current must be updated. */
 void removeclient(Client *c) {
     Client **p = NULL;
-    int nd = -1, cd = current_desktop;
+    int nd = -1, cd = currdeskidx;
     for (Bool found = False; nd<DESKTOPS-1 && !found;)
         for (selectdesktop(++nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
@@ -737,12 +737,12 @@ void savedesktop(int i) {
 /* set the specified desktop's properties */
 void selectdesktop(int i) {
     if (i < 0 || i >= DESKTOPS) return;
-    savedesktop(current_desktop);
+    savedesktop(currdeskidx);
     mode            = desktops[i].mode;
     head            = desktops[i].head;
     current         = desktops[i].current;
     prevfocus       = desktops[i].prevfocus;
-    current_desktop = i;
+    currdeskidx = i;
 }
 
 /* set or unset fullscreen state of client */
@@ -884,7 +884,7 @@ void unmapnotify(XEvent *e) {
 /* find to which client the given window belongs to */
 Client* wintoclient(Window w) {
     Client *c = NULL;
-    int nd = -1, cd = current_desktop;
+    int nd = -1, cd = currdeskidx;
     for (Bool found = False; nd<DESKTOPS-1 && !found;)
         for (selectdesktop(++nd), c=head; c && !(found = (w == c->win)); c=c->next);
     if (cd != nd) selectdesktop(cd);
