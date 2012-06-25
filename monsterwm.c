@@ -133,7 +133,7 @@ static void quit();
 static void removeclient(client *c);
 static void run(void);
 static void savedesktop(int i);
-static void select_desktop(int i);
+static void selectdesktop(int i);
 static void setfullscreen(client *c, Bool fullscrn);
 static void setup(void);
 static void sigchld();
@@ -215,13 +215,13 @@ void buttonpress(XEvent *e) {
 void change_desktop(const Arg *arg) {
     if (arg->i == current_desktop) return;
     previous_desktop = current_desktop;
-    select_desktop(arg->i);
+    selectdesktop(arg->i);
     if (current) XMapWindow(dis, current->win);
     for (client *c=head; c; c=c->next) XMapWindow(dis, c->win);
-    select_desktop(previous_desktop);
+    selectdesktop(previous_desktop);
     for (client *c=head; c; c=c->next) if (c != current) XUnmapWindow(dis, c->win);
     if (current) XUnmapWindow(dis, current->win);
-    select_desktop(arg->i);
+    selectdesktop(arg->i);
     tile(); update_current(current);
     desktopinfo();
 }
@@ -247,11 +247,11 @@ void client_to_desktop(const Arg *arg) {
     int cd = current_desktop;
     client *p = prevclient(current), *c = current;
 
-    select_desktop(arg->i);
+    selectdesktop(arg->i);
     client *l = prevclient(head);
     update_current(l ? (l->next = c):head ? (head->next = c):(head = c));
 
-    select_desktop(cd);
+    selectdesktop(cd);
     if (c == head || !p) head = c->next; else p->next = c->next;
     c->next = NULL;
     XUnmapWindow(dis, c->win);
@@ -326,11 +326,11 @@ void desktopinfo(void) {
     Bool urgent = False;
     int cd = current_desktop, n=0, nd=-1;
     for (client *c; nd<DESKTOPS-1;) {
-        for (select_desktop(++nd), c=head, n=0, urgent=False; c; c=c->next, ++n) if (c->isurgent) urgent = True;
+        for (selectdesktop(++nd), c=head, n=0, urgent=False; c; c=c->next, ++n) if (c->isurgent) urgent = True;
         fprintf(stdout, "%d:%d:%d:%d:%d%c", nd, n, mode, current_desktop == cd, urgent, nd==DESKTOPS-1?'\n':' ');
     }
     fflush(stdout);
-    if (cd != nd) select_desktop(cd);
+    if (cd != nd) selectdesktop(cd);
 }
 
 /* a destroy notification is received when a window is being closed
@@ -457,7 +457,7 @@ void maprequest(XEvent *e) {
     if (ch.res_class) XFree(ch.res_class);
     if (ch.res_name) XFree(ch.res_name);
 
-    if (cd != newdsk) select_desktop(newdsk);
+    if (cd != newdsk) selectdesktop(newdsk);
     client *c = addwindow(e->xmaprequest.window);
     c->istransient = XGetTransientForHint(dis, c->win, &w);
     c->isfloating = floating || mode == FLOAT || c->istransient;
@@ -468,7 +468,7 @@ void maprequest(XEvent *e) {
         setfullscreen(c, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
     if (state) XFree(state);
 
-    if (cd != newdsk) select_desktop(cd);
+    if (cd != newdsk) selectdesktop(cd);
     if (cd == newdsk) { if (!c->isfloating) tile(); XMapWindow(dis, c->win); }
     else if (follow) change_desktop(&(Arg){.i = newdsk});
     if (follow || cd == newdsk) update_current(c);
@@ -657,11 +657,11 @@ void removeclient(client *c) {
     client **p = NULL;
     int nd = -1, cd = current_desktop;
     for (Bool found = False; nd<DESKTOPS-1 && !found;)
-        for (select_desktop(++nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
+        for (selectdesktop(++nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
     if (c == prevfocus) prevfocus = prevclient(current);
     if (c == current || (head && !head->next)) update_current(prevfocus);
-    if (cd != nd) select_desktop(cd); else if (!c->isfloating && !c->istransient) tile();
+    if (cd != nd) selectdesktop(cd); else if (!c->isfloating && !c->istransient) tile();
     free(c); c = NULL;
 }
 
@@ -681,7 +681,7 @@ void savedesktop(int i) {
 }
 
 /* set the specified desktop's properties */
-void select_desktop(int i) {
+void selectdesktop(int i) {
     if (i < 0 || i >= DESKTOPS) return;
     savedesktop(current_desktop);
     mode            = desktops[i].mode;
@@ -886,8 +886,8 @@ client* wintoclient(Window w) {
     client *c = NULL;
     int nd = -1, cd = current_desktop;
     for (Bool found = False; nd<DESKTOPS-1 && !found;)
-        for (select_desktop(++nd), c=head; c && !(found = (w == c->win)); c=c->next);
-    if (cd != nd) select_desktop(cd);
+        for (selectdesktop(++nd), c=head; c && !(found = (w == c->win)); c=c->next);
+    if (cd != nd) selectdesktop(cd);
     return c;
 }
 
