@@ -78,14 +78,14 @@ typedef struct Client {
 } Client;
 
 /* properties of each desktop
- * mode         - the desktop's tiling layout mode
- * head         - the start of the client list
- * current      - the currently highlighted window
- * prevfocus    - the client that previously had focus
+ * mode - the desktop's tiling layout mode
+ * head - the start of the client list
+ * curr - the currently highlighted window
+ * prev - the client that previously had focus
  */
 typedef struct {
     int mode;
-    Client *head, *current, *prevfocus;
+    Client *head, *curr, *prev;
 } Desktop;
 
 /* define behavior of certain applications
@@ -157,7 +157,7 @@ static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0, win_unfocus, win_focus;
 static Display *dis;
 static Window root;
-static Client *head, *prevfocus, *current;
+static Client *head, *prev, *curr;
 static Atom wmatoms[WM_COUNT], netatoms[NET_COUNT];
 static Desktop desktops[DESKTOPS];
 
@@ -195,12 +195,12 @@ Client* addwindow(Window w) {
 void buttonpress(XEvent *e) {
     Client *c = wintoclient(e->xbutton.window);
     if (!c) return;
-    if (CLICK_TO_FOCUS && current != c && e->xbutton.button == Button1) focus(c);
+    if (CLICK_TO_FOCUS && curr != c && e->xbutton.button == Button1) focus(c);
 
     for (unsigned int i=0; i<LENGTH(buttons); i++)
         if (buttons[i].func && buttons[i].button == e->xbutton.button &&
             CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state)) {
-            if (current != c) focus(c);
+            if (curr != c) focus(c);
             buttons[i].func(&(buttons[i].arg));
         }
 }
@@ -216,13 +216,13 @@ void change_desktop(const Arg *arg) {
     if (arg->i == currdeskidx) return;
     prevdeskidx = currdeskidx;
     selectdesktop(arg->i);
-    if (current) XMapWindow(dis, current->win);
+    if (curr) XMapWindow(dis, curr->win);
     for (Client *c=head; c; c=c->next) XMapWindow(dis, c->win);
     selectdesktop(prevdeskidx);
-    for (Client *c=head; c; c=c->next) if (c != current) XUnmapWindow(dis, c->win);
-    if (current) XUnmapWindow(dis, current->win);
+    for (Client *c=head; c; c=c->next) if (c != curr) XUnmapWindow(dis, c->win);
+    if (curr) XUnmapWindow(dis, curr->win);
     selectdesktop(arg->i);
-    tile(); focus(current);
+    tile(); focus(curr);
     desktopinfo();
 }
 
@@ -243,9 +243,9 @@ void cleanup(void) {
  * remove the current client from the current desktop's client list
  * and add it as last client of the new desktop's client list */
 void client_to_desktop(const Arg *arg) {
-    if (!current || arg->i == currdeskidx) return;
+    if (!curr || arg->i == currdeskidx) return;
     int cd = currdeskidx;
-    Client *p = prevclient(current), *c = current;
+    Client *p = prevclient(curr), *c = curr;
 
     selectdesktop(arg->i);
     Client *l = prevclient(head);
@@ -255,7 +255,7 @@ void client_to_desktop(const Arg *arg) {
     if (c == head || !p) head = c->next; else p->next = c->next;
     c->next = NULL;
     XUnmapWindow(dis, c->win);
-    focus(prevfocus);
+    focus(prev);
 
     if (FOLLOW_WINDOW) change_desktop(arg);
     else if (!c->isfloating && !c->istransient) tile();
@@ -379,28 +379,28 @@ void enternotify(XEvent *e) {
 void focus(Client *c) {
     if (!head) {
         XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
-        current = prevfocus = NULL;
+        curr = prev = NULL;
         return;
-    } else if (c == prevfocus) { prevfocus = prevclient(current = prevfocus ? prevfocus:head);
-    } else if (c != current) { prevfocus = current; current = c; }
+    } else if (c == prev) { prev = prevclient(curr = prev ? prev:head);
+    } else if (c != curr) { prev = curr; curr = c; }
 
     /* num of n:all fl:fullscreen ft:floating/transient windows */
     int n = 0, fl = 0, ft = 0;
     for (c = head; c; c = c->next, ++n) if (ISFFT(c)) { fl++; if (!c->isfullscrn) ft++; }
     Window w[n];
-    w[(current->isfloating||current->istransient) ? 0:ft] = current->win;
-    for (fl += !ISFFT(current) ? 1:0, c = head; c; c = c->next) {
-        XSetWindowBorder(dis, c->win, c == current ? win_focus:win_unfocus);
+    w[(curr->isfloating||curr->istransient) ? 0:ft] = curr->win;
+    for (fl += !ISFFT(curr) ? 1:0, c = head; c; c = c->next) {
+        XSetWindowBorder(dis, c->win, c == curr ? win_focus:win_unfocus);
         XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn
                     || (mode == MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
-        if (c != current) w[c->isfullscrn ? --fl:ISFFT(c) ? --ft:--n] = c->win;
-        if (CLICK_TO_FOCUS || c == current) grabbuttons(c);
+        if (c != curr) w[c->isfullscrn ? --fl:ISFFT(c) ? --ft:--n] = c->win;
+        if (CLICK_TO_FOCUS || c == curr) grabbuttons(c);
     }
     XRestackWindows(dis, w, LENGTH(w));
 
-    XSetInputFocus(dis, current->win, RevertToPointerRoot, CurrentTime);
+    XSetInputFocus(dis, curr->win, RevertToPointerRoot, CurrentTime);
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32,
-                PropModeReplace, (unsigned char *)&current->win, 1);
+                PropModeReplace, (unsigned char *)&curr->win, 1);
 
     XSync(dis, False);
 }
@@ -411,7 +411,7 @@ void focus(Client *c) {
  * input (mouse/kbd) focus from the current and
  * highlighted client - this gives focus back */
 void focusin(XEvent *e) {
-    if (current && current->win != e->xfocus.window) focus(current);
+    if (curr && curr->win != e->xfocus.window) focus(curr);
 }
 
 /* get a pixel with the requested color
@@ -427,7 +427,7 @@ void grabbuttons(Client *c) {
     unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
     if (CLICK_TO_FOCUS) for (unsigned int m=0; m<LENGTH(modifiers); m++)
-        if (c != current) XGrabButton(dis, Button1, modifiers[m], c->win, False,
+        if (c != curr) XGrabButton(dis, Button1, modifiers[m], c->win, False,
                           BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
         else XUngrabButton(dis, Button1, modifiers[m], c->win);
 
@@ -476,11 +476,11 @@ void keypress(XEvent *e) {
 /* explicitly kill a client - close the highlighted window
  * send a delete message and remove the client */
 void killclient(void) {
-    if (!current) return;
+    if (!curr) return;
     Atom *prot; int n = -1;
-    if (XGetWMProtocols(dis, current->win, &prot, &n)) while(!--n<0 && prot[n] != wmatoms[WM_DELETE_WINDOW]);
-    if (n < 0) XKillClient(dis, current->win); else deletewindow(current->win);
-    removeclient(current);
+    if (XGetWMProtocols(dis, curr->win, &prot, &n)) while(!--n<0 && prot[n] != wmatoms[WM_DELETE_WINDOW]);
+    if (n < 0) XKillClient(dis, curr->win); else deletewindow(curr->win);
+    removeclient(curr);
 }
 
 /* a map request is received when a window wants to display itself
@@ -540,18 +540,18 @@ void maprequest(XEvent *e) {
  * Ungrab the poitner and event handling is passed back to run() function.
  * Once a window has been moved or resized, it's marked as floating. */
 void mousemotion(const Arg *arg) {
-    if (!current) return;
+    if (!curr) return;
     static XWindowAttributes wa;
-    if (!XGetWindowAttributes(dis, current->win, &wa)) return;
+    if (!XGetWindowAttributes(dis, curr->win, &wa)) return;
 
     if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
                      GrabModeAsync, None, None, CurrentTime) != GrabSuccess) return;
-    if (arg->i == RESIZE) XWarpPointer(dis, None, current->win, 0, 0, 0, 0, wa.width, wa.height);
+    if (arg->i == RESIZE) XWarpPointer(dis, None, curr->win, 0, 0, 0, 0, wa.width, wa.height);
     int rx, ry, c, xw, yh; unsigned int m; Window w;
     XQueryPointer(dis, root, &w, &w, &rx, &ry, &c, &c, &m);
 
-    if (current->isfullscrn) setfullscreen(current, False);
-    if (!current->isfloating && !current->istransient) { current->isfloating = True; tile(); }
+    if (curr->isfullscrn) setfullscreen(curr, False);
+    if (!curr->isfloating && !curr->istransient) { curr->isfloating = True; tile(); }
 
     XEvent ev;
     do {
@@ -563,9 +563,9 @@ void mousemotion(const Arg *arg) {
             case MotionNotify:
                 xw = (arg->i == MOVE ? wa.x:wa.width)  + ev.xmotion.x - rx;
                 yh = (arg->i == MOVE ? wa.y:wa.height) + ev.xmotion.y - ry;
-                if (arg->i == RESIZE) XResizeWindow(dis, current->win,
+                if (arg->i == RESIZE) XResizeWindow(dis, curr->win,
                    xw>MINWSZ ? xw:wa.width, yh>MINWSZ ? yh:wa.height);
-                else if (arg->i == MOVE) XMoveWindow(dis, current->win, xw, yh);
+                else if (arg->i == MOVE) XMoveWindow(dis, curr->win, xw, yh);
                 break;
         }
     } while(ev.type != ButtonRelease);
@@ -581,8 +581,8 @@ void monocle(int hh, int cy) {
  * and current->next to current client's position */
 void move_down(void) {
     /* p is previous, c is current, n is next, if current is head n is last */
-    Client *p = NULL, *n = (current->next) ? current->next:head;
-    if (!(p = prevclient(current))) return;
+    Client *p = NULL, *n = (curr->next) ? curr->next:head;
+    if (!(p = prevclient(curr))) return;
     /*
      * if c is head, swapping with n should update head to n
      * [c]->[n]->..  ==>  [n]->[c]->..
@@ -591,7 +591,7 @@ void move_down(void) {
      * else there is a previous client and p->next should be what's after c
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
      */
-    if (current == head) head = n; else p->next = current->next;
+    if (curr == head) head = n; else p->next = curr->next;
     /*
      * if c is the last client, c will be the current head
      * [n]->..->[p]->[c]->NULL  ==>  [c]->[n]->..->[p]->NULL
@@ -599,7 +599,7 @@ void move_down(void) {
      * else c will take the place of n, so c-next will be n->next
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
      */
-    current->next = (current->next) ? n->next:n;
+    curr->next = (curr->next) ? n->next:n;
     /*
      * if c was swapped with n then they now point to the same ->next. n->next should be c
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->..  ==>  ..->[p]->[n]->[c]->..
@@ -610,8 +610,8 @@ void move_down(void) {
      * [n]->..->[p]->[c]->NULL  ==>  [c]->[n]->..->[p]->NULL
      *  ^head                         ^head
      */
-    if (current->next == n->next) n->next = current; else head = current;
-    if (!current->isfloating && !current->istransient) tile();
+    if (curr->next == n->next) n->next = curr; else head = curr;
+    if (!curr->isfloating && !curr->istransient) tile();
 }
 
 /* move the current client, to the previous from current and
@@ -619,7 +619,7 @@ void move_down(void) {
 void move_up(void) {
     Client *pp = NULL, *p;
     /* p is previous from current or last if current is head */
-    if (!(p = prevclient(current))) return;
+    if (!(p = prevclient(curr))) return;
     /* pp is previous from p, or null if current is head and thus p is last */
     if (p->next) for (pp=head; pp && pp->next != p; pp=pp->next);
     /*
@@ -633,7 +633,7 @@ void move_up(void) {
      * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
      *  ^head         ^last           ^head         ^last
      */
-    if (pp) pp->next = current; else head = (current == head) ? current->next:current;
+    if (pp) pp->next = curr; else head = (curr == head) ? curr->next:curr;
     /*
      * next of p should be next of c
      * ..->[pp]->[p]->[c]->[n]->..  ==>  ..->[pp]->[c]->[p]->[n]->..
@@ -641,7 +641,7 @@ void move_up(void) {
      * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
      *  ^head         ^last           ^head         ^last
      */
-    p->next = (current->next == head) ? current:current->next;
+    p->next = (curr->next == head) ? curr:curr->next;
     /*
      * next of c should be p
      * ..->[pp]->[p]->[c]->[n]->..  ==>  ..->[pp]->[c]->[p]->[n]->..
@@ -649,24 +649,24 @@ void move_up(void) {
      * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
      *  ^head         ^last           ^head         ^last
      */
-    current->next = (current->next == head) ? NULL:p;
-    if (!current->isfloating && !current->istransient) tile();
+    curr->next = (curr->next == head) ? NULL:p;
+    if (!curr->isfloating && !curr->istransient) tile();
 }
 
 /* move and resize a window with the keyboard */
 void moveresize(const Arg *arg) {
     XWindowAttributes wa;
-    if (!current || !XGetWindowAttributes(dis, current->win, &wa)) return;
-    if (!current->isfloating && !current->istransient) { current->isfloating = True; tile(); }
-    XMoveResizeWindow(dis, current->win, wa.x + ((int *)arg->v)[0], wa.y + ((int *)arg->v)[1],
-                               wa.width  + ((int *)arg->v)[2], wa.height + ((int *)arg->v)[3]);
+    if (!curr || !XGetWindowAttributes(dis, curr->win, &wa)) return;
+    if (!curr->isfloating && !curr->istransient) { curr->isfloating = True; tile(); }
+    XMoveResizeWindow(dis, curr->win, wa.x + ((int *)arg->v)[0], wa.y + ((int *)arg->v)[1],
+                            wa.width  + ((int *)arg->v)[2], wa.height + ((int *)arg->v)[3]);
 }
 
 /* cyclic focus the next window
  * if the window is the last on stack, focus head */
 void next_win(void) {
-    if (!current || !head->next) return;
-    focus(current->next ? current->next:head);
+    if (!curr || !head->next) return;
+    focus(curr->next ? curr->next:head);
 }
 
 /* get the previous client from the given
@@ -680,8 +680,8 @@ Client* prevclient(Client *c) {
 /* cyclic focus the previous window
  * if the window is the head, focus the last stack window */
 void prev_win(void) {
-    if (!current || !head->next) return;
-    focus(prevclient(prevfocus = current));
+    if (!curr || !head->next) return;
+    focus(prevclient(prev = curr));
 }
 
 /* property notify is called when one of the window's properties
@@ -690,7 +690,7 @@ void propertynotify(XEvent *e) {
     Client *c = wintoclient(e->xproperty.window);
     if (!c || e->xproperty.atom != XA_WM_HINTS) return;
     XWMHints *wmh = XGetWMHints(dis, c->win);
-    c->isurgent = c != current && wmh && (wmh->flags & XUrgencyHint);
+    c->isurgent = c != curr && wmh && (wmh->flags & XUrgencyHint);
     XFree(wmh);
     desktopinfo();
 }
@@ -713,8 +713,8 @@ void removeclient(Client *c) {
     for (Bool found = False; nd<DESKTOPS-1 && !found;)
         for (selectdesktop(++nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
     *p = c->next;
-    if (c == prevfocus) prevfocus = prevclient(current);
-    if (c == current || (head && !head->next)) focus(prevfocus);
+    if (c == prev) prev = prevclient(curr);
+    if (c == curr || (head && !head->next)) focus(prev);
     if (cd != nd) selectdesktop(cd); else if (!c->isfloating && !c->istransient) tile();
     free(c); c = NULL;
 }
@@ -728,20 +728,20 @@ void run(void) {
 /* save specified desktop's properties */
 void savedesktop(int i) {
     if (i < 0 || i >= DESKTOPS) return;
-    desktops[i].mode        = mode;
-    desktops[i].head        = head;
-    desktops[i].current     = current;
-    desktops[i].prevfocus   = prevfocus;
+    desktops[i].mode = mode;
+    desktops[i].head = head;
+    desktops[i].curr = curr;
+    desktops[i].prev = prev;
 }
 
 /* set the specified desktop's properties */
 void selectdesktop(int i) {
     if (i < 0 || i >= DESKTOPS) return;
     savedesktop(currdeskidx);
-    mode            = desktops[i].mode;
-    head            = desktops[i].head;
-    current         = desktops[i].current;
-    prevfocus       = desktops[i].prevfocus;
+    mode = desktops[i].mode;
+    head = desktops[i].head;
+    curr = desktops[i].curr;
+    prev = desktops[i].prev;
     currdeskidx = i;
 }
 
@@ -854,9 +854,9 @@ void stack(int hh, int cy) {
  * is behind us, so move_up until we
  * are the head */
 void swap_master(void) {
-    if (!current || !head->next) return;
-    if (current == head) move_down();
-    else while (current != head) move_up();
+    if (!curr || !head->next) return;
+    if (curr == head) move_down();
+    else while (curr != head) move_up();
     focus(head);
 }
 
@@ -864,7 +864,7 @@ void swap_master(void) {
 void switch_mode(const Arg *arg) {
     if (mode == arg->i && mode != FLOAT) for (Client *c=head; c; c=c->next) c->isfloating = False;
     if ((mode = arg->i) == FLOAT) for (Client *c=head; c; c=c->next) c->isfloating = True;
-    tile(); focus(current);
+    tile(); focus(curr);
     desktopinfo();
 }
 
