@@ -5,7 +5,7 @@ monsterwm
 ----------------------
 
 **monsterwm** is a minimal, lightweight, tiny but monsterous dynamic tiling window manager.
-It will try to stay as small as possible. Currently under 750 lines with the config file included.
+It will try to stay as small as possible. Currently under 700 lines with the config file included.
 It provides a set of different layout modes (see below), including floating mode support.
 Each virtual desktop has its own properties, unaffected by other desktops' settings.
 For screenshots and ramblings/updates check the [topic on ArchLinux forums][monsterwm].
@@ -150,6 +150,7 @@ Currently:
  * [initlayouts]    : define initial layouts for every desktop
  * [monocleborders] : adds borders to the monocle layout
  * [nmaster]        : adds nmaster layout - multiple master windows for BSTACK and TILE layouts
+ * [rectangle]      : draws only a rectangle when moving/resizing windows to keep resources low (ie through an ssh forwarded session)
  * [showhide]       : adds a function to show and hide all windows on all desktops
  * [uselessgaps]    : adds gaps around every window on screen
  * [warpcursor]     : cursors follows and is placed in the center of the current window
@@ -160,14 +161,22 @@ Currently:
   [initlayouts]:    https://github.com/c00kiemon5ter/monsterwm/tree/initlayouts
   [monocleborders]: https://github.com/c00kiemon5ter/monsterwm/tree/monocleborders
   [nmaster]:        https://github.com/c00kiemon5ter/monsterwm/tree/nmaster
+  [rectangle]:      https://github.com/c00kiemon5ter/monsterwm/tree/rectangle
   [showhide]:       https://github.com/c00kiemon5ter/monsterwm/tree/showhide
   [uselessgaps]:    https://github.com/c00kiemon5ter/monsterwm/tree/uselessgaps
   [warpcursor]:     https://github.com/c00kiemon5ter/monsterwm/tree/warpcursor
   [windowtitles]:   https://github.com/c00kiemon5ter/monsterwm/tree/windowtitles
 
+[Cloudef] has developed a [multi-monitor] version of monsterwm.
+It is also mirrored in this tree, see [multi-monitor branch][mm].
+
+  [Cloudef]:        https://github.com/Cloudef
+  [multi-monitor]:  https://github.com/Cloudef/monsterwm/tree/multi-monitor
+  [mm]:             https://github.com/c00kiemon5ter/monsterwm/tree/multi-monitor
+
 There is also another branch, called [`core`].
 `core` is an even more stripped and minimal version of `monsterwm`,
-on top of which the `master` branch is built and builds.
+on top of which the `master` branch is built and extended.
 
   [core]: https://github.com/c00kiemon5ter/monsterwm/tree/core
 
