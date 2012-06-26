@@ -539,9 +539,8 @@ void maprequest(XEvent *e) {
  * Ungrab the poitner and event handling is passed back to run() function.
  * Once a window has been moved or resized, it's marked as floating. */
 void mousemotion(const Arg *arg) {
-    if (!curr) return;
     static XWindowAttributes wa;
-    if (!XGetWindowAttributes(dis, curr->win, &wa)) return;
+    if (!curr || !XGetWindowAttributes(dis, curr->win, &wa)) return;
 
     if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
                      GrabModeAsync, None, None, CurrentTime) != GrabSuccess) return;
