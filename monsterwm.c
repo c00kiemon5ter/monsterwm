@@ -510,7 +510,8 @@ void maprequest(XEvent *e) {
     if (cd != newdsk) selectdesktop(newdsk);
     Client *c = addwindow(e->xmaprequest.window);
     c->istransient = XGetTransientForHint(dis, c->win, &w);
-    c->isfloating = floating || mode == FLOAT || c->istransient;
+    if ((c->isfloating = floating || mode == FLOAT || c->istransient))
+        XMoveWindow(dis, c->win, (ww - wa.width)/2, (wh - wa.height)/2);
 
     int di; unsigned long dl; unsigned char *state = NULL; Atom da;
     if (XGetWindowProperty(dis, c->win, netatoms[NET_WM_STATE], 0L, sizeof da,
