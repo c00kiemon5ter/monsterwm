@@ -150,7 +150,7 @@ static int xerrorstart();
 #include "config.h"
 
 static Bool running = True;
-static int prevdeskidx = 0, currdeskidx = 0;
+static int currdeskidx = 0;
 static int screen, wh, ww, mode = DEFAULT_MODE;
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0, win_unfocus, win_focus;
@@ -213,11 +213,8 @@ void buttonpress(XEvent *e) {
  * first all others then the current */
 void change_desktop(const Arg *arg) {
     if (arg->i == currdeskidx) return;
-    prevdeskidx = currdeskidx;
-    selectdesktop(arg->i);
-    if (curr) XMapWindow(dis, curr->win);
-    for (Client *c=head; c; c=c->next) XMapWindow(dis, c->win);
-    selectdesktop(prevdeskidx);
+    if (desktops[arg->i].curr) XMapWindow(dis, desktops[arg->i].curr->win);
+    for (Client *c=desktops[arg->i].head; c; c=c->next) XMapWindow(dis, c->win);
     for (Client *c=head; c; c=c->next) if (c != curr) XUnmapWindow(dis, c->win);
     if (curr) XUnmapWindow(dis, curr->win);
     selectdesktop(arg->i);
