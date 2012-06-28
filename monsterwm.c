@@ -254,7 +254,7 @@ void client_to_desktop(const Arg *arg) {
     focus(prev);
 
     if (FOLLOW_WINDOW) change_desktop(arg);
-    else if (!c->isfloating && !c->istransient) tile();
+    else if ((!c->isfloating && !c->istransient) || (head && !head->next)) tile();
     desktopinfo();
 }
 
@@ -710,7 +710,8 @@ void removeclient(Client *c) {
     *p = c->next;
     if (c == prev) prev = prevclient(curr);
     if (c == curr || (head && !head->next)) focus(prev);
-    if (cd != nd) selectdesktop(cd); else if (!c->isfloating && !c->istransient) tile();
+    if (cd != nd) selectdesktop(cd);
+    else if ((!c->isfloating && !c->istransient) || (head && !head->next)) tile();
     free(c); c = NULL;
 }
 
