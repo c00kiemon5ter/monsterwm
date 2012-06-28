@@ -864,8 +864,9 @@ void tile(void) {
 /* windows that request to unmap should lose their
  * client, so no invisible windows exist on screen */
 void unmapnotify(XEvent *e) {
-    Client *c = wintoclient(e->xunmap.window);
-    if (c && e->xunmap.send_event) { removeclient(c); desktopinfo(); }
+    Client *c = NULL;
+    if (!e->xunmap.send_event || !(c = wintoclient(e->xunmap.window))) return;
+    else { removeclient(c); desktopinfo(); }
 }
 
 /* find to which client the given window belongs to */
