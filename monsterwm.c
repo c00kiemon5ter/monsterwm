@@ -874,8 +874,7 @@ void unmapnotify(XEvent *e) {
 Client* wintoclient(Window w) {
     Client *c = NULL;
     int nd = -1, cd = currdeskidx;
-    for (Bool found = False; nd<DESKTOPS-1 && !found;)
-        for (selectdesktop(++nd), c=head; c && !(found = (w == c->win)); c=c->next);
+    while (nd<DESKTOPS-1 && !c) for (selectdesktop(++nd), c=head; c && w != c->win; c=c->next);
     if (cd != nd) selectdesktop(cd);
     return c;
 }
