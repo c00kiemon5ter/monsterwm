@@ -239,8 +239,8 @@ void cleanup(void) {
 
 /* move a client to another desktop
  *
- * remove the current client from the current desktop's client list
- * and add it as last client of the new desktop's client list */
+ * add the current client as the last on the new desktop
+ * and then remove it from the current desktop */
 void client_to_desktop(const Arg *arg) {
     if (!curr || arg->i == currdeskidx) return;
     int cd = currdeskidx;
