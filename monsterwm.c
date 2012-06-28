@@ -724,7 +724,7 @@ void run(void) {
 /* save the current desktop's properties
  * load the specified desktop's properties */
 void selectdesktop(int i) {
-    if (i < 0 || i >= DESKTOPS) return;
+    if (i < 0 || i >= DESKTOPS || i == currdeskidx) return;
     desktops[currdeskidx] = (Desktop){ .mode = mode, .head = head, .curr = curr, .prev = prev, };
     mode = desktops[i].mode;
     head = desktops[i].head;
