@@ -133,7 +133,6 @@ static void propertynotify(XEvent *e);
 static void quit();
 static void removeclient(Client *c);
 static void run(void);
-static void savedesktop(int i);
 static void selectdesktop(int i);
 static void setfullscreen(Client *c, Bool fullscrn);
 static void setup(void);
@@ -725,19 +724,11 @@ void run(void) {
     while(running && !XNextEvent(dis, &ev)) if (events[ev.type]) events[ev.type](&ev);
 }
 
-/* save specified desktop's properties */
-void savedesktop(int i) {
-    if (i < 0 || i >= DESKTOPS) return;
-    desktops[i].mode = mode;
-    desktops[i].head = head;
-    desktops[i].curr = curr;
-    desktops[i].prev = prev;
-}
-
-/* set the specified desktop's properties */
+/* save the current desktop's properties
+ * load the specified desktop's properties */
 void selectdesktop(int i) {
     if (i < 0 || i >= DESKTOPS) return;
-    savedesktop(currdeskidx);
+    desktops[currdeskidx] = (Desktop){ .mode = mode, .head = head, .curr = curr, .prev = prev, };
     mode = desktops[i].mode;
     head = desktops[i].head;
     curr = desktops[i].curr;
@@ -766,7 +757,7 @@ void setup(void) {
 
     ww = XDisplayWidth(dis,  screen);
     wh = XDisplayHeight(dis, screen) - PANEL_HEIGHT;
-    for (unsigned int i=0; i<DESKTOPS; i++) savedesktop(i);
+    for (unsigned int d=0; d<DESKTOPS;) desktops[d++] = (Desktop){ .mode = mode, };
 
     win_focus = getcolor(FOCUS);
     win_unfocus = getcolor(UNFOCUS);
