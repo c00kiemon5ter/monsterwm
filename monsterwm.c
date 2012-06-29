@@ -547,7 +547,7 @@ void mousemotion(const Arg *arg) {
     XQueryPointer(dis, root, &w, &w, &rx, &ry, &c, &c, &m);
 
     if (curr->isfullscrn) setfullscreen(curr, False);
-    if (!curr->isfloating && !curr->istransient) { curr->isfloating = True; tile(); }
+    if (!curr->isfloating && !curr->istransient) { curr->isfloating = True; tile(); focus(curr); }
 
     XEvent ev;
     do {
@@ -653,7 +653,7 @@ void move_up(void) {
 void moveresize(const Arg *arg) {
     XWindowAttributes wa;
     if (!curr || !XGetWindowAttributes(dis, curr->win, &wa)) return;
-    if (!curr->isfloating && !curr->istransient) { curr->isfloating = True; tile(); }
+    if (!curr->isfloating && !curr->istransient) { curr->isfloating = True; tile(); focus(curr); }
     XMoveResizeWindow(dis, curr->win, wa.x + ((int *)arg->v)[0], wa.y + ((int *)arg->v)[1],
                             wa.width  + ((int *)arg->v)[2], wa.height + ((int *)arg->v)[3]);
 }
