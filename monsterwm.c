@@ -24,8 +24,9 @@ enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_ACTIVE, NET_COUNT };
 
 /* argument structure to be passed to function by config.h
- * com  - a command to run
- * i    - an integer to indicate different states
+ * com - function pointer ~ the command to run
+ * i   - an integer to indicate different states
+ * v   - any type argument
  */
 typedef union {
     const char** com;
