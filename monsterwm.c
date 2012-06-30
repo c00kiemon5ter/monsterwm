@@ -576,8 +576,8 @@ void monocle(int hh, int cy) {
  * and current->next to current client's position */
 void move_down(void) {
     /* p is previous, c is current, n is next, if current is head n is last */
-    Client *p = NULL, *n = (curr->next) ? curr->next:head;
-    if (!(p = prevclient(curr))) return;
+    Client *p = prevclient(curr), *n = (curr->next) ? curr->next:head;
+    if (!p) return;
     /*
      * if c is head, swapping with n should update head to n
      * [c]->[n]->..  ==>  [n]->[c]->..
@@ -612,9 +612,9 @@ void move_down(void) {
 /* move the current client, to the previous from current and
  * the previous from  current to current client's position */
 void move_up(void) {
-    Client *pp = NULL, *p;
     /* p is previous from current or last if current is head */
-    if (!(p = prevclient(curr))) return;
+    Client *pp = NULL, *p = prevclient(curr);
+    if (!p) return;
     /* pp is previous from p, or null if current is head and thus p is last */
     if (p->next) for (pp = head; pp && pp->next != p; pp = pp->next);
     /*
