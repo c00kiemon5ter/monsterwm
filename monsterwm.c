@@ -666,8 +666,8 @@ void next_win(void) {
 /* get the previous client from the given
  * if no such client, return NULL */
 Client* prevclient(Client *c) {
-    if (!c || !head->next) return NULL;
-    Client *p; for (p = head; p->next && p->next != c; p = p->next);
+    Client *p = NULL;
+    if (c && head->next) for (p = head; p->next && p->next != c; p = p->next);
     return p;
 }
 
