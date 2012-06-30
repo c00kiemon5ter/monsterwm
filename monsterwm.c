@@ -788,9 +788,8 @@ void setup(void) {
 }
 
 void sigchld() {
-    if (signal(SIGCHLD, sigchld) == SIG_ERR)
-        err(EXIT_FAILURE, "cannot install SIGCHLD handler");
-    while(0 < waitpid(-1, NULL, WNOHANG));
+    if (signal(SIGCHLD, sigchld) != SIG_ERR) while(0 < waitpid(-1, NULL, WNOHANG));
+    else err(EXIT_FAILURE, "cannot install SIGCHLD handler");
 }
 
 /* execute a command */
