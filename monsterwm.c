@@ -660,8 +660,7 @@ void moveresize(const Arg *arg) {
 /* cyclic focus the next window
  * if the window is the last on stack, focus head */
 void next_win(void) {
-    if (!curr || !head->next) return;
-    focus(curr->next ? curr->next:head);
+    if (curr && head->next) focus(curr->next ? curr->next:head);
 }
 
 /* get the previous client from the given
@@ -675,8 +674,7 @@ Client* prevclient(Client *c) {
 /* cyclic focus the previous window
  * if the window is the head, focus the last stack window */
 void prev_win(void) {
-    if (!curr || !head->next) return;
-    focus(prevclient(prev = curr));
+    if (curr && head->next) focus(prevclient(prev = curr));
 }
 
 /* property notify is called when one of the window's properties
