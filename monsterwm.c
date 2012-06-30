@@ -198,10 +198,10 @@ void buttonpress(XEvent *e) {
     if (CLICK_TO_FOCUS && curr != c && e->xbutton.button == Button1) focus(c);
 
     for (unsigned int i = 0; i < LENGTH(buttons); i++)
-        if (buttons[i].func && buttons[i].button == e->xbutton.button &&
-            CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state)) {
+        if (CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state)
+                  && buttons[i].button == e->xbutton.button) {
             if (curr != c) focus(c);
-            buttons[i].func(&(buttons[i].arg));
+            if (buttons[i].func) buttons[i].func(&(buttons[i].arg));
         }
 }
 
@@ -466,8 +466,8 @@ void grid(int hh, int cy) {
 void keypress(XEvent *e) {
     KeySym keysym = XkbKeycodeToKeysym(dis, e->xkey.keycode, 0, 0);
     for (unsigned int i = 0; i < LENGTH(keys); i++)
-        if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(e->xkey.state)
-                   && keys[i].func) keys[i].func(&keys[i].arg);
+        if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod) == CLEANMASK(e->xkey.state))
+            if (keys[i].func) keys[i].func(&keys[i].arg);
 }
 
 /* explicitly kill a client - close the highlighted window
