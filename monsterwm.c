@@ -194,10 +194,8 @@ Client* addwindow(Window w) {
 /* on the press of a button check to see if there's a binded function to call */
 void buttonpress(XEvent *e) {
     Client *c = wintoclient(e->xbutton.window);
-    if (!c) return;
-    if (CLICK_TO_FOCUS && curr != c && e->xbutton.button == Button1) focus(c);
-
-    for (unsigned int i = 0; i < LENGTH(buttons); i++)
+    if (c && CLICK_TO_FOCUS && curr != c && e->xbutton.button == Button1) focus(c);
+    for (unsigned int i = 0; c && i < LENGTH(buttons); i++)
         if (CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state)
                   && buttons[i].button == e->xbutton.button) {
             if (curr != c) focus(c);
