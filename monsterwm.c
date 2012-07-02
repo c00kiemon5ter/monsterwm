@@ -16,7 +16,7 @@
 #define LENGTH(x)       (sizeof(x)/sizeof(*x))
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 #define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
-#define ISFFT(c)        (c->isfullscrn || c->isfloating || c->istransient)
+#define ISFFT(c)        (c->isfull || c->isfloat || c->istrans)
 
 enum { RESIZE, MOVE };
 enum { TILE, MONOCLE, BSTACK, GRID, FLOAT, MODES };
@@ -62,19 +62,19 @@ typedef struct {
 /* a client is a wrapper to a window that additionally
  * holds some properties for that window
  *
- * next        - the client after this one, or NULL if the current is the last client
- * isurgent    - set when the window received an urgent hint
- * istransient - set when the window is transient
- * isfullscrn  - set when the window is fullscreen
- * isfloating  - set when the window is floating
- * win         - the window this client is representing
+ * next    - the client after this one, or NULL if the current is the last client
+ * isurgn  - set when the window received an urgent hint
+ * isfull  - set when the window is fullscreen
+ * isfloat - set when the window is floating
+ * istrans - set when the window is transient
+ * win     - the window this client is representing
  *
- * istransient is separate from isfloating as floating window can be reset
- * to their tiling positions, while the transients will always be floating
+ * istrans is separate from isfloat as floating windows can be reset to
+ * their tiling positions, while the transients will always be floating
  */
 typedef struct Client {
     struct Client *next;
-    Bool isurgent, istransient, isfullscrn, isfloating;
+    Bool isurgn, isfull, isfloat, istrans;
     Window win;
 } Client;
 
@@ -253,7 +253,7 @@ void client_to_desktop(const Arg *arg) {
     focus(prev);
 
     if (FOLLOW_WINDOW) change_desktop(arg);
-    else if ((!c->isfloating && !c->istransient) || (head && !head->next)) tile();
+    else if (!(c->isfloat || c->istrans) || (head && !head->next)) tile();
     desktopinfo();
 }
 
@@ -272,7 +272,7 @@ void clientmessage(XEvent *e) {
     if (c && e->xclient.message_type         == netatoms[NET_WM_STATE]
           && ((unsigned)e->xclient.data.l[1] == netatoms[NET_FULLSCREEN]
            || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN])) {
-        setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfullscrn)));
+        setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfull)));
         tile();
     } else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) for (t = head; t && t != c; t = t->next);
     if (t) focus(c);
@@ -285,12 +285,12 @@ void clientmessage(XEvent *e) {
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     Client *c = wintoclient(ev->window);
-    if (!c || !c->isfullscrn) {
+    if (!c || !c->isfull) {
         XConfigureWindow(dis, ev->window, ev->value_mask, &(XWindowChanges){ev->x,
             ev->y, ev->width, ev->height, ev->border_width, ev->above, ev->detail});
         XSync(dis, False);
     } else setfullscreen(c, True);
-    if (!c || (!c->isfloating && !c->istransient)) tile();
+    if (!c || !(c->isfloat || c->istrans)) tile();
 }
 
 /* close the window */
@@ -321,7 +321,7 @@ void desktopinfo(void) {
     Bool urgent = False;
     int cd = currdeskidx, n = 0, nd = -1;
     for (Client *c; nd < DESKTOPS-1;) {
-        for (selectdesktop(++nd), c = head, n = 0, urgent = False; c; urgent |= c->isurgent, c = c->next, ++n);
+        for (selectdesktop(++nd), c = head, n = 0, urgent = False; c; urgent |= c->isurgn, c = c->next, ++n);
         fprintf(stdout, "%d:%d:%d:%d:%d%c", nd, n, mode, currdeskidx == cd, urgent, nd == DESKTOPS-1?'\n':' ');
     }
     fflush(stdout);
@@ -381,14 +381,14 @@ void focus(Client *c) {
 
     /* num of n:all fl:fullscreen ft:floating/transient windows */
     int n = 0, fl = 0, ft = 0;
-    for (c = head; c; c = c->next, ++n) if (ISFFT(c)) { fl++; if (!c->isfullscrn) ft++; }
+    for (c = head; c; c = c->next, ++n) if (ISFFT(c)) { fl++; if (!c->isfull) ft++; }
     Window w[n];
-    w[(curr->isfloating || curr->istransient) ? 0:ft] = curr->win;
+    w[(curr->isfloat || curr->istrans) ? 0:ft] = curr->win;
     for (fl += !ISFFT(curr) ? 1:0, c = head; c; c = c->next) {
         XSetWindowBorder(dis, c->win, c == curr ? win_focus:win_unfocus);
-        XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfullscrn
+        XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfull
                     || (mode == MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
-        if (c != curr) w[c->isfullscrn ? --fl:ISFFT(c) ? --ft:--n] = c->win;
+        if (c != curr) w[c->isfull ? --fl:ISFFT(c) ? --ft:--n] = c->win;
         if (CLICK_TO_FOCUS || c == curr) grabbuttons(c);
     }
     XRestackWindows(dis, w, LENGTH(w));
@@ -508,8 +508,8 @@ void maprequest(XEvent *e) {
 
     if (cd != newdsk) selectdesktop(newdsk);
     Client *c = addwindow(e->xmaprequest.window);
-    c->istransient = XGetTransientForHint(dis, c->win, &w);
-    if ((c->isfloating = floating || mode == FLOAT || c->istransient))
+    c->istrans = XGetTransientForHint(dis, c->win, &w);
+    if ((c->isfloat = floating || mode == FLOAT || c->istrans))
         XMoveWindow(dis, c->win, (ww - wa.width)/2, (wh - wa.height)/2);
 
     int di; unsigned long dl; unsigned char *state = NULL; Atom da;
@@ -519,7 +519,7 @@ void maprequest(XEvent *e) {
     if (state) XFree(state);
 
     if (cd != newdsk) selectdesktop(cd);
-    if (cd == newdsk) { if (!c->isfloating) tile(); XMapWindow(dis, c->win); }
+    if (cd == newdsk) { if (!c->isfloat) tile(); XMapWindow(dis, c->win); }
     else if (follow) change_desktop(&(Arg){.i = newdsk});
     if (follow || cd == newdsk) focus(c);
 
@@ -545,8 +545,8 @@ void mousemotion(const Arg *arg) {
     int rx, ry, c, xw, yh; unsigned int m; Window w;
     XQueryPointer(dis, root, &w, &w, &rx, &ry, &c, &c, &m);
 
-    if (curr->isfullscrn) setfullscreen(curr, False);
-    if (!curr->isfloating && !curr->istransient) { curr->isfloating = True; tile(); focus(curr); }
+    if (curr->isfull) setfullscreen(curr, False);
+    if (!curr->isfloat && !curr->istrans) { curr->isfloat = True; tile(); focus(curr); }
 
     XEvent ev;
     do {
@@ -606,7 +606,7 @@ void move_down(void) {
      *  ^head                         ^head
      */
     if (curr->next == n->next) n->next = curr; else head = curr;
-    if (!curr->isfloating && !curr->istransient) tile();
+    if (!curr->isfloat && !curr->istrans) tile();
 }
 
 /* move the current client, to the previous from current and
@@ -645,14 +645,14 @@ void move_up(void) {
      *  ^head         ^last           ^head         ^last
      */
     curr->next = (curr->next == head) ? NULL:p;
-    if (!curr->isfloating && !curr->istransient) tile();
+    if (!curr->isfloat && !curr->istrans) tile();
 }
 
 /* move and resize a window with the keyboard */
 void moveresize(const Arg *arg) {
     XWindowAttributes wa;
     if (!curr || !XGetWindowAttributes(dis, curr->win, &wa)) return;
-    if (!curr->isfloating && !curr->istransient) { curr->isfloating = True; tile(); focus(curr); }
+    if (!curr->isfloat && !curr->istrans) { curr->isfloat = True; tile(); focus(curr); }
     XMoveResizeWindow(dis, curr->win, wa.x + ((int *)arg->v)[0], wa.y + ((int *)arg->v)[1],
                             wa.width  + ((int *)arg->v)[2], wa.height + ((int *)arg->v)[3]);
 }
@@ -683,7 +683,7 @@ void propertynotify(XEvent *e) {
     Client *c = wintoclient(e->xproperty.window);
     if (!c || e->xproperty.atom != XA_WM_HINTS) return;
     XWMHints *wmh = XGetWMHints(dis, c->win);
-    c->isurgent = (c != curr && wmh && (wmh->flags & XUrgencyHint));
+    c->isurgn = (c != curr && wmh && (wmh->flags & XUrgencyHint));
     if (wmh) XFree(wmh);
     desktopinfo();
 }
@@ -709,7 +709,7 @@ void removeclient(Client *c) {
     if (c == prev) prev = prevclient(curr);
     if (c == curr || (head && !head->next)) focus(prev);
     if (cd != nd) selectdesktop(cd);
-    else if ((!c->isfloating && !c->istransient) || (head && !head->next)) tile();
+    else if (!(c->isfloat || c->istrans) || (head && !head->next)) tile();
     free(c); c = NULL;
 }
 
@@ -733,11 +733,12 @@ void selectdesktop(int i) {
 
 /* set or unset fullscreen state of client */
 void setfullscreen(Client *c, Bool fullscrn) {
-    if (fullscrn != c->isfullscrn) XChangeProperty(dis, c->win,
+    if (fullscrn != c->isfull) XChangeProperty(dis, c->win,
             netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
-            ((c->isfullscrn = fullscrn) ? &netatoms[NET_FULLSCREEN]:0), fullscrn);
+            ((c->isfull = fullscrn) ? &netatoms[NET_FULLSCREEN]:0), fullscrn);
     if (fullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww, wh + PANEL_HEIGHT);
-    XConfigureWindow(dis, c->win, CWBorderWidth, &(XWindowChanges){0,0,0,0,fullscrn?0:BORDER_WIDTH,0,0});
+    XWindowChanges xwc = { 0, 0, 0, 0, fullscrn ? 0:BORDER_WIDTH, 0, 0 };
+    XConfigureWindow(dis, c->win, CWBorderWidth, &xwc);
 }
 
 /* set initial values
@@ -847,8 +848,8 @@ void swap_master(void) {
 
 /* switch the tiling mode and reset all floating windows */
 void switch_mode(const Arg *arg) {
-    if (mode == arg->i && mode != FLOAT) for (Client *c = head; c; c = c->next) c->isfloating = False;
-    if ((mode = arg->i) == FLOAT) for (Client *c = head; c; c = c->next) c->isfloating = True;
+    if (mode == arg->i && mode != FLOAT) for (Client *c = head; c; c = c->next) c->isfloat = False;
+    if ((mode = arg->i) == FLOAT) for (Client *c = head; c; c = c->next) c->isfloat = True;
     tile(); focus(curr);
     desktopinfo();
 }
