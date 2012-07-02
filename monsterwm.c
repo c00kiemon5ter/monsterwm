@@ -102,7 +102,7 @@ typedef struct {
 } AppRule;
 
 /* function prototypes sorted alphabetically */
-static Client* addwindow(Window w);
+static Client* addwindow(Window w, Desktop *d);
 static void buttonpress(XEvent *e);
 static void change_desktop(const Arg *arg);
 static void cleanup(void);
@@ -113,51 +113,48 @@ static void deletewindow(Window w);
 static void desktopinfo(void);
 static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
-static void focus(Client *c);
+static void focus(Client *c, Desktop *d);
 static void focusin(XEvent *e);
 static unsigned long getcolor(const char* color);
 static void grabbuttons(Client *c);
 static void grabkeys(void);
-static void grid(int h, int y);
+static void grid(int h, int y, Desktop *d);
 static void keypress(XEvent *e);
 static void killclient();
 static void maprequest(XEvent *e);
-static void monocle(int h, int y);
+static void monocle(int h, int y, Desktop *d);
 static void move_down();
 static void move_up();
 static void moveresize(const Arg *arg);
 static void mousemotion(const Arg *arg);
 static void next_win();
-static Client* prevclient(Client *c);
+static Client* prevclient(Client *c, Desktop *d);
 static void prev_win();
 static void propertynotify(XEvent *e);
 static void quit();
-static void removeclient(Client *c);
+static void removeclient(Client *c, Desktop *d);
 static void run(void);
-static void selectdesktop(int i);
 static void setfullscreen(Client *c, Bool fullscrn);
 static void setup(void);
 static void sigchld();
 static void spawn(const Arg *arg);
-static void stack(int h, int y);
+static void stack(int h, int y, Desktop *d);
 static void swap_master();
 static void switch_mode(const Arg *arg);
-static void tile(void);
+static void tile(Desktop *d);
 static void unmapnotify(XEvent *e);
-static Client* wintoclient(Window w);
+static Bool wintoclient(Window w, Client **c, Desktop **d);
 static int xerror(Display *dis, XErrorEvent *ee);
 static int xerrorstart();
 
 #include "config.h"
 
 static Bool running = True;
-static int currdeskidx = 0;
-static int screen, wh, ww, mode = DEFAULT_MODE;
+static int screen, wh, ww, currdeskidx = 0;
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0, win_unfocus, win_focus;
 static Display *dis;
 static Window root;
-static Client *head, *prev, *curr;
 static Atom wmatoms[WM_COUNT], netatoms[NET_COUNT];
 static Desktop desktops[DESKTOPS];
 
@@ -173,19 +170,19 @@ static void (*events[LASTEvent])(XEvent *e) = {
 /* layout array - given the current layout mode, tile the windows
  * h (or hh) - avaible height that windows have to expand
  * y (or cy) - offset from top to place the windows (reserved by the panel) */
-static void (*layout[MODES])(int h, int y) = {
+static void (*layout[MODES])(int h, int y, Desktop *d) = {
     [TILE] = stack, [BSTACK] = stack, [GRID] = grid, [MONOCLE] = monocle,
 };
 
 /* create a new client and add the new window
  * window should notify of property change events */
-Client* addwindow(Window w) {
-    Client *c, *t = prevclient(head);
+Client* addwindow(Window w, Desktop *d) {
+    Client *c = NULL, *t = prevclient(d->head, d);
     if (!(c = (Client *)calloc(1, sizeof(Client)))) err(EXIT_FAILURE, "cannot allocate client");
 
-    if (!head) head = c;
-    else if (!ATTACH_ASIDE) { c->next = head; head = c; }
-    else if (t) t->next = c; else head->next = c;
+    if (!d->head) d->head = c;
+    else if (!ATTACH_ASIDE) { c->next = d->head; d->head = c; }
+    else if (t) t->next = c; else d->head->next = c;
 
     XSelectInput(dis, (c->win = w), PropertyChangeMask|FocusChangeMask|(FOLLOW_MOUSE?EnterWindowMask:0));
     return c;
@@ -193,12 +190,17 @@ Client* addwindow(Window w) {
 
 /* on the press of a button check to see if there's a binded function to call */
 void buttonpress(XEvent *e) {
-    Client *c = wintoclient(e->xbutton.window);
-    if (c && CLICK_TO_FOCUS && curr != c && e->xbutton.button == Button1) focus(c);
-    for (unsigned int i = 0; c && i < LENGTH(buttons); i++)
+    Desktop *d = NULL;
+    Client *c = NULL;
+
+    if (!wintoclient(e->xbutton.window, &c, &d)) return;
+
+    if (CLICK_TO_FOCUS && d->curr != c && e->xbutton.button == Button1) focus(c, d);
+
+    for (unsigned int i = 0; i < LENGTH(buttons); i++)
         if (CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state)
                   && buttons[i].button == e->xbutton.button) {
-            if (curr != c) focus(c);
+            if (d->curr != c) focus(c, d);
             if (buttons[i].func) buttons[i].func(&(buttons[i].arg));
         }
 }
@@ -212,12 +214,13 @@ void buttonpress(XEvent *e) {
  * first all others then the current */
 void change_desktop(const Arg *arg) {
     if (arg->i == currdeskidx) return;
-    if (desktops[arg->i].curr) XMapWindow(dis, desktops[arg->i].curr->win);
-    for (Client *c = desktops[arg->i].head; c; c = c->next) XMapWindow(dis, c->win);
-    for (Client *c = head; c; c = c->next) if (c != curr) XUnmapWindow(dis, c->win);
-    if (curr) XUnmapWindow(dis, curr->win);
-    selectdesktop(arg->i);
-    tile(); focus(curr);
+    Desktop *d = &desktops[currdeskidx], *n = &desktops[(currdeskidx = arg->i)];
+    if (n->head) tile(n);
+    if (n->curr) XMapWindow(dis, n->curr->win);
+    for (Client *c = n->head; c; c = c->next) XMapWindow(dis, c->win);
+    for (Client *c = d->head; c; c = c->next) if (c != d->curr) XUnmapWindow(dis, c->win);
+    if (d->curr) XUnmapWindow(dis, d->curr->win);
+    if (n->curr) focus(n->curr, n);
     desktopinfo();
 }
 
@@ -238,22 +241,19 @@ void cleanup(void) {
  * add the current client as the last on the new desktop
  * and then remove it from the current desktop */
 void client_to_desktop(const Arg *arg) {
-    if (!curr || arg->i == currdeskidx) return;
-    int cd = currdeskidx;
-    Client *p = prevclient(curr), *c = curr;
+    if (arg->i == currdeskidx || !desktops[currdeskidx].curr) return;
+    Desktop *d = &desktops[currdeskidx], *n = &desktops[arg->i];
 
-    selectdesktop(arg->i);
-    Client *l = prevclient(head);
-    focus(l ? (l->next = c):head ? (head->next = c):(head = c));
+    Client *p = prevclient(d->curr, d), *l = prevclient(n->head, n);
+    focus(l ? (l->next = d->curr):n->head ? (n->head->next = d->curr):(n->head = d->curr), n);
 
-    selectdesktop(cd);
-    if (c == head || !p) head = c->next; else p->next = c->next;
-    c->next = NULL;
-    XUnmapWindow(dis, c->win);
-    focus(prev);
+    if (d->curr == d->head || !p) d->head = d->curr->next; else p->next = d->curr->next;
+    d->curr->next = NULL;
+    XUnmapWindow(dis, d->curr->win);
+    focus(d->prev, d);
 
     if (FOLLOW_WINDOW) change_desktop(arg);
-    else if (!(c->isfloat || c->istrans) || (head && !head->next)) tile();
+    else if (!(n->curr->isfloat || n->curr->istrans) || (d->head && !d->head->next)) tile(d);
     desktopinfo();
 }
 
@@ -268,14 +268,17 @@ void client_to_desktop(const Arg *arg) {
  *
  * check if window requested fullscreen or activation */
 void clientmessage(XEvent *e) {
-    Client *t = NULL, *c = wintoclient(e->xclient.window);
-    if (c && e->xclient.message_type         == netatoms[NET_WM_STATE]
-          && ((unsigned)e->xclient.data.l[1] == netatoms[NET_FULLSCREEN]
-           || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN])) {
+    Desktop *d = NULL;
+    Client *c = NULL;
+
+    if (!wintoclient(e->xclient.window, &c, &d)) return;
+
+    if (e->xclient.message_type        == netatoms[NET_WM_STATE] && (
+        (unsigned)e->xclient.data.l[1] == netatoms[NET_FULLSCREEN]
+     || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN])) {
         setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfull)));
-        tile();
-    } else if (c && e->xclient.message_type == netatoms[NET_ACTIVE]) for (t = head; t && t != c; t = t->next);
-    if (t) focus(c);
+        if (d->head) tile(d);
+    } else if (e->xclient.message_type == netatoms[NET_ACTIVE]) focus(c, d);
 }
 
 /* a configure request means that the window requested changes in its geometry
@@ -283,14 +286,17 @@ void clientmessage(XEvent *e) {
  * appropriate values as requested, and tile the window again so that it fills
  * the gaps that otherwise could have been created */
 void configurerequest(XEvent *e) {
+    Desktop *d = NULL;
+    Client *c = NULL;
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
-    Client *c = wintoclient(ev->window);
-    if (!c || !c->isfull) {
-        XConfigureWindow(dis, ev->window, ev->value_mask, &(XWindowChanges){ev->x,
-            ev->y, ev->width, ev->height, ev->border_width, ev->above, ev->detail});
+
+    if (!wintoclient(ev->window, &c, &d) || !c->isfull) {
+        XWindowChanges xwc = { ev->x, ev->y,  ev->width, ev->height, ev->border_width, ev->above, ev->detail };
+        XConfigureWindow(dis, ev->window, ev->value_mask, &xwc);
         XSync(dis, False);
     } else setfullscreen(c, True);
-    if (!c || !(c->isfloat || c->istrans)) tile();
+
+    if (!c || !(c->isfloat || c->istrans)) tile(c ? d:&desktops[currdeskidx]);
 }
 
 /* close the window */
@@ -318,32 +324,34 @@ void deletewindow(Window w) {
  *
  * once the info is collected, immediately flush the stream */
 void desktopinfo(void) {
+    Desktop *d = NULL;
+    Client *c = NULL;
     Bool urgent = False;
-    int cd = currdeskidx, n = 0, nd = -1;
-    for (Client *c; nd < DESKTOPS-1;) {
-        for (selectdesktop(++nd), c = head, n = 0, urgent = False; c; urgent |= c->isurgn, c = c->next, ++n);
-        fprintf(stdout, "%d:%d:%d:%d:%d%c", nd, n, mode, currdeskidx == cd, urgent, nd == DESKTOPS-1?'\n':' ');
+
+    for (int w = 0, i = 0; i < DESKTOPS; i++, w = 0, urgent = False) {
+        for (d = &desktops[i], c = d->head; c; urgent |= c->isurgn, ++w, c = c->next);
+        printf("%d:%d:%d:%d:%d%c", i, w, d->mode, i == currdeskidx, urgent, i == DESKTOPS-1 ? '\n':' ');
     }
     fflush(stdout);
-    if (cd != nd) selectdesktop(cd);
 }
 
 /* a destroy notification is received when a window is being closed
  * on receival, remove the appropriate client that held that window */
 void destroynotify(XEvent *e) {
-    Client *c = wintoclient(e->xdestroywindow.window);
-    if (c) removeclient(c);
-    desktopinfo();
+    Desktop *d = NULL;
+    Client *c = NULL;
+    if (wintoclient(e->xdestroywindow.window, &c, &d)) { removeclient(c, d); desktopinfo(); }
 }
 
 /* when the mouse enters a window's borders
  * the window, if notifying of such events (EnterWindowMask)
  * will notify the wm and will get focus */
 void enternotify(XEvent *e) {
-    if (!FOLLOW_MOUSE) return;
-    Client *c = wintoclient(e->xcrossing.window);
-    if (c && e->xcrossing.mode   == NotifyNormal
-          && e->xcrossing.detail != NotifyInferior) focus(c);
+    Desktop *d = NULL;
+    Client *c = NULL;
+
+    if (FOLLOW_MOUSE && wintoclient(e->xcrossing.window, &c, &d) && e->xcrossing.mode == NotifyNormal
+        && e->xcrossing.detail != NotifyInferior && e->xcrossing.window != d->curr->win) focus(c, d);
 }
 
 /* highlight borders and set active window and input focus
@@ -371,31 +379,31 @@ void enternotify(XEvent *e) {
  * client on maprequest(), but since we will be calling this
  * function anyway, we can just grab the buttons for the current
  * client that may be the new client. */
-void focus(Client *c) {
-    if (!head) {
+void focus(Client *c, Desktop *d) {
+    if (!d->head) {
         XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
-        curr = prev = NULL;
+        d->curr = d->prev = NULL;
         return;
-    } else if (c == prev) { prev = prevclient((curr = prev) ? prev:head);
-    } else if (c != curr) { prev = curr; curr = c; }
+    } else if (c == d->prev) { d->prev = prevclient((d->curr = d->prev) ? d->prev:d->head, d);
+    } else if (c != d->curr) { d->prev = d->curr; d->curr = c; }
 
     /* num of n:all fl:fullscreen ft:floating/transient windows */
     int n = 0, fl = 0, ft = 0;
-    for (c = head; c; c = c->next, ++n) if (ISFFT(c)) { fl++; if (!c->isfull) ft++; }
+    for (c = d->head; c; c = c->next, ++n) if (ISFFT(c)) { fl++; if (!c->isfull) ft++; }
     Window w[n];
-    w[(curr->isfloat || curr->istrans) ? 0:ft] = curr->win;
-    for (fl += !ISFFT(curr) ? 1:0, c = head; c; c = c->next) {
-        XSetWindowBorder(dis, c->win, c == curr ? win_focus:win_unfocus);
-        XSetWindowBorderWidth(dis, c->win, (!head->next || c->isfull
-                    || (mode == MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
-        if (c != curr) w[c->isfull ? --fl:ISFFT(c) ? --ft:--n] = c->win;
-        if (CLICK_TO_FOCUS || c == curr) grabbuttons(c);
+    w[(d->curr->isfloat || d->curr->istrans) ? 0:ft] = d->curr->win;
+    for (fl += !ISFFT(d->curr) ? 1:0, c = d->head; c; c = c->next) {
+        XSetWindowBorder(dis, c->win, c == d->curr ? win_focus:win_unfocus);
+        XSetWindowBorderWidth(dis, c->win, (!d->head->next || c->isfull
+                    || (d->mode == MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
+        if (c != d->curr) w[c->isfull ? --fl:ISFFT(c) ? --ft:--n] = c->win;
+        if (CLICK_TO_FOCUS || c == d->curr) grabbuttons(c);
     }
     XRestackWindows(dis, w, LENGTH(w));
 
-    XSetInputFocus(dis, curr->win, RevertToPointerRoot, CurrentTime);
+    XSetInputFocus(dis, d->curr->win, RevertToPointerRoot, CurrentTime);
     XChangeProperty(dis, root, netatoms[NET_ACTIVE], XA_WINDOW, 32,
-                    PropModeReplace, (unsigned char *)&curr->win, 1);
+                    PropModeReplace, (unsigned char *)&d->curr->win, 1);
 
     XSync(dis, False);
 }
@@ -406,7 +414,11 @@ void focus(Client *c) {
  * input (mouse/kbd) focus from the current and
  * highlighted client - this gives focus back */
 void focusin(XEvent *e) {
-    if (curr && curr->win != e->xfocus.window) focus(curr);
+    Desktop *d = NULL;
+    Client *c = NULL;
+
+    if (!wintoclient(e->xfocus.window, &c, &d)) return;
+    else if (d->curr && e->xfocus.window != d->curr->win) focus(d->curr, d);
 }
 
 /* get a pixel with the requested color
@@ -422,8 +434,8 @@ void grabbuttons(Client *c) {
     unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
     if (CLICK_TO_FOCUS) for (unsigned int m = 0; m < LENGTH(modifiers); m++)
-        if (c != curr) XGrabButton(dis, Button1, modifiers[m], c->win, False,
-                          BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
+        if (c != desktops[currdeskidx].curr) XGrabButton(dis, Button1, modifiers[m],
+                c->win, False, BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
         else XUngrabButton(dis, Button1, modifiers[m], c->win);
 
     for (unsigned int b = 0; b < LENGTH(buttons); b++)
@@ -445,14 +457,14 @@ void grabkeys(void) {
 }
 
 /* arrange windows in a grid */
-void grid(int hh, int cy) {
+void grid(int hh, int cy, Desktop *d) {
     int n = 0, cols = 0, cn = 0, rn = 0, i = -1;
-    for (Client *c = head; c; c = c->next) if (!ISFFT(c)) ++n;
+    for (Client *c = d->head; c; c = c->next) if (!ISFFT(c)) ++n;
     for (cols = 0; cols <= n/2; cols++) if (cols*cols >= n) break; /* emulate square root */
     if (n == 0) return; else if (n == 5) cols = 2;
 
     int rows = n/cols, ch = hh - BORDER_WIDTH, cw = (ww - BORDER_WIDTH)/(cols ? cols:1);
-    for (Client *c = head; c; c = c->next) {
+    for (Client *c = d->head; c; c = c->next) {
         if (ISFFT(c)) continue; else ++i;
         if (i/rows + 1 > cols - n%cols) rows = n/cols + 1;
         XMoveResizeWindow(dis, c->win, cn*cw, cy + rn*ch/rows, cw - BORDER_WIDTH, ch/rows - BORDER_WIDTH);
@@ -471,11 +483,14 @@ void keypress(XEvent *e) {
 /* explicitly kill a client - close the highlighted window
  * send a delete message and remove the client */
 void killclient(void) {
-    if (!curr) return;
+    Desktop *d = &desktops[currdeskidx];
+    if (!d->curr) return;
+
     Atom *prot; int n = -1;
-    if (XGetWMProtocols(dis, curr->win, &prot, &n)) while(--n >= 0 && prot[n] != wmatoms[WM_DELETE_WINDOW]);
-    if (n < 0) XKillClient(dis, curr->win); else deletewindow(curr->win);
-    removeclient(curr);
+    if (XGetWMProtocols(dis, d->curr->win, &prot, &n))
+        while(--n >= 0 && prot[n] != wmatoms[WM_DELETE_WINDOW]);
+    if (n < 0) XKillClient(dis, d->curr->win); else deletewindow(d->curr->win);
+    removeclient(d->curr, d);
 }
 
 /* a map request is received when a window wants to display itself
@@ -488,17 +503,21 @@ void killclient(void) {
  * if the desktop in which the window is to be spawned is the current desktop
  * then display/map the window, else, if follow is set, focus the new desktop. */
 void maprequest(XEvent *e) {
-    static XWindowAttributes wa; Window w;
+    Desktop *d = NULL;
+    Client *c = NULL;
+    XWindowAttributes wa; Window w;
+
     if (XGetWindowAttributes(dis, e->xmaprequest.window, &wa) && wa.override_redirect) return;
-    if (wintoclient(e->xmaprequest.window)) return;
+    if (wintoclient(e->xmaprequest.window, &c, &d)) return;
 
     Bool follow = False, floating = False;
-    int cd = currdeskidx, newdsk = currdeskidx;
+    int newdsk = currdeskidx;
+
     XClassHint ch = {0, 0};
     if (XGetClassHint(dis, e->xmaprequest.window, &ch))
         for (unsigned int i = 0; i < LENGTH(rules); i++)
             if (strstr(ch.res_class, rules[i].class) || strstr(ch.res_name, rules[i].class)) {
-                newdsk = (rules[i].desktop < 0) ? currdeskidx:rules[i].desktop;
+                if (rules[i].desktop >= 0) newdsk = rules[i].desktop;
                 follow = rules[i].follow;
                 floating = rules[i].floating;
                 break;
@@ -506,10 +525,9 @@ void maprequest(XEvent *e) {
     if (ch.res_class) XFree(ch.res_class);
     if (ch.res_name) XFree(ch.res_name);
 
-    if (cd != newdsk) selectdesktop(newdsk);
-    Client *c = addwindow(e->xmaprequest.window);
+    c = addwindow(e->xmaprequest.window, (d = &desktops[newdsk]));
     c->istrans = XGetTransientForHint(dis, c->win, &w);
-    if ((c->isfloat = floating || mode == FLOAT || c->istrans))
+    if ((c->isfloat = (floating || d->mode == FLOAT)) && !c->istrans)
         XMoveWindow(dis, c->win, (ww - wa.width)/2, (wh - wa.height)/2);
 
     int di; unsigned long dl; unsigned char *state = NULL; Atom da;
@@ -518,10 +536,9 @@ void maprequest(XEvent *e) {
         setfullscreen(c, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
     if (state) XFree(state);
 
-    if (cd != newdsk) selectdesktop(cd);
-    if (cd == newdsk) { if (!c->isfloat) tile(); XMapWindow(dis, c->win); }
+    if (currdeskidx == newdsk) { if (!ISFFT(c)) tile(d); XMapWindow(dis, c->win); }
     else if (follow) change_desktop(&(Arg){.i = newdsk});
-    if (follow || cd == newdsk) focus(c);
+    focus(c, d);
 
     desktopinfo();
 }
@@ -536,17 +553,19 @@ void maprequest(XEvent *e) {
  * Ungrab the poitner and event handling is passed back to run() function.
  * Once a window has been moved or resized, it's marked as floating. */
 void mousemotion(const Arg *arg) {
-    static XWindowAttributes wa;
-    if (!curr || !XGetWindowAttributes(dis, curr->win, &wa)) return;
+    Desktop *d = &desktops[currdeskidx];
+    XWindowAttributes wa;
+
+    if (!d->curr || !XGetWindowAttributes(dis, d->curr->win, &wa)) return;
 
     if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
                      GrabModeAsync, None, None, CurrentTime) != GrabSuccess) return;
-    if (arg->i == RESIZE) XWarpPointer(dis, None, curr->win, 0, 0, 0, 0, wa.width, wa.height);
+    if (arg->i == RESIZE) XWarpPointer(dis, None, d->curr->win, 0, 0, 0, 0, wa.width, wa.height);
     int rx, ry, c, xw, yh; unsigned int m; Window w;
     XQueryPointer(dis, root, &w, &w, &rx, &ry, &c, &c, &m);
 
-    if (curr->isfull) setfullscreen(curr, False);
-    if (!curr->isfloat && !curr->istrans) { curr->isfloat = True; tile(); focus(curr); }
+    if (d->curr->isfull) setfullscreen(d->curr, False);
+    if (!d->curr->isfloat && !d->curr->istrans) { d->curr->isfloat = True; tile(d); focus(d->curr, d); }
 
     XEvent ev;
     do {
@@ -558,9 +577,9 @@ void mousemotion(const Arg *arg) {
             case MotionNotify:
                 xw = (arg->i == MOVE ? wa.x:wa.width)  + ev.xmotion.x - rx;
                 yh = (arg->i == MOVE ? wa.y:wa.height) + ev.xmotion.y - ry;
-                if (arg->i == RESIZE) XResizeWindow(dis, curr->win,
+                if (arg->i == RESIZE) XResizeWindow(dis, d->curr->win,
                    xw > MINWSZ ? xw:wa.width, yh > MINWSZ ? yh:wa.height);
-                else if (arg->i == MOVE) XMoveWindow(dis, curr->win, xw, yh);
+                else if (arg->i == MOVE) XMoveWindow(dis, d->curr->win, xw, yh);
                 break;
         }
     } while(ev.type != ButtonRelease);
@@ -568,16 +587,17 @@ void mousemotion(const Arg *arg) {
 }
 
 /* each window should cover all the available screen space */
-void monocle(int hh, int cy) {
-    for (Client *c = head; c; c = c->next) if (!ISFFT(c)) XMoveResizeWindow(dis, c->win, 0, cy, ww, hh);
+void monocle(int hh, int cy, Desktop *d) {
+    for (Client *c = d->head; c; c = c->next) if (!ISFFT(c)) XMoveResizeWindow(dis, c->win, 0, cy, ww, hh);
 }
 
 /* move the current client, to current->next
  * and current->next to current client's position */
 void move_down(void) {
-    if (!curr || !head->next) return;
+    Desktop *d = &desktops[currdeskidx];
+    if (!d->curr || !d->head->next) return;
     /* p is previous, c is current, n is next, if current is head n is last */
-    Client *p = prevclient(curr), *n = (curr->next) ? curr->next:head;
+    Client *p = prevclient(d->curr, d), *n = (d->curr->next) ? d->curr->next:d->head;
     /*
      * if c is head, swapping with n should update head to n
      * [c]->[n]->..  ==>  [n]->[c]->..
@@ -586,7 +606,7 @@ void move_down(void) {
      * else there is a previous client and p->next should be what's after c
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
      */
-    if (curr == head) head = n; else p->next = curr->next;
+    if (d->curr == d->head) d->head = n; else p->next = d->curr->next;
     /*
      * if c is the last client, c will be the current head
      * [n]->..->[p]->[c]->NULL  ==>  [c]->[n]->..->[p]->NULL
@@ -594,7 +614,7 @@ void move_down(void) {
      * else c will take the place of n, so c-next will be n->next
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->[c]->..
      */
-    curr->next = (curr->next) ? n->next:n;
+    d->curr->next = (d->curr->next) ? n->next:n;
     /*
      * if c was swapped with n then they now point to the same ->next. n->next should be c
      * ..->[p]->[c]->[n]->..  ==>  ..->[p]->[n]->..  ==>  ..->[p]->[n]->[c]->..
@@ -605,18 +625,19 @@ void move_down(void) {
      * [n]->..->[p]->[c]->NULL  ==>  [c]->[n]->..->[p]->NULL
      *  ^head                         ^head
      */
-    if (curr->next == n->next) n->next = curr; else head = curr;
-    if (!curr->isfloat && !curr->istrans) tile();
+    if (d->curr->next == n->next) n->next = d->curr; else d->head = d->curr;
+    if (!d->curr->isfloat && !d->curr->istrans) tile(d);
 }
 
 /* move the current client, to the previous from current and
  * the previous from  current to current client's position */
 void move_up(void) {
-    if (!curr || !head->next) return;
+    Desktop *d = &desktops[currdeskidx];
+    if (!d->curr || !d->head->next) return;
     /* p is previous from current or last if current is head */
-    Client *pp = NULL, *p = prevclient(curr);
+    Client *pp = NULL, *p = prevclient(d->curr, d);
     /* pp is previous from p, or null if current is head and thus p is last */
-    if (p->next) for (pp = head; pp && pp->next != p; pp = pp->next);
+    if (p->next) for (pp = d->head; pp && pp->next != p; pp = pp->next);
     /*
      * if p has a previous client then the next client should be current (current is c)
      * ..->[pp]->[p]->[c]->..  ==>  ..->[pp]->[c]->[p]->..
@@ -628,7 +649,7 @@ void move_up(void) {
      * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
      *  ^head         ^last           ^head         ^last
      */
-    if (pp) pp->next = curr; else head = (curr == head) ? curr->next:curr;
+    if (pp) pp->next = d->curr; else d->head = (d->curr == d->head) ? d->curr->next:d->curr;
     /*
      * next of p should be next of c
      * ..->[pp]->[p]->[c]->[n]->..  ==>  ..->[pp]->[c]->[p]->[n]->..
@@ -636,7 +657,7 @@ void move_up(void) {
      * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
      *  ^head         ^last           ^head         ^last
      */
-    p->next = (curr->next == head) ? curr:curr->next;
+    p->next = (d->curr->next == d->head) ? d->curr:d->curr->next;
     /*
      * next of c should be p
      * ..->[pp]->[p]->[c]->[n]->..  ==>  ..->[pp]->[c]->[p]->[n]->..
@@ -644,46 +665,50 @@ void move_up(void) {
      * [c]->[n]->..->[p]->NULL  ==>  [n]->..->[p]->[c]->NULL
      *  ^head         ^last           ^head         ^last
      */
-    curr->next = (curr->next == head) ? NULL:p;
-    if (!curr->isfloat && !curr->istrans) tile();
+    d->curr->next = (d->curr->next == d->head) ? NULL:p;
+    if (!d->curr->isfloat && !d->curr->istrans) tile(d);
 }
 
 /* move and resize a window with the keyboard */
 void moveresize(const Arg *arg) {
+    Desktop *d = &desktops[currdeskidx];
     XWindowAttributes wa;
-    if (!curr || !XGetWindowAttributes(dis, curr->win, &wa)) return;
-    if (!curr->isfloat && !curr->istrans) { curr->isfloat = True; tile(); focus(curr); }
-    XMoveResizeWindow(dis, curr->win, wa.x + ((int *)arg->v)[0], wa.y + ((int *)arg->v)[1],
-                            wa.width  + ((int *)arg->v)[2], wa.height + ((int *)arg->v)[3]);
+    if (!d->curr || !XGetWindowAttributes(dis, d->curr->win, &wa)) return;
+    if (!d->curr->isfloat && !d->curr->istrans) { d->curr->isfloat = True; tile(d); focus(d->curr, d); }
+    XMoveResizeWindow(dis, d->curr->win, wa.x + ((int *)arg->v)[0], wa.y + ((int *)arg->v)[1],
+                                wa.width + ((int *)arg->v)[2], wa.height + ((int *)arg->v)[3]);
 }
 
 /* cyclic focus the next window
  * if the window is the last on stack, focus head */
 void next_win(void) {
-    if (curr && head->next) focus(curr->next ? curr->next:head);
+    Desktop *d = &desktops[currdeskidx];
+    if (d->curr && d->head->next) focus(d->curr->next ? d->curr->next:d->head, d);
 }
 
 /* get the previous client from the given
  * if no such client, return NULL */
-Client* prevclient(Client *c) {
+Client* prevclient(Client *c, Desktop *d) {
     Client *p = NULL;
-    if (c && head->next) for (p = head; p->next && p->next != c; p = p->next);
+    if (c && d->head && d->head->next) for (p = d->head; p->next && p->next != c; p = p->next);
     return p;
 }
 
 /* cyclic focus the previous window
  * if the window is the head, focus the last stack window */
 void prev_win(void) {
-    if (curr && head->next) focus(prevclient(prev = curr));
+    Desktop *d = &desktops[currdeskidx];
+    if (d->curr && d->head->next) focus(prevclient((d->prev = d->curr), d), d);
 }
 
 /* property notify is called when one of the window's properties
  * is changed, such as an urgent hint is received */
 void propertynotify(XEvent *e) {
-    Client *c = wintoclient(e->xproperty.window);
-    if (!c || e->xproperty.atom != XA_WM_HINTS) return;
+    Desktop *d = NULL;
+    Client *c = NULL;
+    if (e->xproperty.atom != XA_WM_HINTS || !wintoclient(e->xproperty.window, &c, &d)) return;
     XWMHints *wmh = XGetWMHints(dis, c->win);
-    c->isurgn = (c != curr && wmh && (wmh->flags & XUrgencyHint));
+    c->isurgn = (c != d->curr && wmh && (wmh->flags & XUrgencyHint));
     if (wmh) XFree(wmh);
     desktopinfo();
 }
@@ -700,35 +725,20 @@ void quit(void) {
  * we must always return back to the current focused desktop
  * if c was the previous client, previous must be updated.
  * if c was the current client, current must be updated. */
-void removeclient(Client *c) {
+void removeclient(Client *c, Desktop *d) {
     Client **p = NULL;
-    int nd = -1, cd = currdeskidx;
-    for (Bool found = False; nd < DESKTOPS-1 && !found;)
-        for (selectdesktop(++nd), p = &head; *p && !(found = *p == c); p = &(*p)->next);
-    *p = c->next;
-    if (c == prev) prev = prevclient(curr);
-    if (c == curr || (head && !head->next)) focus(prev);
-    if (cd != nd) selectdesktop(cd);
-    else if (!(c->isfloat || c->istrans) || (head && !head->next)) tile();
-    free(c); c = NULL;
+    for (p = &d->head; *p && (*p != c); p = &(*p)->next);
+    if (!*p) return; else *p = c->next;
+    if (c == d->prev) d->prev = prevclient(d->curr, d);
+    if (c == d->curr || (d->head && !d->head->next)) focus(d->prev, d);
+    if (!(c->isfloat || c->istrans) || (d->head && !d->head->next)) tile(d);
+    free(c);
 }
 
 /* main event loop - on receival of an event call the appropriate event handler */
 void run(void) {
     XEvent ev;
     while(running && !XNextEvent(dis, &ev)) if (events[ev.type]) events[ev.type](&ev);
-}
-
-/* save the current desktop's properties
- * load the specified desktop's properties */
-void selectdesktop(int i) {
-    if (i < 0 || i >= DESKTOPS || i == currdeskidx) return;
-    desktops[currdeskidx] = (Desktop){ .mode = mode, .head = head, .curr = curr, .prev = prev, };
-    mode = desktops[i].mode;
-    head = desktops[i].head;
-    curr = desktops[i].curr;
-    prev = desktops[i].prev;
-    currdeskidx = i;
 }
 
 /* set or unset fullscreen state of client */
@@ -753,7 +763,8 @@ void setup(void) {
 
     ww = XDisplayWidth(dis,  screen);
     wh = XDisplayHeight(dis, screen) - PANEL_HEIGHT;
-    for (unsigned int d = 0; d < DESKTOPS;) desktops[d++] = (Desktop){ .mode = mode, };
+
+    for (unsigned int d = 0; d < DESKTOPS; d++) desktops[d] = (Desktop){ .mode = DEFAULT_MODE };
 
     win_focus = getcolor(FOCUS);
     win_unfocus = getcolor(UNFOCUS);
@@ -801,23 +812,23 @@ void spawn(const Arg *arg) {
 }
 
 /* arrange windows in normal or bottom stack tile */
-void stack(int hh, int cy) {
-    Client *c = NULL, *t = NULL; Bool b = (mode == BSTACK);
-    int n = 0, d = 0, z = b ? ww:hh, ma = (b ? hh:ww) * MASTER_SIZE;
+void stack(int hh, int cy, Desktop *d) {
+    Client *c = NULL, *t = NULL; Bool b = (d->mode == BSTACK);
+    int n = 0, p = 0, z = b ? ww:hh, ma = (b ? hh:ww) * MASTER_SIZE;
 
     /* count stack windows and grab first non-floating, non-fullscreen window */
-    for (t = head; t; t = t->next) if (!ISFFT(t)) { if (c) ++n; else c = t; }
+    for (t = d->head; t; t = t->next) if (!ISFFT(t)) { if (c) ++n; else c = t; }
 
     /* if there is only one window, it should cover the available screen space
      * if there is only one stack window (n == 1) then we don't care about the adjustments
      * if more than one stack windows (n > 1) on screen then adjustments may be needed
-     *   - d is the num of pixels than remain when spliting
+     *   - p is the num of pixels than remain when spliting
      *   the available width/height to the number of windows
      *   - z is the clients' height/width */
     if (!c) return; else if (!n) {
         XMoveResizeWindow(dis, c->win, 0, cy, ww - 2*BORDER_WIDTH, hh - 2*BORDER_WIDTH);
         return;
-    } else if (n > 1) { d = z%n; z /= n; }
+    } else if (n > 1) { p = z%n; z /= n; }
 
     /* tile the first non-floating, non-fullscreen window to cover the master area */
     if (b) XMoveResizeWindow(dis, c->win, 0, cy, ww - 2*BORDER_WIDTH, ma - BORDER_WIDTH);
@@ -828,7 +839,7 @@ void stack(int hh, int cy) {
     for (cy += b ? ma:0, c = c->next; c; c = c->next) {
         if (ISFFT(c)) continue;
         for (t = c->next; t && ISFFT(t); t = t->next);
-        if (!t) ch += d - BORDER_WIDTH; /* add remaining space to last window */
+        if (!t) ch += p - BORDER_WIDTH; /* add remaining space to last window */
         if (b) { XMoveResizeWindow(dis, c->win, cx, cy, ch, cw); cx += z; }
         else   { XMoveResizeWindow(dis, c->win, cx, cy, cw, ch); cy += z; }
     }
@@ -840,40 +851,44 @@ void stack(int hh, int cy) {
  * is behind us, so move_up until we
  * are the head */
 void swap_master(void) {
-    if (!curr || !head->next) return;
-    if (curr == head) move_down();
-    else while (curr != head) move_up();
-    focus(head);
+    Desktop *d = &desktops[currdeskidx];
+    if (!d->curr || !d->head->next) return;
+    if (d->curr == d->head) move_down();
+    else while (d->curr != d->head) move_up();
+    focus(d->head, d);
 }
 
 /* switch the tiling mode and reset all floating windows */
 void switch_mode(const Arg *arg) {
-    if (mode == arg->i && mode != FLOAT) for (Client *c = head; c; c = c->next) c->isfloat = False;
-    if ((mode = arg->i) == FLOAT) for (Client *c = head; c; c = c->next) c->isfloat = True;
-    tile(); focus(curr);
+    Desktop *d = &desktops[currdeskidx];
+    if (d->mode == arg->i && d->mode != FLOAT)
+        for (Client *c = d->head; c; c = c->next) c->isfloat = False;
+    if ((d->mode = arg->i) == FLOAT)
+        for (Client *c = d->head; c; c = c->next) c->isfloat = True;
+    tile(d);
+    focus(d->curr, d);
     desktopinfo();
 }
 
 /* tile all windows of current desktop - call the handler tiling function */
-void tile(void) {
-    if (!head || mode == FLOAT) return; /* nothing to arange */
-    layout[head->next ? mode:MONOCLE](wh, TOP_PANEL ? PANEL_HEIGHT:0);
+void tile(Desktop *d) {
+    if (!d->head || d->mode == FLOAT) return; /* nothing to arange */
+    layout[d->head->next ? d->mode:MONOCLE](wh, TOP_PANEL ? PANEL_HEIGHT:0, d);
 }
 
 /* windows that request to unmap should lose their
  * client, so no invisible windows exist on screen */
 void unmapnotify(XEvent *e) {
-    Client *c = wintoclient(e->xunmap.window);
-    if (e->xunmap.send_event && c) { removeclient(c); desktopinfo(); }
+    Desktop *d = NULL;
+    Client *c = NULL;
+    if (e->xunmap.send_event && wintoclient(e->xunmap.window, &c, &d)) { removeclient(c, d); desktopinfo(); }
 }
 
-/* find to which client the given window belongs to */
-Client* wintoclient(Window w) {
-    Client *c = NULL;
-    int nd = -1, cd = currdeskidx;
-    while (nd < DESKTOPS-1 && !c) for (selectdesktop(++nd), c = head; c && w != c->win; c = c->next);
-    if (cd != nd) selectdesktop(cd);
-    return c;
+/* find to which client and desktop the given window belongs to */
+Bool wintoclient(Window w, Client **c, Desktop **d) {
+    for (int i = 0; i < DESKTOPS && !*c; i++)
+        for (*d = &desktops[i], *c = (*d)->head; *c && (*c)->win != w; *c = (*c)->next);
+    return (*c != NULL);
 }
 
 /* There's no way to check accesses to destroyed windows, thus those cases are
