@@ -180,7 +180,7 @@ Client* addwindow(Window w, Desktop *d) {
     Client *c = NULL, *t = prevclient(d->head, d);
     if (!(c = (Client *)calloc(1, sizeof(Client)))) err(EXIT_FAILURE, "cannot allocate client");
 
-    if (!d->head) d->head = c;
+    if (!d->head) d->head = d->curr = c;
     else if (!ATTACH_ASIDE) { c->next = d->head; d->head = c; }
     else if (t) t->next = c; else d->head->next = c;
 
