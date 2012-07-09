@@ -252,7 +252,7 @@ void client_to_desktop(const Arg *arg) {
 
     if (FOLLOW_WINDOW) change_desktop(arg);
     else if (!(n->curr->isfloat || n->curr->istrans) || (d->head && !d->head->next)) tile(d);
-    desktopinfo();
+    if (!FOLLOW_WINDOW) desktopinfo();
 }
 
 /* To change the state of a mapped window, a client MUST
@@ -331,7 +331,7 @@ void desktopinfo(void) {
 void destroynotify(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
-    if (wintoclient(e->xdestroywindow.window, &c, &d)) { removeclient(c, d); desktopinfo(); }
+    if (wintoclient(e->xdestroywindow.window, &c, &d)) removeclient(c, d);
 }
 
 /* when the mouse enters a window's borders
@@ -529,7 +529,7 @@ void maprequest(XEvent *e) {
     else if (follow) change_desktop(&(Arg){.i = newdsk});
     focus(c, d);
 
-    desktopinfo();
+    if (!follow) desktopinfo();
 }
 
 /* grab the pointer and get it's current position
@@ -717,6 +717,7 @@ void removeclient(Client *c, Desktop *d) {
     if (c == d->curr || (d->head && !d->head->next)) focus(d->prev, d);
     if (!(c->isfloat || c->istrans) || (d->head && !d->head->next)) tile(d);
     free(c);
+    desktopinfo();
 }
 
 /* main event loop - on receival of an event call the appropriate event handler */
@@ -866,7 +867,7 @@ void tile(Desktop *d) {
 void unmapnotify(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
-    if (e->xunmap.send_event && wintoclient(e->xunmap.window, &c, &d)) { removeclient(c, d); desktopinfo(); }
+    if (e->xunmap.send_event && wintoclient(e->xunmap.window, &c, &d)) removeclient(c, d);
 }
 
 /* find to which client and desktop the given window belongs to */
