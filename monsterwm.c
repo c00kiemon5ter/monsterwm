@@ -240,7 +240,7 @@ void cleanup(void) {
  * add the current client as the last on the new desktop
  * and then remove it from the current desktop */
 void client_to_desktop(const Arg *arg) {
-    if (arg->i == currdeskidx || !desktops[currdeskidx].curr) return;
+    if (arg->i == currdeskidx || arg->i < 0 || arg->i >= DESKTOPS || !desktops[currdeskidx].curr) return;
     Desktop *d = &desktops[currdeskidx], *n = &desktops[arg->i];
 
     Client *p = prevclient(d->curr, d), *l = prevclient(n->head, n);
