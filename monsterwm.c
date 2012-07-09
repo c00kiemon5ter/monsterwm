@@ -115,7 +115,7 @@ static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
 static void focus(Client *c, Desktop *d);
 static void focusin(XEvent *e);
-static unsigned long getcolor(const char* color);
+static unsigned long getcolor(const char* color, const int screen);
 static void grabbuttons(Client *c);
 static void grabkeys(void);
 static void grid(int h, int y, Desktop *d);
@@ -150,7 +150,7 @@ static int xerrorstart();
 #include "config.h"
 
 static Bool running = True;
-static int screen, wh, ww, currdeskidx = 0;
+static int wh, ww, currdeskidx = 0;
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0, win_unfocus, win_focus;
 static Display *dis;
@@ -422,7 +422,7 @@ void focusin(XEvent *e) {
 
 /* get a pixel with the requested color
  * to fill some window area - borders */
-unsigned long getcolor(const char* color) {
+unsigned long getcolor(const char* color, const int screen) {
     XColor c; Colormap map = DefaultColormap(dis, screen);
     if (!XAllocNamedColor(dis, map, color, &c, &c)) err(EXIT_FAILURE, "cannot allocate color");
     return c.pixel;
@@ -751,7 +751,7 @@ void setfullscreen(Client *c, Bool fullscrn) {
 void setup(void) {
     sigchld();
 
-    screen = DefaultScreen(dis);
+    const int screen = DefaultScreen(dis);
     root = RootWindow(dis, screen);
 
     ww = XDisplayWidth(dis,  screen);
@@ -759,8 +759,8 @@ void setup(void) {
 
     for (unsigned int d = 0; d < DESKTOPS; d++) desktops[d] = (Desktop){ .mode = DEFAULT_MODE };
 
-    win_focus = getcolor(FOCUS);
-    win_unfocus = getcolor(UNFOCUS);
+    win_focus = getcolor(FOCUS, screen);
+    win_unfocus = getcolor(UNFOCUS, screen);
 
     XModifierKeymap *modmap = XGetModifierMapping(dis);
     for (int k = 0; k < 8; k++) for (int j = 0; j < modmap->max_keypermod; j++)
