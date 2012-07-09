@@ -215,12 +215,11 @@ void buttonpress(XEvent *e) {
 void change_desktop(const Arg *arg) {
     if (arg->i == currdeskidx) return;
     Desktop *d = &desktops[currdeskidx], *n = &desktops[(currdeskidx = arg->i)];
-    if (n->head) tile(n);
     if (n->curr) XMapWindow(dis, n->curr->win);
     for (Client *c = n->head; c; c = c->next) XMapWindow(dis, c->win);
     for (Client *c = d->head; c; c = c->next) if (c != d->curr) XUnmapWindow(dis, c->win);
     if (d->curr) XUnmapWindow(dis, d->curr->win);
-    if (n->curr) focus(n->curr, n);
+    if (n->head) { tile(n); focus(n->curr, n); }
     desktopinfo();
 }
 
@@ -277,7 +276,7 @@ void clientmessage(XEvent *e) {
         (unsigned)e->xclient.data.l[1] == netatoms[NET_FULLSCREEN]
      || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN])) {
         setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfull)));
-        if (d->head) tile(d);
+        if (!(c->isfloat || c->istrans) || !d->head->next) tile(d);
     } else if (e->xclient.message_type == netatoms[NET_ACTIVE]) focus(c, d);
 }
 
@@ -865,8 +864,7 @@ void switch_mode(const Arg *arg) {
         for (Client *c = d->head; c; c = c->next) c->isfloat = False;
     if ((d->mode = arg->i) == FLOAT)
         for (Client *c = d->head; c; c = c->next) c->isfloat = True;
-    tile(d);
-    focus(d->curr, d);
+    if (d->head) { tile(d); focus(d->curr, d); }
     desktopinfo();
 }
 
