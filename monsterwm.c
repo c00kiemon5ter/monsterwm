@@ -136,7 +136,7 @@ static void removeclient(Client *c, Desktop *d);
 static void run(void);
 static void setfullscreen(Client *c, Desktop *d, Bool fullscrn);
 static void setup(void);
-static void sigchld();
+static void sigchld(int sig);
 static void spawn(const Arg *arg);
 static void stack(int h, int y, Desktop *d);
 static void swap_master();
@@ -145,7 +145,7 @@ static void tile(Desktop *d);
 static void unmapnotify(XEvent *e);
 static Bool wintoclient(Window w, Client **c, Desktop **d);
 static int xerror(Display *dis, XErrorEvent *ee);
-static int xerrorstart();
+static int xerrorstart(Display *dis, XErrorEvent *ee);
 
 #include "config.h"
 
@@ -740,7 +740,7 @@ void setfullscreen(Client *c, Desktop *d, Bool fullscrn) {
  * set masks for reporting events handled by the wm
  * and propagate the suported net atoms */
 void setup(void) {
-    sigchld();
+    sigchld(0);
 
     const int screen = DefaultScreen(dis);
     root = RootWindow(dis, screen);
@@ -781,7 +781,7 @@ void setup(void) {
     grabkeys();
 }
 
-void sigchld() {
+void sigchld(__attribute__((unused)) int sig) {
     if (signal(SIGCHLD, sigchld) != SIG_ERR) while(0 < waitpid(-1, NULL, WNOHANG));
     else err(EXIT_FAILURE, "cannot install SIGCHLD handler");
 }
@@ -872,10 +872,11 @@ Bool wintoclient(Window w, Client **c, Desktop **d) {
     return (*c != NULL);
 }
 
-/* There's no way to check accesses to destroyed windows, thus those cases are
- * ignored (especially on UnmapNotify's). Other types of errors call Xlibs
- * default error handler, which may call exit through xerrorlib. */
-int xerror(Display *dis, XErrorEvent *ee) {
+/**
+ * There's no way to check accesses to destroyed windows,
+ * thus those cases are ignored (especially on UnmapNotify's).
+ */
+int xerror(__attribute__((unused)) Display *dis, XErrorEvent *ee) {
     if (ee->error_code == BadWindow   || (ee->error_code == BadAccess && ee->request_code == X_GrabKey)
     || (ee->error_code == BadMatch    && (ee->request_code == X_SetInputFocus
                                       ||  ee->request_code == X_ConfigureWindow))
@@ -886,8 +887,12 @@ int xerror(Display *dis, XErrorEvent *ee) {
     return xerrorxlib(dis, ee);
 }
 
-int xerrorstart(void) {
-    err(EXIT_FAILURE, "another window manager is already running");
+/**
+ * error handler function to display an appropriate error message
+ * when the window manager initializes (see setup - XSetErrorHandler)
+ */
+int xerrorstart(__attribute__((unused)) Display *dis, __attribute__((unused)) XErrorEvent *ee) {
+    errx(EXIT_FAILURE, "xerror: another window manager is already running");
 }
 
 int main(int argc, char *argv[]) {
