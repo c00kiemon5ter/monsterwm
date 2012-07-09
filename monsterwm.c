@@ -900,7 +900,7 @@ int xerrorstart(__attribute__((unused)) Display *dis, __attribute__((unused)) XE
 
 int main(int argc, char *argv[]) {
     if (argc == 2 && !strncmp(argv[1], "-v", 3))
-        errx(EXIT_SUCCESS, "version-%s - by c00kiemon5ter >:3 omnomnomnom", VERSION);
+        errx(EXIT_SUCCESS, "version: %s - by c00kiemon5ter >:3 omnomnomnom", VERSION);
     else if (argc != 1) errx(EXIT_FAILURE, "usage: man monsterwm");
     if (!(dis = XOpenDisplay(NULL))) errx(EXIT_FAILURE, "cannot open display");
     setup();
