@@ -552,11 +552,12 @@ void maprequest(XEvent *e) {
 void mousemotion(const Arg *arg) {
     Desktop *d = &desktops[currdeskidx];
     XWindowAttributes wa;
+    XEvent ev;
 
     if (!d->curr || !XGetWindowAttributes(dis, d->curr->win, &wa)) return;
-
     if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
                      GrabModeAsync, None, None, CurrentTime) != GrabSuccess) return;
+
     if (arg->i == RESIZE) XWarpPointer(dis, None, d->curr->win, 0, 0, 0, 0, wa.width, wa.height);
     int rx, ry, c, xw, yh; unsigned int m; Window w;
     XQueryPointer(dis, root, &w, &w, &rx, &ry, &c, &c, &m);
@@ -564,22 +565,17 @@ void mousemotion(const Arg *arg) {
     if (d->curr->isfull) setfullscreen(d->curr, False);
     if (!d->curr->isfloat && !d->curr->istrans) { d->curr->isfloat = True; tile(d); focus(d->curr, d); }
 
-    XEvent ev;
     do {
         XMaskEvent(dis, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
-        switch (ev.type) {
-            case ConfigureRequest: case MapRequest:
-                events[ev.type](&ev);
-                break;
-            case MotionNotify:
-                xw = (arg->i == MOVE ? wa.x:wa.width)  + ev.xmotion.x - rx;
-                yh = (arg->i == MOVE ? wa.y:wa.height) + ev.xmotion.y - ry;
-                if (arg->i == RESIZE) XResizeWindow(dis, d->curr->win,
-                   xw > MINWSZ ? xw:wa.width, yh > MINWSZ ? yh:wa.height);
-                else if (arg->i == MOVE) XMoveWindow(dis, d->curr->win, xw, yh);
-                break;
-        }
-    } while(ev.type != ButtonRelease);
+        if (ev.type == MotionNotify) {
+            xw = (arg->i == MOVE ? wa.x:wa.width)  + ev.xmotion.x - rx;
+            yh = (arg->i == MOVE ? wa.y:wa.height) + ev.xmotion.y - ry;
+            if (arg->i == RESIZE) XResizeWindow(dis, d->curr->win,
+                    xw > MINWSZ ? xw:wa.width, yh > MINWSZ ? yh:wa.height);
+            else if (arg->i == MOVE) XMoveWindow(dis, d->curr->win, xw, yh);
+        } else if (ev.type == ConfigureRequest || ev.type == MapRequest) events[ev.type](&ev);
+    } while (ev.type != ButtonRelease);
+
     XUngrabPointer(dis, CurrentTime);
 }
 
