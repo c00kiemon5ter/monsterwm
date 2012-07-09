@@ -151,7 +151,6 @@ static int xerrorstart(Display *dis, XErrorEvent *ee);
 
 static Bool running = True;
 static int wh, ww, currdeskidx = 0;
-static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0, win_unfocus, win_focus;
 static Display *dis;
 static Window root;
@@ -767,16 +766,21 @@ void setup(void) {
     netatoms[NET_ACTIVE]      = XInternAtom(dis, "_NET_ACTIVE_WINDOW",       False);
     netatoms[NET_FULLSCREEN]  = XInternAtom(dis, "_NET_WM_STATE_FULLSCREEN", False);
 
-    /* check if another window manager is running */
-    xerrorxlib = XSetErrorHandler(xerrorstart);
+    /* propagate EWMH support */
+    XChangeProperty(dis, root, netatoms[NET_SUPPORTED], XA_ATOM, 32,
+              PropModeReplace, (unsigned char *)netatoms, NET_COUNT);
+
+    /* set the appropriate error handler
+     * try an action that will cause an error if another wm is active
+     * wait until events are processed to process the error from the above action
+     * if all is good set the generic error handler */
+    XSetErrorHandler(xerrorstart);
+    /* set masks for reporting events handled by the wm */
     XSelectInput(dis, DefaultRootWindow(dis), SubstructureRedirectMask|ButtonPressMask|
                                               SubstructureNotifyMask|PropertyChangeMask);
     XSync(dis, False);
-
     XSetErrorHandler(xerror);
     XSync(dis, False);
-    XChangeProperty(dis, root, netatoms[NET_SUPPORTED], XA_ATOM, 32,
-              PropModeReplace, (unsigned char *)netatoms, NET_COUNT);
 
     grabkeys();
 }
@@ -883,8 +887,7 @@ int xerror(__attribute__((unused)) Display *dis, XErrorEvent *ee) {
     || (ee->error_code == BadDrawable && (ee->request_code == X_PolyFillRectangle
     || ee->request_code == X_CopyArea ||  ee->request_code == X_PolySegment
                                       ||  ee->request_code == X_PolyText8))) return 0;
-    warn("error: xerror: request code: %d, error code: %d", ee->request_code, ee->error_code);
-    return xerrorxlib(dis, ee);
+    err(EXIT_FAILURE, "xerror: request: %d code: %d", ee->request_code, ee->error_code);
 }
 
 /**
