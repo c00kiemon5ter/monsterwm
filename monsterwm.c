@@ -285,17 +285,11 @@ void clientmessage(XEvent *e) {
  * appropriate values as requested, and tile the window again so that it fills
  * the gaps that otherwise could have been created */
 void configurerequest(XEvent *e) {
-    Desktop *d = NULL;
-    Client *c = NULL;
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
-
-    if (!wintoclient(ev->window, &c, &d) || !c->isfull) {
-        XWindowChanges xwc = { ev->x, ev->y,  ev->width, ev->height, ev->border_width, ev->above, ev->detail };
-        XConfigureWindow(dis, ev->window, ev->value_mask, &xwc);
-        XSync(dis, False);
-    } else setfullscreen(c, True);
-
-    if (!c || !(c->isfloat || c->istrans)) tile(c ? d:&desktops[currdeskidx]);
+    XWindowChanges wc = { ev->x, ev->y,  ev->width, ev->height, ev->border_width, ev->above, ev->detail };
+    XConfigureWindow(dis, ev->window, ev->value_mask, &wc);
+    XSync(dis, False);
+    tile(&desktops[currdeskidx]);
 }
 
 /* close the window */
