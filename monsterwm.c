@@ -213,7 +213,7 @@ void buttonpress(XEvent *e) {
  * then unmap the old windows
  * first all others then the current */
 void change_desktop(const Arg *arg) {
-    if (arg->i == currdeskidx) return;
+    if (arg->i == currdeskidx || arg->i < 0 || arg->i >= DESKTOPS) return;
     Desktop *d = &desktops[currdeskidx], *n = &desktops[(currdeskidx = arg->i)];
     if (n->curr) XMapWindow(dis, n->curr->win);
     for (Client *c = n->head; c; c = c->next) XMapWindow(dis, c->win);
