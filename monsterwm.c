@@ -294,8 +294,7 @@ void configurerequest(XEvent *e) {
 
 /* close the window */
 void deletewindow(Window w) {
-    XEvent ev;
-    ev.type = ClientMessage;
+    XEvent ev = { .type = ClientMessage };
     ev.xclient.window = w;
     ev.xclient.format = 32;
     ev.xclient.message_type = wmatoms[WM_PROTOCOLS];
