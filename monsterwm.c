@@ -134,7 +134,7 @@ static void propertynotify(XEvent *e);
 static void quit();
 static void removeclient(Client *c, Desktop *d);
 static void run(void);
-static void setfullscreen(Client *c, Bool fullscrn);
+static void setfullscreen(Client *c, Desktop *d, Bool fullscrn);
 static void setup(void);
 static void sigchld();
 static void spawn(const Arg *arg);
@@ -275,7 +275,7 @@ void clientmessage(XEvent *e) {
     if (e->xclient.message_type        == netatoms[NET_WM_STATE] && (
         (unsigned)e->xclient.data.l[1] == netatoms[NET_FULLSCREEN]
      || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN])) {
-        setfullscreen(c, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfull)));
+        setfullscreen(c, d, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfull)));
         if (!(c->isfloat || c->istrans) || !d->head->next) tile(d);
     } else if (e->xclient.message_type == netatoms[NET_ACTIVE]) focus(c, d);
 }
@@ -524,7 +524,7 @@ void maprequest(XEvent *e) {
     int di; unsigned long dl; unsigned char *state = NULL; Atom da;
     if (XGetWindowProperty(dis, c->win, netatoms[NET_WM_STATE], 0L, sizeof da,
               False, XA_ATOM, &da, &di, &dl, &dl, &state) == Success && state)
-        setfullscreen(c, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
+        setfullscreen(c, d, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
     if (state) XFree(state);
 
     if (currdeskidx == newdsk) { if (!ISFFT(c)) tile(d); XMapWindow(dis, c->win); }
@@ -728,13 +728,12 @@ void run(void) {
 }
 
 /* set or unset fullscreen state of client */
-void setfullscreen(Client *c, Bool fullscrn) {
+void setfullscreen(Client *c, Desktop *d, Bool fullscrn) {
     if (fullscrn != c->isfull) XChangeProperty(dis, c->win,
             netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
             ((c->isfull = fullscrn) ? &netatoms[NET_FULLSCREEN]:0), fullscrn);
     if (fullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww, wh + PANEL_HEIGHT);
-    XWindowChanges xwc = { 0, 0, 0, 0, fullscrn ? 0:BORDER_WIDTH, 0, 0 };
-    XConfigureWindow(dis, c->win, CWBorderWidth, &xwc);
+    XSetWindowBorderWidth(dis, c->win, (c->isfull || !d->head->next ? 0:BORDER_WIDTH));
 }
 
 /* set initial values
