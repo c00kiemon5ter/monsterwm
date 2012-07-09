@@ -430,29 +430,27 @@ unsigned long getcolor(const char* color) {
 
 /* set the given client to listen to button events (presses / releases) */
 void grabbuttons(Client *c) {
-    unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
+    unsigned int b, m, modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
-    if (CLICK_TO_FOCUS) for (unsigned int m = 0; m < LENGTH(modifiers); m++)
+    if (CLICK_TO_FOCUS) for (m = 0; m < LENGTH(modifiers); m++)
         if (c != desktops[currdeskidx].curr) XGrabButton(dis, Button1, modifiers[m],
                 c->win, False, BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
         else XUngrabButton(dis, Button1, modifiers[m], c->win);
 
-    for (unsigned int b = 0; b < LENGTH(buttons); b++)
-        for (unsigned int m = 0; m < LENGTH(modifiers); m++)
-            XGrabButton(dis, buttons[b].button, buttons[b].mask|modifiers[m], c->win,
-                        False, BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
+    for (b = 0, m = 0; b < LENGTH(buttons); b++, m = 0) while (m < LENGTH(modifiers))
+        XGrabButton(dis, buttons[b].button, buttons[b].mask|modifiers[m++], c->win,
+                      False, BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
 }
 
 /* the wm should listen to key presses */
 void grabkeys(void) {
     KeyCode code;
     XUngrabKey(dis, AnyKey, AnyModifier, root);
+    unsigned int k, m, modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
-    unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
-    for (unsigned int k = 0; k < LENGTH(keys); k++)
-        if ((code = XKeysymToKeycode(dis, keys[k].keysym)))
-            for (unsigned int m = 0; m < LENGTH(modifiers); m++)
-                XGrabKey(dis, code, keys[k].mod|modifiers[m], root, True, GrabModeAsync, GrabModeAsync);
+    for (k = 0, m = 0; k < LENGTH(keys); k++, m = 0)
+        while ((code = XKeysymToKeycode(dis, keys[k].keysym)) && m < LENGTH(modifiers))
+            XGrabKey(dis, code, keys[k].mod|modifiers[m++], root, True, GrabModeAsync, GrabModeAsync);
 }
 
 /* arrange windows in a grid */
