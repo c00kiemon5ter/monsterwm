@@ -811,10 +811,8 @@ void stack(int hh, int cy, Desktop *d) {
      *   - p is the num of pixels than remain when spliting
      *   the available width/height to the number of windows
      *   - z is the clients' height/width */
-    if (!c) return; else if (!n) {
-        XMoveResizeWindow(dis, c->win, 0, cy, ww - 2*BORDER_WIDTH, hh - 2*BORDER_WIDTH);
-        return;
-    } else if (n > 1) { p = z%n; z /= n; }
+    if (c && !n) XMoveResizeWindow(dis, c->win, 0, cy, ww - 2*BORDER_WIDTH, hh - 2*BORDER_WIDTH);
+    if (!c || !n) return; else if (n > 1) { p = z%n; z /= n; }
 
     /* tile the first non-floating, non-fullscreen window to cover the master area */
     if (b) XMoveResizeWindow(dis, c->win, 0, cy, ww - 2*BORDER_WIDTH, ma - BORDER_WIDTH);
