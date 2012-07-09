@@ -556,7 +556,6 @@ void mousemotion(const Arg *arg) {
     int rx, ry, c, xw, yh; unsigned int m; Window w;
     XQueryPointer(dis, root, &w, &w, &rx, &ry, &c, &c, &m);
 
-    if (d->curr->isfull) setfullscreen(d->curr, False);
     if (!d->curr->isfloat && !d->curr->istrans) { d->curr->isfloat = True; tile(d); focus(d->curr, d); }
 
     do {
