@@ -13,32 +13,40 @@
 #define MASTER_SIZE     0.52
 #define TOP_PANEL       True      /* False mean panel is on bottom */
 #define PANEL_HEIGHT    18        /* 0 for no space for panel, thus no panel */
-#define DEFAULT_MODE    TILE      /* TILE MONOCLE BSTACK GRID */
+#define DEFAULT_MODE    TILE      /* initial layout/mode: TILE MONOCLE BSTACK GRID FLOAT */
 #define ATTACH_ASIDE    True      /* False means new window is master */
-#define FOLLOW_MOUSE    False     /* Focus the window the mouse just entered */
 #define FOLLOW_WINDOW   False     /* Follow the window when moved to a different desktop */
-#define CLICK_TO_FOCUS  False     /* Focus an unfocused window when clicked */
+#define FOLLOW_MOUSE    False     /* Focus the window the mouse just entered */
+#define CLICK_TO_FOCUS  False     /* Focus an unfocused window when clicked  */
 #define BORDER_WIDTH    2         /* window border width */
 #define FOCUS           "#ff950e" /* focused window border color   */
 #define UNFOCUS         "#444444" /* unfocused window border color */
-#define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
 #define MINWSZ          50        /* minimum window size in pixels */
+#define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
 
-/** open applications to specified desktop. if desktop is negative, then spawn in current **/
+/**
+ * open applications to specified desktop with specified mode.
+ * if desktop is negative, then current is assumed
+ */
 static const AppRule rules[] = { \
     /*  class     desktop  follow  float */
     { "MPlayer",     3,    True,   False },
     { "Gimp",        0,    False,  True  },
 };
 
-/** commands **/
+/**
+ * custom commands
+ * must always end with '.., NULL };'
+ */
 static const char *termcmd[] = { "xterm", NULL };
 
 #define DESKTOPCHANGE(K,N) \
     {  MOD1,             K,              change_desktop, {.i = N}}, \
     {  MOD1|ShiftMask,   K,              client_to_desktop, {.i = N}},
 
-/** Shortcuts **/
+/**
+ * keyboard shortcuts
+ */
 static Key keys[] = {
     /* modifier          key            function           argument */
     {  MOD1|SHIFT,       XK_c,          killclient,        {NULL}},
@@ -68,6 +76,9 @@ static Key keys[] = {
        DESKTOPCHANGE(    XK_F4,                             3)
 };
 
+/**
+ * mouse shortcuts
+ */
 static Button buttons[] = {
     {  MOD1,    Button1,     mousemotion,   {.i = MOVE}},
     {  MOD1,    Button3,     mousemotion,   {.i = RESIZE}},

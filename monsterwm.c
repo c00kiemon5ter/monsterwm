@@ -23,7 +23,8 @@ enum { TILE, MONOCLE, BSTACK, GRID, FLOAT, MODES };
 enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
 enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_ACTIVE, NET_COUNT };
 
-/* argument structure to be passed to function by config.h
+/**
+ * argument structure to be passed to function by config.h
  * com - function pointer ~ the command to run
  * i   - an integer to indicate different states
  * v   - any type argument
@@ -34,11 +35,12 @@ typedef union {
     const void *v;
 } Arg;
 
-/* a key struct represents a combination of
- * mod      - a modifier mask
- * keysym   - and the key pressed
- * func     - the function to be triggered because of the above combo
- * arg      - the argument to the function
+/**
+ * a key struct represents a combination of
+ * mod    - a modifier mask
+ * keysym - and the key pressed
+ * func   - the function to be triggered because of the above combo
+ * arg    - the argument to the function
  */
 typedef struct {
     unsigned int mod;
@@ -47,11 +49,12 @@ typedef struct {
     const Arg arg;
 } Key;
 
-/* a button struct represents a combination of
- * mask     - a modifier mask
- * button   - and the mouse button pressed
- * func     - the function to be triggered because of the above combo
- * arg      - the argument to the function
+/**
+ * a button struct represents a combination of
+ * mask   - a modifier mask
+ * button - and the mouse button pressed
+ * func   - the function to be triggered because of the above combo
+ * arg    - the argument to the function
  */
 typedef struct {
     unsigned int mask, button;
@@ -59,7 +62,8 @@ typedef struct {
     const Arg arg;
 } Button;
 
-/* a client is a wrapper to a window that additionally
+/**
+ * a client is a wrapper to a window that additionally
  * holds some properties for that window
  *
  * next    - the client after this one, or NULL if the current is the last client
@@ -78,7 +82,9 @@ typedef struct Client {
     Window win;
 } Client;
 
-/* properties of each desktop
+/**
+ * properties of each desktop
+ *
  * mode - the desktop's tiling layout mode
  * head - the start of the client list
  * curr - the currently highlighted window
@@ -89,11 +95,13 @@ typedef struct {
     Client *head, *curr, *prev;
 } Desktop;
 
-/* define behavior of certain applications
+/**
+ * define behavior of certain applications
  * configured in config.h
- * class    - the class or name of the instance
- * desktop  - what desktop it should be spawned at
- * follow   - whether to change desktop focus to the specified desktop
+ *
+ * class   - the class or name of the instance
+ * desktop - what desktop it should be spawned at
+ * follow  - whether to change desktop focus to the specified desktop
  */
 typedef struct {
     const char *class;
@@ -149,6 +157,19 @@ static int xerrorstart(Display *dis, XErrorEvent *ee);
 
 #include "config.h"
 
+/**
+ * global variables
+ *
+ * running      - whether the wm is accepting and processing more events
+ * wh           - screen height
+ * ww           - screen width
+ * dis          - the display aka dpy
+ * root         - the root window
+ * wmatons      - array holding atoms for ICCCM support
+ * netatoms     - array holding atoms for EWMH support
+ * dekstops     - array of managed desktops
+ * currdeskidx  - which desktop is currently active
+ */
 static Bool running = True;
 static int wh, ww, currdeskidx = 0;
 static unsigned int numlockmask = 0, win_unfocus, win_focus;
@@ -157,7 +178,12 @@ static Window root;
 static Atom wmatoms[WM_COUNT], netatoms[NET_COUNT];
 static Desktop desktops[DESKTOPS];
 
-/* events array - on new event, call the appropriate handling function */
+/**
+ * array of event handlers
+ *
+ * when a new event is received,
+ * call the appropriate handler function
+ */
 static void (*events[LASTEvent])(XEvent *e) = {
     [KeyPress]         = keypress,     [EnterNotify]    = enternotify,
     [MapRequest]       = maprequest,   [ClientMessage]  = clientmessage,
@@ -166,15 +192,28 @@ static void (*events[LASTEvent])(XEvent *e) = {
     [ConfigureRequest] = configurerequest,    [FocusIn] = focusin,
 };
 
-/* layout array - given the current layout mode, tile the windows
- * h (or hh) - avaible height that windows have to expand
- * y (or cy) - offset from top to place the windows (reserved by the panel) */
+/**
+ * array of layout handlers
+ *
+ * h aka hh - avaible height that windows have to expand
+ * y aka cy - offset from top to place the windows (reserved by the panel)
+ * d        - the desktop to tile its clients
+ */
 static void (*layout[MODES])(int h, int y, Desktop *d) = {
     [TILE] = stack, [BSTACK] = stack, [GRID] = grid, [MONOCLE] = monocle,
 };
 
-/* create a new client and add the new window
- * window should notify of property change events */
+/**
+ * add the given window to the given desktop
+ *
+ * create a new client to hold the new window
+ *
+ * if there is no head at the given desktop
+ * add the window as the head
+ * otherwise if ATTACH_ASIDE is not set,
+ * add the window as the last client
+ * otherwise add the window as head
+ */
 Client* addwindow(Window w, Desktop *d) {
     Client *c = NULL, *t = prevclient(d->head, d);
     if (!(c = (Client *)calloc(1, sizeof(Client)))) err(EXIT_FAILURE, "cannot allocate client");
@@ -187,7 +226,10 @@ Client* addwindow(Window w, Desktop *d) {
     return c;
 }
 
-/* on the press of a button check to see if there's a binded function to call */
+/**
+ * on the press of a key binding (see grabkeys)
+ * call the appropriate handler
+ */
 void buttonpress(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
@@ -204,13 +246,15 @@ void buttonpress(XEvent *e) {
         }
 }
 
-/* focus another desktop
+/**
+ * focus another desktop
  *
- * to avoid flickering
+ * to avoid flickering (esp. monocle mode):
  * first map the new windows
  * first the current window and then all other
  * then unmap the old windows
- * first all others then the current */
+ * first all others then the current
+ */
 void change_desktop(const Arg *arg) {
     if (arg->i == currdeskidx || arg->i < 0 || arg->i >= DESKTOPS) return;
     Desktop *d = &desktops[currdeskidx], *n = &desktops[(currdeskidx = arg->i)];
@@ -222,7 +266,9 @@ void change_desktop(const Arg *arg) {
     desktopinfo();
 }
 
-/* remove all windows in all desktops by sending a delete message */
+/**
+ * remove all windows in all desktops by sending a delete window message
+ */
 void cleanup(void) {
     Window root_return, parent_return, *children;
     unsigned int nchildren;
@@ -234,10 +280,12 @@ void cleanup(void) {
     XSync(dis, False);
 }
 
-/* move a client to another desktop
+/**
+ * move the current focused client to another desktop
  *
  * add the current client as the last on the new desktop
- * and then remove it from the current desktop */
+ * then remove it from the current desktop
+ */
 void client_to_desktop(const Arg *arg) {
     if (arg->i == currdeskidx || arg->i < 0 || arg->i >= DESKTOPS || !desktops[currdeskidx].curr) return;
     Desktop *d = &desktops[currdeskidx], *n = &desktops[arg->i];
@@ -255,7 +303,13 @@ void client_to_desktop(const Arg *arg) {
     if (!FOLLOW_WINDOW) desktopinfo();
 }
 
-/* To change the state of a mapped window, a client MUST
+/**
+ * receive and process client messages
+ *
+ * check if window wants to change its state to fullscreen,
+ * or if the window want to become active/focused
+ *
+ * to change the state of a mapped window, a client MUST
  * send a _NET_WM_STATE client message to the root window
  * message_type must be _NET_WM_STATE
  *   data.l[0] is the action to be taken
@@ -264,7 +318,12 @@ void client_to_desktop(const Arg *arg) {
  *   - add/set _NET_WM_STATE_ADD=1,
  *   - toggle _NET_WM_STATE_TOGGLE=2
  *
- * check if window requested fullscreen or activation */
+ * to request to become active, a client should send a
+ * message of _NET_ACTIVE_WINDOW type. when such a message
+ * is received and a client holding that window exists,
+ * the window becomes the current active focused window
+ * on its desktop.
+ */
 void clientmessage(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
@@ -279,10 +338,29 @@ void clientmessage(XEvent *e) {
     } else if (e->xclient.message_type == netatoms[NET_ACTIVE]) focus(c, d);
 }
 
-/* a configure request means that the window requested changes in its geometry
- * state. if the window is fullscreen discard and fill the screen else set the
- * appropriate values as requested, and tile the window again so that it fills
- * the gaps that otherwise could have been created */
+/**
+ * configure a window's size, position, border width, and stacking order.
+ *
+ * windows usually have a prefered size (width, height) and position (x, y),
+ * and sometimes borer with (border_width) and stacking order (above, detail).
+ * a configure request attempts to reconfigure those properties for a window.
+ *
+ * we don't really care about those values, because a tiling wm will impose
+ * by its own, the position, size and stacking order of windows.
+ * however the requested values must be set initially, or
+ * the window will misbehave (see gedit, geany, gvim etc).
+ *
+ * this is actually not respecting the prefered size of the windows,
+ * some windows depend on the number of columns and rows to set their
+ * size, and not on pixels (terminals, consoles, some editors).
+ * normally those clients when tiled and respecting the prefered size
+ * will create gaps around them (window_hints).
+ * when the configure request is sent and processed,
+ * clients are tiled to match the wm's prefered size.
+ *
+ * set the appropriate values as requested,
+ * then tile the desktop that contain that window.
+ */
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     XWindowChanges wc = { ev->x, ev->y,  ev->width, ev->height, ev->border_width, ev->above, ev->detail };
@@ -291,7 +369,11 @@ void configurerequest(XEvent *e) {
     tile(&desktops[currdeskidx]);
 }
 
-/* close the window */
+/**
+ * clients receiving a WM_DELETE_WINDOW message should behave as if
+ * the user selected "delete window" from a hypothetical menu and
+ * also perform any confirmation dialog with the user.
+ */
 void deletewindow(Window w) {
     XEvent ev = { .type = ClientMessage };
     ev.xclient.window = w;
@@ -302,18 +384,21 @@ void deletewindow(Window w) {
     XSendEvent(dis, w, False, NoEventMask, &ev);
 }
 
-/* output info about the desktops on standard output stream
+/**
+ * output info about the desktops on standard output stream
  *
- * the info is a list of ':' separated values for each desktop
- * desktop to desktop info is separated by ' ' single spaces
- * the info values are
- *   the desktop number/id
- *   the desktop's client count
- *   the desktop's tiling layout mode/id
- *   whether the desktop is the current focused (1) or not (0)
- *   whether any client in that desktop has received an urgent hint
+ * the information is formatted as a space separated line
+ * where each token contains information about a desktop.
+ * each token is a formatted as ':' separated string of values.
+ * the values are:
+ *   - the desktop number/id
+ *   - the desktop's client count
+ *   - the desktop's tiling layout mode/id
+ *   - whether the desktop is the current focused (1) or not (0)
+ *   - whether any client in that desktop has received an urgent hint
  *
- * once the info is collected, immediately flush the stream */
+ * once the info is collected, immediately flush the stream
+ */
 void desktopinfo(void) {
     Desktop *d = NULL;
     Client *c = NULL;
@@ -326,17 +411,24 @@ void desktopinfo(void) {
     fflush(stdout);
 }
 
-/* a destroy notification is received when a window is being closed
- * on receival, remove the appropriate client that held that window */
+/**
+ * generated whenever a client application destroys a window
+ *
+ * a destroy notification is received when a window is being closed
+ * on receival, remove the client that held that window
+ */
 void destroynotify(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
     if (wintoclient(e->xdestroywindow.window, &c, &d)) removeclient(c, d);
 }
 
-/* when the mouse enters a window's borders
- * the window, if notifying of such events (EnterWindowMask)
- * will notify the wm and will get focus */
+/**
+ * when the mouse enters a window's borders, that window,
+ * if has set notifications of such events (EnterWindowMask)
+ * will notify that the pointer entered its region
+ * and will get focus if FOLLOW_MOUSE is set in the config.
+ */
 void enternotify(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
@@ -345,8 +437,11 @@ void enternotify(XEvent *e) {
         && e->xcrossing.detail != NotifyInferior && e->xcrossing.window != d->curr->win) focus(c, d);
 }
 
-/* highlight borders and set active window and input focus
- * if given current is NULL then delete the active window property
+/**
+ * set current/active/focused client
+ * restack clients
+ * highlight borders and set active window property and input focus
+ * for the current/active/focused client
  *
  * stack order by client properties, top to bottom:
  *  - current when floating or transient
@@ -369,7 +464,8 @@ void enternotify(XEvent *e) {
  * this is a compromise. we could grab the buttons for the new
  * client on maprequest(), but since we will be calling this
  * function anyway, we can just grab the buttons for the current
- * client that may be the new client. */
+ * client that may be the new client.
+ */
 void focus(Client *c, Desktop *d) {
     if (!d->head) {
         XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
@@ -399,11 +495,16 @@ void focus(Client *c, Desktop *d) {
     XSync(dis, False);
 }
 
-/* dont give focus to any client except current
- * some apps explicitly call XSetInputFocus suchs
- * as tabbed and chromium, resulting in loss of
- * input (mouse/kbd) focus from the current and
- * highlighted client - this gives focus back */
+/**
+ * dont give focus to any client except current.
+ * some apps explicitly call XSetInputFocus (see
+ * tabbed, chromium), resulting in loss of input
+ * focuse (mouse/kbd) from the current focused
+ * client.
+ *
+ * this gives focus back to the current selected
+ * client, by the user, through the wm.
+ */
 void focusin(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
@@ -412,15 +513,23 @@ void focusin(XEvent *e) {
     else if (d->curr && e->xfocus.window != d->curr->win) focus(d->curr, d);
 }
 
-/* get a pixel with the requested color
- * to fill some window area - borders */
+/**
+ * get a pixel with the requested color to
+ * fill some window area (such as borders)
+ */
 unsigned long getcolor(const char* color, const int screen) {
     XColor c; Colormap map = DefaultColormap(dis, screen);
     if (!XAllocNamedColor(dis, map, color, &c, &c)) err(EXIT_FAILURE, "cannot allocate color");
     return c.pixel;
 }
 
-/* set the given client to listen to button events (presses / releases) */
+/**
+ * register button bindings to be notified of
+ * when they occur.
+ * the wm listens to those button bindings and
+ * calls an appropriate handler when a binding
+ * occurs (see buttonpress).
+ */
 void grabbuttons(Client *c) {
     unsigned int b, m, modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
@@ -434,7 +543,13 @@ void grabbuttons(Client *c) {
                       False, BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
 }
 
-/* the wm should listen to key presses */
+/**
+ * register key bindings to be notified of
+ * when they occur.
+ * the wm listens to those key bindings and
+ * calls an appropriate handler when a binding
+ * occurs (see keypressed).
+ */
 void grabkeys(void) {
     KeyCode code;
     XUngrabKey(dis, AnyKey, AnyModifier, root);
@@ -445,7 +560,10 @@ void grabkeys(void) {
             XGrabKey(dis, code, keys[k].mod|modifiers[m++], root, True, GrabModeAsync, GrabModeAsync);
 }
 
-/* arrange windows in a grid */
+/**
+ * grid mode / grid layout
+ * arrange windows in a grid aka fair
+ */
 void grid(int hh, int cy, Desktop *d) {
     int n = 0, cols = 0, cn = 0, rn = 0, i = -1;
     for (Client *c = d->head; c; c = c->next) if (!ISFFT(c)) ++n;
@@ -461,7 +579,10 @@ void grid(int hh, int cy, Desktop *d) {
     }
 }
 
-/* on the press of a key check to see if there's a binded function to call */
+/**
+ * on the press of a key binding (see grabkeys)
+ * call the appropriate handler
+ */
 void keypress(XEvent *e) {
     KeySym keysym = XkbKeycodeToKeysym(dis, e->xkey.keycode, 0, 0);
     for (unsigned int i = 0; i < LENGTH(keys); i++)
@@ -469,8 +590,11 @@ void keypress(XEvent *e) {
             if (keys[i].func) keys[i].func(&keys[i].arg);
 }
 
-/* explicitly kill a client - close the highlighted window
- * send a delete message and remove the client */
+/**
+ * explicitly kill the current client - close the highlighted window
+ * if the client accepts WM_DELETE_WINDOW requests send a delete message
+ * otherwise forcefully kill and remove the client
+ */
 void killclient(void) {
     Desktop *d = &desktops[currdeskidx];
     if (!d->curr) return;
@@ -482,15 +606,18 @@ void killclient(void) {
     else deletewindow(d->curr->win);
 }
 
-/* a map request is received when a window wants to display itself
- * if the window has override_redirect flag set then it should not be handled
- * by the wm. if the window already has a client then there is nothing to do.
+/**
+ * a map request is received when a window wants to display itself.
+ * if the window has override_redirect flag set,
+ * then it should not be handled by the wm.
+ * if the window already has a client then there is nothing to do.
  *
  * match window class and/or install name against an app rule.
- * create a new client for the window and add it to the appropriate desktop
- * set the floating, transient and fullscreen state of the client
+ * create a new client for the window and add it to the appropriate desktop.
+ * set the floating, transient and fullscreen state of the client.
  * if the desktop in which the window is to be spawned is the current desktop
- * then display/map the window, else, if follow is set, focus the new desktop. */
+ * then display/map the window, else, if follow is set, focus the new desktop.
+ */
 void maprequest(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
@@ -532,15 +659,22 @@ void maprequest(XEvent *e) {
     if (!follow) desktopinfo();
 }
 
-/* grab the pointer and get it's current position
- * all pointer movement events will be reported until it's ungrabbed
- * until the mouse button has not been released,
- * grab the interesting events - button press/release and pointer motion
- * and on on pointer movement resize or move the window under the curson.
- * if the received event is a map request or a configure request call the
- * appropriate handler, and stop listening for other events.
- * Ungrab the poitner and event handling is passed back to run() function.
- * Once a window has been moved or resized, it's marked as floating. */
+/**
+ * handle resize and positioning of a window with the pointer.
+ *
+ * grab the pointer and get it's current position.
+ * now, all pointer movement events will be reported until it is ungrabbed.
+ *
+ * while the mouse is pressed, grab interesting events (see button press,
+ * button release, pointer motion).
+ * on on pointer movement resize or move the window under the curson.
+ * also handle map requests and configure requests.
+ *
+ * finally, on ButtonRelease, ungrab the poitner.
+ * event handling is passed back to run() function.
+ *
+ * once a window has been moved or resized, it's marked as floating.
+ */
 void mousemotion(const Arg *arg) {
     Desktop *d = &desktops[currdeskidx];
     XWindowAttributes wa;
@@ -570,13 +704,17 @@ void mousemotion(const Arg *arg) {
     XUngrabPointer(dis, CurrentTime);
 }
 
-/* each window should cover all the available screen space */
+/**
+ * monocle aka max aka fullscreen mode/layout
+ * each window should cover all the available screen space
+ */
 void monocle(int hh, int cy, Desktop *d) {
     for (Client *c = d->head; c; c = c->next) if (!ISFFT(c)) XMoveResizeWindow(dis, c->win, 0, cy, ww, hh);
 }
 
-/* move the current client, to current->next
- * and current->next to current client's position */
+/**
+ * swap positions of current and next from current clients
+ */
 void move_down(void) {
     Desktop *d = &desktops[currdeskidx];
     if (!d->curr || !d->head->next) return;
@@ -613,8 +751,9 @@ void move_down(void) {
     if (!d->curr->isfloat && !d->curr->istrans) tile(d);
 }
 
-/* move the current client, to the previous from current and
- * the previous from  current to current client's position */
+/**
+ * swap positions of current and previous from current clients
+ */
 void move_up(void) {
     Desktop *d = &desktops[currdeskidx];
     if (!d->curr || !d->head->next) return;
@@ -653,7 +792,9 @@ void move_up(void) {
     if (!d->curr->isfloat && !d->curr->istrans) tile(d);
 }
 
-/* move and resize a window with the keyboard */
+/**
+ * move and resize a window with the keyboard
+ */
 void moveresize(const Arg *arg) {
     Desktop *d = &desktops[currdeskidx];
     XWindowAttributes wa;
@@ -663,30 +804,37 @@ void moveresize(const Arg *arg) {
                                 wa.width + ((int *)arg->v)[2], wa.height + ((int *)arg->v)[3]);
 }
 
-/* cyclic focus the next window
- * if the window is the last on stack, focus head */
+/**
+ * cyclic focus the next window
+ * if the window is the last on stack, focus head
+ */
 void next_win(void) {
     Desktop *d = &desktops[currdeskidx];
     if (d->curr && d->head->next) focus(d->curr->next ? d->curr->next:d->head, d);
 }
 
-/* get the previous client from the given
- * if no such client, return NULL */
+/**
+ * get the previous client from the given
+ * if no such client, return NULL
+ */
 Client* prevclient(Client *c, Desktop *d) {
     Client *p = NULL;
     if (c && d->head && d->head->next) for (p = d->head; p->next && p->next != c; p = p->next);
     return p;
 }
 
-/* cyclic focus the previous window
- * if the window is the head, focus the last stack window */
+/**
+ * cyclic focus the previous window
+ * if the window is head, focus the last stack window
+ */
 void prev_win(void) {
     Desktop *d = &desktops[currdeskidx];
     if (d->curr && d->head->next) focus(prevclient((d->prev = d->curr), d), d);
 }
 
-/* property notify is called when one of the window's properties
- * is changed, such as an urgent hint is received */
+/**
+ * set unrgent hint for a window
+ */
 void propertynotify(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
@@ -697,18 +845,20 @@ void propertynotify(XEvent *e) {
     desktopinfo();
 }
 
-/* to quit just stop receiving events
- * run() is stopped and control is back to main() */
+/**
+ * to quit just stop receiving events
+ * run is stopped and control is back to main
+ */
 void quit(void) {
     running = False;
 }
 
-/* remove the specified client
+/**
+ * remove the specified client from the given desktop
  *
- * note: the removing client can be on any desktop!
- * we must always return back to the current focused desktop
  * if c was the previous client, previous must be updated.
- * if c was the current client, current must be updated. */
+ * if c was the current client, current must be updated.
+ */
 void removeclient(Client *c, Desktop *d) {
     Client **p = NULL;
     for (p = &d->head; *p && (*p != c); p = &(*p)->next);
@@ -720,13 +870,26 @@ void removeclient(Client *c, Desktop *d) {
     desktopinfo();
 }
 
-/* main event loop - on receival of an event call the appropriate event handler */
+/**
+ * main event loop
+ * on receival of an event call the appropriate handler
+ */
 void run(void) {
     XEvent ev;
     while(running && !XNextEvent(dis, &ev)) if (events[ev.type]) events[ev.type](&ev);
 }
 
-/* set or unset fullscreen state of client */
+/**
+ * set the fullscreen state of a client
+ *
+ * if a client gets fullscreen resize it
+ * to cover all screen space.
+ * the border should be zero (0).
+ *
+ * if a client is reset from fullscreen,
+ * the border should be BORDER_WIDTH,
+ * except if no other client is on that desktop.
+ */
 void setfullscreen(Client *c, Desktop *d, Bool fullscrn) {
     if (fullscrn != c->isfull) XChangeProperty(dis, c->win,
             netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
@@ -735,24 +898,28 @@ void setfullscreen(Client *c, Desktop *d, Bool fullscrn) {
     XSetWindowBorderWidth(dis, c->win, (c->isfull || !d->head->next ? 0:BORDER_WIDTH));
 }
 
-/* set initial values
- * root window - screen height/width - atoms - xerror handler
- * set masks for reporting events handled by the wm
- * and propagate the suported net atoms */
+/**
+ * set initial values
+ */
 void setup(void) {
     sigchld(0);
 
+    /* screen and root window */
     const int screen = DefaultScreen(dis);
     root = RootWindow(dis, screen);
 
+    /* screen width and height */
     ww = XDisplayWidth(dis,  screen);
     wh = XDisplayHeight(dis, screen) - PANEL_HEIGHT;
 
+    /* initialize mode for each desktop */
     for (unsigned int d = 0; d < DESKTOPS; d++) desktops[d] = (Desktop){ .mode = DEFAULT_MODE };
 
+    /* get color for focused and unfocused client borders */
     win_focus = getcolor(FOCUS, screen);
     win_unfocus = getcolor(UNFOCUS, screen);
 
+    /* set numlockmask */
     XModifierKeymap *modmap = XGetModifierMapping(dis);
     for (int k = 0; k < 8; k++) for (int j = 0; j < modmap->max_keypermod; j++)
         if (modmap->modifiermap[modmap->max_keypermod*k + j] == XKeysymToKeycode(dis, XK_Num_Lock))
@@ -791,7 +958,9 @@ void sigchld(__attribute__((unused)) int sig) {
     else err(EXIT_FAILURE, "cannot install SIGCHLD handler");
 }
 
-/* execute a command */
+/**
+ * execute a command
+ */
 void spawn(const Arg *arg) {
     if (fork()) return;
     if (dis) close(ConnectionNumber(dis));
@@ -800,7 +969,10 @@ void spawn(const Arg *arg) {
     err(EXIT_SUCCESS, "execvp %s", (char *)arg->com[0]);
 }
 
-/* arrange windows in normal or bottom stack tile */
+/**
+ * tile or common tiling aka v-stack mode/layout
+ * bstack or bottom stack aka h-stack mode/layout
+ */
 void stack(int hh, int cy, Desktop *d) {
     Client *c = NULL, *t = NULL; Bool b = (d->mode == BSTACK);
     int n = 0, p = 0, z = b ? ww:hh, ma = (b ? hh:ww) * MASTER_SIZE;
@@ -832,11 +1004,13 @@ void stack(int hh, int cy, Desktop *d) {
     }
 }
 
-/* swap master window with current or
+/**
+ * swap master window with current.
  * if current is head swap with next
  * if current is not head, then head
  * is behind us, so move_up until we
- * are the head */
+ * are the head
+ */
 void swap_master(void) {
     Desktop *d = &desktops[currdeskidx];
     if (!d->curr || !d->head->next) return;
@@ -845,7 +1019,12 @@ void swap_master(void) {
     focus(d->head, d);
 }
 
-/* switch the tiling mode and reset all floating windows */
+/**
+ * switch tiling mode/layout
+ *
+ * if mode is reselected reset all floating clients
+ * if mode is FLOAT set all clients floating
+ */
 void switch_mode(const Arg *arg) {
     Desktop *d = &desktops[currdeskidx];
     if (d->mode == arg->i && d->mode != FLOAT)
@@ -856,21 +1035,28 @@ void switch_mode(const Arg *arg) {
     desktopinfo();
 }
 
-/* tile all windows of current desktop - call the handler tiling function */
+/**
+ * tile clients of the given desktop with the desktop's mode/layout
+ * call the tiling handler fucntion taking account the panel height
+ */
 void tile(Desktop *d) {
     if (!d->head || d->mode == FLOAT) return; /* nothing to arange */
     layout[d->head->next ? d->mode:MONOCLE](wh, TOP_PANEL ? PANEL_HEIGHT:0, d);
 }
 
-/* windows that request to unmap should lose their
- * client, so no invisible windows exist on screen */
+/**
+ * windows that request to unmap should lose their
+ * client, so invisible windows do not exist on screen
+ */
 void unmapnotify(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
     if (e->xunmap.send_event && wintoclient(e->xunmap.window, &c, &d)) removeclient(c, d);
 }
 
-/* find to which client and desktop the given window belongs to */
+/**
+ * find to which client and desktop the given window belongs to
+ */
 Bool wintoclient(Window w, Client **c, Desktop **d) {
     for (int i = 0; i < DESKTOPS && !*c; i++)
         for (*d = &desktops[i], *c = (*d)->head; *c && (*c)->win != w; *c = (*c)->next);
