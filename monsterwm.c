@@ -692,7 +692,7 @@ void propertynotify(XEvent *e) {
     Client *c = NULL;
     if (e->xproperty.atom != XA_WM_HINTS || !wintoclient(e->xproperty.window, &c, &d)) return;
     XWMHints *wmh = XGetWMHints(dis, c->win);
-    c->isurgn = (c != d->curr && wmh && (wmh->flags & XUrgencyHint));
+    c->isurgn = (c != desktops[currdeskidx].curr && wmh && (wmh->flags & XUrgencyHint));
     if (wmh) XFree(wmh);
     desktopinfo();
 }
