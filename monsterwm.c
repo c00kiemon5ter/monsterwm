@@ -452,9 +452,10 @@ void enternotify(XEvent *e) {
  *  - tiled windows
  *
  * a window should have borders in any case, except if
- *  - the window is the only window on screen
  *  - the window is fullscreen
- *  - the mode is MONOCLE and the window is not floating or transient
+ *  - the window is not floating or transient and
+ *      - the mode is MONOCLE or,
+ *      - it is the only window on screen
  *
  * finally button events are grabbed for the new client. There
  * is no need for button events to be grabbed again, except if
@@ -481,8 +482,8 @@ void focus(Client *c, Desktop *d) {
     w[(d->curr->isfloat || d->curr->istrans) ? 0:ft] = d->curr->win;
     for (fl += !ISFFT(d->curr) ? 1:0, c = d->head; c; c = c->next) {
         XSetWindowBorder(dis, c->win, c == d->curr ? win_focus:win_unfocus);
-        XSetWindowBorderWidth(dis, c->win, (!d->head->next || c->isfull
-                    || (d->mode == MONOCLE && !ISFFT(c))) ? 0:BORDER_WIDTH);
+        XSetWindowBorderWidth(dis, c->win, c->isfull || (!ISFFT(c) &&
+            (d->mode == MONOCLE || !d->head->next)) ? 0:BORDER_WIDTH);
         if (c != d->curr) w[c->isfull ? --fl:ISFFT(c) ? --ft:--n] = c->win;
         if (CLICK_TO_FOCUS || c == d->curr) grabbuttons(c);
     }
