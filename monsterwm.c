@@ -217,8 +217,7 @@ static void (*layout[MODES])(int h, int y, Desktop *d) = {
 Client* addwindow(Window w, Desktop *d) {
     Client *c = NULL, *t = prevclient(d->head, d);
     if (!(c = (Client *)calloc(1, sizeof(Client)))) err(EXIT_FAILURE, "cannot allocate client");
-
-    if (!d->head) d->head = d->curr = c;
+    if (!d->head) d->head = c;
     else if (!ATTACH_ASIDE) { c->next = d->head; d->head = c; }
     else if (t) t->next = c; else d->head->next = c;
 
@@ -438,44 +437,84 @@ void enternotify(XEvent *e) {
 }
 
 /**
- * set current/active/focused client
- * restack clients
- * highlight borders and set active window property and input focus
- * for the current/active/focused client
+ * set current/active/focused and previously focused client
+ * (iow manage curr and prev references)
  *
- * stack order by client properties, top to bottom:
- *  - current when floating or transient
- *  - floating or trancient windows
- *  - current when tiled
- *  - current when fullscreen
- *  - fullscreen windows
- *  - tiled windows
+ * restack clients
+ *
+ * highlight borders and set active window property and
+ * give input focus to the current/active/focused client
  *
  * a window should have borders in any case, except if
  *  - the window is fullscreen
  *  - the window is not floating or transient and
  *      - the mode is MONOCLE or,
  *      - it is the only window on screen
- *
- * finally button events are grabbed for the new client. There
- * is no need for button events to be grabbed again, except if
- * CLICK_TO_FOCUS is set, in which case the grabbing of Button1
- * must be updated, so Button1 clicks are available to the
- * active window / current client.
- * this is a compromise. we could grab the buttons for the new
- * client on maprequest(), but since we will be calling this
- * function anyway, we can just grab the buttons for the current
- * client that may be the new client.
  */
 void focus(Client *c, Desktop *d) {
-    if (!d->head) {
+    /* update references to prev and curr,
+     * previously focused and currently focused clients.
+     *
+     * if there are no clients (!head) or the new client
+     * is NULL, then delete the _NET_ACTIVE_WINDOW property
+     *
+     * if the new client is the prev client then
+     *  - either the current client was removed
+     *    and thus focus(prev) was called
+     *  - or the previous from current is prev
+     *    ie, two consecutive clients were focused
+     *    and then prev_win() was called, to focus
+     *    the previous from current client, which
+     *    happens to be prev (curr == c->next).
+     * (below: h:head p:prev c:curr)
+     *
+     * [h]->[p]->[c]->NULL   ===>   [h|p]->[c]->NULL
+     *            ^ remove current
+     *
+     * [h]->[p]->[c]->NULL   ===>   [h]->[c]->[p]->NULL
+     *       ^ prev_win swaps prev and curr
+     *
+     * in the first case we need to update prev reference,
+     * choice here is to set it to the previous from the
+     * new current client.
+     * the second case is handled as any other case, the
+     * current client is now the previously focused (prev = curr)
+     * and the new current client is now curr (curr = c)
+     *
+     * references should only change when the current
+     * client is different from the one given to focus.
+     *
+     * the new client should never be NULL, except if,
+     * there is no other client on the workspace (!head).
+     * prev and curr always point to different clients.
+     *
+     * NOTICE: remove client can remove any client,
+     * not just the current (curr). Thus, if prev is
+     * removed, its reference needs to be updated.
+     * That is handled by removeclient() function.
+     * All other reference changes for curr and prev
+     * should and are handled here.
+     */
+    if (!d->head || !c) { /* no clients - no active window - nothing to do */
         XDeleteProperty(dis, root, netatoms[NET_ACTIVE]);
         d->curr = d->prev = NULL;
         return;
-    } else if (c == d->prev) { d->prev = prevclient((d->curr = d->prev) ? d->prev:d->head, d);
-    } else if (c != d->curr) { d->prev = d->curr; d->curr = c; }
+    } else if (d->prev == c && d->curr != c->next) { d->prev = prevclient((d->curr = c), d);
+    } else if (d->curr != c) { d->prev = d->curr; d->curr = c; }
 
-    /* num of n:all fl:fullscreen ft:floating/transient windows */
+    /* restack clients
+     *
+     * stack order is based on client properties.
+     * from top to bottom:
+     *  - current when floating or transient
+     *  - floating or trancient windows
+     *  - current when tiled
+     *  - current when fullscreen
+     *  - fullscreen windows
+     *  - tiled windows
+     *
+     * num of n:all fl:fullscreen ft:floating/transient windows
+     */
     int n = 0, fl = 0, ft = 0;
     for (c = d->head; c; c = c->next, ++n) if (ISFFT(c)) { fl++; if (!c->isfull) ft++; }
     Window w[n];
@@ -830,7 +869,7 @@ Client* prevclient(Client *c, Desktop *d) {
  */
 void prev_win(void) {
     Desktop *d = &desktops[currdeskidx];
-    if (d->curr && d->head->next) focus(prevclient((d->prev = d->curr), d), d);
+    if (d->curr && d->head->next) focus(prevclient(d->curr, d), d);
 }
 
 /**
@@ -864,7 +903,7 @@ void removeclient(Client *c, Desktop *d) {
     Client **p = NULL;
     for (p = &d->head; *p && (*p != c); p = &(*p)->next);
     if (!*p) return; else *p = c->next;
-    if (c == d->prev) d->prev = prevclient(d->curr, d);
+    if (c == d->prev && !(d->prev = prevclient(d->curr, d))) d->prev = d->head;
     if (c == d->curr || (d->head && !d->head->next)) focus(d->prev, d);
     if (!(c->isfloat || c->istrans) || (d->head && !d->head->next)) tile(d);
     free(c);
