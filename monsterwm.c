@@ -14,11 +14,12 @@
 #include <X11/Xatom.h>
 
 #define LENGTH(x)       (sizeof(x)/sizeof(*x))
+#define MAX(a, b)				(a > b ? a : b)
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 #define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
 #define ISFFT(c)        (c->isfull || c->isfloat || c->istrans)
 /* wrapper to automatically move/resize windows used by multi-monitor branch */
-#define XMVRSZ(dis, win, x, y, w, h) XMoveResizeWindow(dis, win, 0 + (x), 0 + (y), w, h)
+#define XMVRSZ(dis, win, x, y, w, h) XMoveResizeWindow(dis, win, 0 + (x), 0 + (y), MAX(1,w), MAX(1,h))
 
 enum { RESIZE, MOVE };
 enum { TILE, MONOCLE, BSTACK, GRID, FLOAT, MODES };
