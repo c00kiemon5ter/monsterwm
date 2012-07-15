@@ -63,6 +63,37 @@ typedef struct {
 } Button;
 
 /**
+ * define behavior of certain applications
+ * configured in config.h
+ *
+ * class   - the class or name of the instance
+ * desktop - what desktop it should be spawned at
+ * follow  - whether to change desktop focus to the specified desktop
+ */
+typedef struct {
+    const char *class;
+    const int desktop;
+    const Bool follow, floating;
+} AppRule;
+
+/* exposed function prototypes sorted alphabetically */
+static void change_desktop(const Arg *arg);
+static void client_to_desktop(const Arg *arg);
+static void killclient();
+static void move_down();
+static void move_up();
+static void moveresize(const Arg *arg);
+static void mousemotion(const Arg *arg);
+static void next_win();
+static void prev_win();
+static void quit();
+static void spawn(const Arg *arg);
+static void swap_master();
+static void switch_mode(const Arg *arg);
+
+#include "config.h"
+
+/**
  * a client is a wrapper to a window that additionally
  * holds some properties for that window
  *
@@ -95,26 +126,10 @@ typedef struct {
     Client *head, *curr, *prev;
 } Desktop;
 
-/**
- * define behavior of certain applications
- * configured in config.h
- *
- * class   - the class or name of the instance
- * desktop - what desktop it should be spawned at
- * follow  - whether to change desktop focus to the specified desktop
- */
-typedef struct {
-    const char *class;
-    const int desktop;
-    const Bool follow, floating;
-} AppRule;
-
-/* function prototypes sorted alphabetically */
+/* hidden function prototypes sorted alphabetically */
 static Client* addwindow(Window w, Desktop *d);
 static void buttonpress(XEvent *e);
-static void change_desktop(const Arg *arg);
 static void cleanup(void);
-static void client_to_desktop(const Arg *arg);
 static void clientmessage(XEvent *e);
 static void configurerequest(XEvent *e);
 static void deletewindow(Window w);
@@ -128,34 +143,21 @@ static void grabbuttons(Client *c);
 static void grabkeys(void);
 static void grid(int h, int y, Desktop *d);
 static void keypress(XEvent *e);
-static void killclient();
 static void maprequest(XEvent *e);
 static void monocle(int h, int y, Desktop *d);
-static void move_down();
-static void move_up();
-static void moveresize(const Arg *arg);
-static void mousemotion(const Arg *arg);
-static void next_win();
 static Client* prevclient(Client *c, Desktop *d);
-static void prev_win();
 static void propertynotify(XEvent *e);
-static void quit();
 static void removeclient(Client *c, Desktop *d);
 static void run(void);
 static void setfullscreen(Client *c, Desktop *d, Bool fullscrn);
 static void setup(void);
 static void sigchld(int sig);
-static void spawn(const Arg *arg);
 static void stack(int h, int y, Desktop *d);
-static void swap_master();
-static void switch_mode(const Arg *arg);
 static void tile(Desktop *d);
 static void unmapnotify(XEvent *e);
 static Bool wintoclient(Window w, Client **c, Desktop **d);
 static int xerror(Display *dis, XErrorEvent *ee);
 static int xerrorstart(Display *dis, XErrorEvent *ee);
-
-#include "config.h"
 
 /**
  * global variables
