@@ -141,10 +141,10 @@ static void focusin(XEvent *e);
 static unsigned long getcolor(const char* color, const int screen);
 static void grabbuttons(Client *c);
 static void grabkeys(void);
-static void grid(int h, int y, Desktop *d);
+static void grid(int x, int y, int w, int h, const Desktop *d);
 static void keypress(XEvent *e);
 static void maprequest(XEvent *e);
-static void monocle(int h, int y, Desktop *d);
+static void monocle(int x, int y, int w, int h, const Desktop *d);
 static Client* prevclient(Client *c, Desktop *d);
 static void propertynotify(XEvent *e);
 static void removeclient(Client *c, Desktop *d);
@@ -152,7 +152,7 @@ static void run(void);
 static void setfullscreen(Client *c, Desktop *d, Bool fullscrn);
 static void setup(void);
 static void sigchld(int sig);
-static void stack(int h, int y, Desktop *d);
+static void stack(int x, int y, int w, int h, const Desktop *d);
 static void tile(Desktop *d);
 static void unmapnotify(XEvent *e);
 static Bool wintoclient(Window w, Client **c, Desktop **d);
@@ -197,11 +197,13 @@ static void (*events[LASTEvent])(XEvent *e) = {
 /**
  * array of layout handlers
  *
- * h aka hh - avaible height that windows have to expand
- * y aka cy - offset from top to place the windows (reserved by the panel)
- * d        - the desktop to tile its clients
+ * x - the start position in the x axis to place clients
+ * y - the start position in the y axis to place clients
+ * w - available width  that windows have to expand
+ * h - available height that windows have to expand
+ * d - the desktop to tile its clients
  */
-static void (*layout[MODES])(int h, int y, Desktop *d) = {
+static void (*layout[MODES])(int x, int y, int w, int h, const Desktop *d) = {
     [TILE] = stack, [BSTACK] = stack, [GRID] = grid, [MONOCLE] = monocle,
 };
 
@@ -606,17 +608,17 @@ void grabkeys(void) {
  * grid mode / grid layout
  * arrange windows in a grid aka fair
  */
-void grid(int hh, int cy, Desktop *d) {
+void grid(int x, int y, int w, int h, const Desktop *d) {
     int n = 0, cols = 0, cn = 0, rn = 0, i = -1;
     for (Client *c = d->head; c; c = c->next) if (!ISFFT(c)) ++n;
     for (cols = 0; cols <= n/2; cols++) if (cols*cols >= n) break; /* emulate square root */
     if (n == 0) return; else if (n == 5) cols = 2;
 
-    int rows = n/cols, ch = hh - BORDER_WIDTH, cw = (ww - BORDER_WIDTH)/(cols ? cols:1);
+    int rows = n/cols, ch = h - BORDER_WIDTH, cw = (w - BORDER_WIDTH)/(cols ? cols:1);
     for (Client *c = d->head; c; c = c->next) {
         if (ISFFT(c)) continue; else ++i;
         if (i/rows + 1 > cols - n%cols) rows = n/cols + 1;
-        XMoveResizeWindow(dis, c->win, cn*cw, cy + rn*ch/rows, cw - BORDER_WIDTH, ch/rows - BORDER_WIDTH);
+        XMoveResizeWindow(dis, c->win, x + cn*cw, y + rn*ch/rows, cw - BORDER_WIDTH, ch/rows - BORDER_WIDTH);
         if (++rn >= rows) { rn = 0; cn++; }
     }
 }
@@ -750,8 +752,8 @@ void mousemotion(const Arg *arg) {
  * monocle aka max aka fullscreen mode/layout
  * each window should cover all the available screen space
  */
-void monocle(int hh, int cy, Desktop *d) {
-    for (Client *c = d->head; c; c = c->next) if (!ISFFT(c)) XMoveResizeWindow(dis, c->win, 0, cy, ww, hh);
+void monocle(int x, int y, int w, int h, const Desktop *d) {
+    for (Client *c = d->head; c; c = c->next) if (!ISFFT(c)) XMoveResizeWindow(dis, c->win, x, y, w, h);
 }
 
 /**
@@ -1015,9 +1017,9 @@ void spawn(const Arg *arg) {
  * tile or common tiling aka v-stack mode/layout
  * bstack or bottom stack aka h-stack mode/layout
  */
-void stack(int hh, int cy, Desktop *d) {
+void stack(int x, int y, int w, int h, const Desktop *d) {
     Client *c = NULL, *t = NULL; Bool b = (d->mode == BSTACK);
-    int n = 0, p = 0, z = b ? ww:hh, ma = (b ? hh:ww) * MASTER_SIZE;
+    int n = 0, p = 0, z = (b ? w:h), ma = (b ? h:w) * MASTER_SIZE;
 
     /* count stack windows and grab first non-floating, non-fullscreen window */
     for (t = d->head; t; t = t->next) if (!ISFFT(t)) { if (c) ++n; else c = t; }
@@ -1027,22 +1029,23 @@ void stack(int hh, int cy, Desktop *d) {
      * if more than one stack windows (n > 1) on screen then adjustments may be needed
      *   - p is the num of pixels than remain when spliting
      *   the available width/height to the number of windows
-     *   - z is the clients' height/width */
-    if (c && !n) XMoveResizeWindow(dis, c->win, 0, cy, ww - 2*BORDER_WIDTH, hh - 2*BORDER_WIDTH);
+     *   - z is the clients' height/width
+     */
+    if (c && !n) XMoveResizeWindow(dis, c->win, x, y, w - 2*BORDER_WIDTH, h - 2*BORDER_WIDTH);
     if (!c || !n) return; else if (n > 1) { p = z%n; z /= n; }
 
     /* tile the first non-floating, non-fullscreen window to cover the master area */
-    if (b) XMoveResizeWindow(dis, c->win, 0, cy, ww - 2*BORDER_WIDTH, ma - BORDER_WIDTH);
-    else   XMoveResizeWindow(dis, c->win, 0, cy, ma - BORDER_WIDTH, hh - 2*BORDER_WIDTH);
+    if (b) XMoveResizeWindow(dis, c->win, x, y, w - 2*BORDER_WIDTH, ma - BORDER_WIDTH);
+    else   XMoveResizeWindow(dis, c->win, x, y, ma - BORDER_WIDTH, h - 2*BORDER_WIDTH);
 
-    int cx = b ? 0:ma, cw = (b ? hh:ww) - 2*BORDER_WIDTH - ma, ch = z - BORDER_WIDTH;
+    int cw = (b ? h:w) - 2*BORDER_WIDTH - ma, ch = z - BORDER_WIDTH;
 
-    for (cy += b ? ma:0, c = c->next; c; c = c->next) {
+    for (x += b ? 0:ma, y += b ? ma:0, c = c->next; c; c = c->next) {
         if (ISFFT(c)) continue;
         for (t = c->next; t && ISFFT(t); t = t->next);
         if (!t) ch += p - BORDER_WIDTH; /* add remaining space to last window */
-        if (b) { XMoveResizeWindow(dis, c->win, cx, cy, ch, cw); cx += z; }
-        else   { XMoveResizeWindow(dis, c->win, cx, cy, cw, ch); cy += z; }
+        if (b) { XMoveResizeWindow(dis, c->win, x, y, ch, cw); x += z; }
+        else   { XMoveResizeWindow(dis, c->win, x, y, cw, ch); y += z; }
     }
 }
 
@@ -1083,7 +1086,7 @@ void switch_mode(const Arg *arg) {
  */
 void tile(Desktop *d) {
     if (!d->head || d->mode == FLOAT) return; /* nothing to arange */
-    layout[d->head->next ? d->mode:MONOCLE](wh, TOP_PANEL ? PANEL_HEIGHT:0, d);
+    layout[d->head->next ? d->mode:MONOCLE](0, TOP_PANEL ? PANEL_HEIGHT:0, ww, wh, d);
 }
 
 /**
