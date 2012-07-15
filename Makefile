@@ -7,11 +7,11 @@ PREFIX ?= /usr/local
 BINDIR ?= ${PREFIX}/bin
 MANPREFIX = ${PREFIX}/share/man
 
-X11INC = /usr/include/X11
-X11LIB = /usr/lib/X11
+X11INC = -I/usr/X11R6/include
+X11LIB = -L/usr/X11R6/lib -lX11
 
-INCS = -I. -I/usr/include -I${X11INC}
-LIBS = -L/usr/lib -lc -L${X11LIB} -lX11
+INCS = -I. -I/usr/include ${X11INC}
+LIBS = -L/usr/lib -lc ${X11LIB}
 
 CFLAGS   = -s -Os -std=c99 -pedantic -Wall -Wextra ${INCS} -DVERSION=\"${VERSION}\"
 LDFLAGS  = -s ${LIBS}
