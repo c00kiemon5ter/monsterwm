@@ -128,6 +128,19 @@ typedef struct {
     Client *head, *curr, *prev;
 } Desktop;
 
+/**
+ * properties of each monitor
+ *
+ * wx, wy      - the starting position of the monitor area
+ * wh, ww      - the width and height of the monitor
+ * currdeskidx - the current desktop
+ * desktops    - the desktops handled by the monitor
+ */
+typedef struct Monitor {
+    int x, y, h, w, currdeskidx;
+    Desktop desktops[DESKTOPS];
+} Monitor;
+
 /* hidden function prototypes sorted alphabetically */
 static Client* addwindow(Window w, Desktop *d);
 static void buttonpress(XEvent *e);
