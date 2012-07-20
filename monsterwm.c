@@ -237,15 +237,14 @@ void buttonpress(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
 
-    if (!wintoclient(e->xbutton.window, &c, &d)) return;
-
-    if (CLICK_TO_FOCUS && d->curr != c && e->xbutton.button == Button1) focus(c, d);
+    if (wintoclient(e->xbutton.window, &c, &d) && CLICK_TO_FOCUS &&
+            c != d->curr && e->xbutton.button == Button1) focus(c, d);
 
     for (unsigned int i = 0; i < LENGTH(buttons); i++)
-        if (CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state)
-                  && buttons[i].button == e->xbutton.button) {
-            if (d->curr != c) focus(c, d);
-            if (buttons[i].func) buttons[i].func(&(buttons[i].arg));
+        if (CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state) &&
+            buttons[i].func && buttons[i].button == e->xbutton.button) {
+            if (c && d->curr != c) focus(c, d);
+            buttons[i].func(&(buttons[i].arg));
         }
 }
 
