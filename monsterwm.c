@@ -673,9 +673,8 @@ void maprequest(XEvent *e) {
 
     if (XGetClassHint(dis, w, &ch)) for (unsigned int i = 0; i < LENGTH(rules); i++)
         if (strstr(ch.res_class, rules[i].class) || strstr(ch.res_name, rules[i].class)) {
-            if (rules[i].desktop >= 0) newdsk = rules[i].desktop;
-            follow = rules[i].follow;
-            floating = rules[i].floating;
+            if (rules[i].desktop >= 0 && rules[i].desktop < DESKTOPS) newdsk = rules[i].desktop;
+            follow = rules[i].follow, floating = rules[i].floating;
             break;
         }
     if (ch.res_class) XFree(ch.res_class);
