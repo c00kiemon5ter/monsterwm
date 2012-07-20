@@ -552,8 +552,8 @@ void focusin(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
 
-    if (!wintoclient(e->xfocus.window, &c, &d)) return;
-    else if (d->curr && e->xfocus.window != d->curr->win) focus(d->curr, d);
+    if (wintoclient(e->xfocus.window, &c, &d) && d->curr &&
+        e->xfocus.window != d->curr->win) focus(d->curr, d);
 }
 
 /**
