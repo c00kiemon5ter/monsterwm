@@ -13,8 +13,13 @@ X11LIB = -L/usr/X11R6/lib -lX11
 INCS = -I. -I/usr/include ${X11INC}
 LIBS = -L/usr/lib -lc ${X11LIB}
 
-CFLAGS   = -s -Os -std=c99 -pedantic -Wall -Wextra ${INCS} -DVERSION=\"${VERSION}\"
-LDFLAGS  = -s ${LIBS}
+OPTFLAGS = -s -Os
+LDOPTFLAGS = -s
+DBGFLAGS = -g -O0
+LDDBGFLAGS = -g
+
+CFLAGS   = -std=c99 -pedantic -Wall -Wextra ${INCS} -DVERSION=\"${VERSION}\"
+LDFLAGS  = ${LIBS}
 
 CC 	 = cc
 EXEC = ${WMNAME}
@@ -22,7 +27,13 @@ EXEC = ${WMNAME}
 SRC = ${WMNAME}.c
 OBJ = ${SRC:.c=.o}
 
+all: CFLAGS += ${OPTFLAGS}
+all: LDFLAGS += ${LDOPTFLAGS}
 all: options ${WMNAME}
+
+debug: CFLAGS += ${DBGFLAGS}
+debug: LDFLAGS += ${LDDBGFLAGS}
+debug: options ${WMNAME}
 
 options:
 	@echo ${WMNAME} build options:
