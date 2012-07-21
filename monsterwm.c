@@ -591,8 +591,8 @@ void focus(Client *c, Desktop *d, Monitor *m) {
  * client, by the user, through the wm.
  */
 void focusin(XEvent *e) {
-    Desktop *d = &desktops[currdeskidx];
-    if (d->curr && d->curr->win != e->xfocus.window) focus(d->curr, d);
+    Monitor *m = &monitors[currmonidx]; Desktop *d = &m->desktops[m->currdeskidx];
+    if (d->curr && d->curr->win != e->xfocus.window) focus(d->curr, d, m);
 }
 
 /**
