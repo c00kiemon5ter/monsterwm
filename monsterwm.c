@@ -280,15 +280,16 @@ void buttonpress(XEvent *e) {
  * first all others then the current
  */
 void change_desktop(const Arg *arg) {
-    if (arg->i == currdeskidx || arg->i < 0 || arg->i >= DESKTOPS) return;
-    Desktop *d = &desktops[currdeskidx], *n = &desktops[(currdeskidx = arg->i)];
+    Monitor *m = &monitors[currmonidx];
+    if (arg->i == m->currdeskidx || arg->i < 0 || arg->i >= DESKTOPS) return;
+    Desktop *d = &m->desktops[m->currdeskidx], *n = &m->desktops[(m->currdeskidx = arg->i)];
     if (n->curr) XMapWindow(dis, n->curr->win);
     for (Client *c = n->head; c; c = c->next) XMapWindow(dis, c->win);
     XChangeWindowAttributes(dis, root, CWEventMask, &(XSetWindowAttributes){.do_not_propagate_mask = SubstructureNotifyMask});
     for (Client *c = d->head; c; c = c->next) if (c != d->curr) XUnmapWindow(dis, c->win);
     if (d->curr) XUnmapWindow(dis, d->curr->win);
     XChangeWindowAttributes(dis, root, CWEventMask, &(XSetWindowAttributes){.event_mask = ROOTMASK});
-    if (n->head) { tile(n); focus(n->curr, n); }
+    if (n->head) { tile(n, m); focus(n->curr, n, m); }
     desktopinfo();
 }
 
