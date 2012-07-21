@@ -171,7 +171,7 @@ static void sigchld(int sig);
 static void stack(int x, int y, int w, int h, const Desktop *d);
 static void tile(Desktop *d);
 static void unmapnotify(XEvent *e);
-static Bool wintoclient(Window w, Client **c, Desktop **d);
+static Bool wintoclient(Window w, Client **c, Desktop **d, Monitor **m);
 static int xerror(Display *dis, XErrorEvent *ee);
 static int xerrorstart(Display *dis, XErrorEvent *ee);
 
@@ -1135,9 +1135,10 @@ void unmapnotify(XEvent *e) {
 /**
  * find to which client and desktop the given window belongs to
  */
-Bool wintoclient(Window w, Client **c, Desktop **d) {
-    for (int i = 0; i < DESKTOPS && !*c; i++)
-        for (*d = &desktops[i], *c = (*d)->head; *c && (*c)->win != w; *c = (*c)->next);
+Bool wintoclient(Window w, Client **c, Desktop **d, Monitor **m) {
+    for (int cm = 0; cm < nmonitors && !*c; cm++)
+        for (int cd = 0; cd < DESKTOPS && !*c; cd++)
+            for (*m = &monitors[cm], *d = &(*m)->desktops[cd], *c = (*d)->head; *c && (*c)->win != w; *c = (*c)->next);
     return (*c != NULL);
 }
 
