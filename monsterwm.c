@@ -169,7 +169,7 @@ static void setfullscreen(Client *c, Desktop *d, Bool fullscrn);
 static void setup(void);
 static void sigchld(int sig);
 static void stack(int x, int y, int w, int h, const Desktop *d);
-static void tile(Desktop *d);
+static void tile(Desktop *d, Monitor *m);
 static void unmapnotify(XEvent *e);
 static Bool wintoclient(Window w, Client **c, Desktop **d, Monitor **m);
 static int xerror(Display *dis, XErrorEvent *ee);
@@ -1118,9 +1118,10 @@ void switch_mode(const Arg *arg) {
  * tile clients of the given desktop with the desktop's mode/layout
  * call the tiling handler fucntion taking account the panel height
  */
-void tile(Desktop *d) {
+void tile(Desktop *d, Monitor *m) {
     if (!d->head || d->mode == FLOAT) return; /* nothing to arange */
-    layout[d->head->next ? d->mode:MONOCLE](0, TOP_PANEL ? PANEL_HEIGHT:0, ww, wh, d);
+    layout[d->head->next ? d->mode:MONOCLE](m->x, m->y + (TOP_PANEL ? PANEL_HEIGHT:0),
+                                            m->w, m->h - (TOP_PANEL ? PANEL_HEIGHT:0), d);
 }
 
 /**
