@@ -799,7 +799,7 @@ void monocle(int x, int y, int w, int h, const Desktop *d) {
  * swap positions of current and next from current clients
  */
 void move_down(void) {
-    Desktop *d = &desktops[currdeskidx];
+    Desktop *d = &monitors[currmonidx].desktops[monitors[currmonidx].currdeskidx];
     if (!d->curr || !d->head->next) return;
     /* p is previous, c is current, n is next, if current is head n is last */
     Client *p = prevclient(d->curr, d), *n = (d->curr->next) ? d->curr->next:d->head;
@@ -831,14 +831,14 @@ void move_down(void) {
      *  ^head                         ^head
      */
     if (d->curr->next == n->next) n->next = d->curr; else d->head = d->curr;
-    if (!d->curr->isfloat && !d->curr->istrans) tile(d);
+    if (!d->curr->isfloat && !d->curr->istrans) tile(d, &monitors[currmonidx]);
 }
 
 /**
  * swap positions of current and previous from current clients
  */
 void move_up(void) {
-    Desktop *d = &desktops[currdeskidx];
+    Desktop *d = &monitors[currmonidx].desktops[monitors[currmonidx].currdeskidx];
     if (!d->curr || !d->head->next) return;
     /* p is previous from current or last if current is head */
     Client *pp = NULL, *p = prevclient(d->curr, d);
@@ -872,7 +872,7 @@ void move_up(void) {
      *  ^head         ^last           ^head         ^last
      */
     d->curr->next = (d->curr->next == d->head) ? NULL:p;
-    if (!d->curr->isfloat && !d->curr->istrans) tile(d);
+    if (!d->curr->isfloat && !d->curr->istrans) tile(d, &monitors[currmonidx]);
 }
 
 /**
