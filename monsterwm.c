@@ -1108,11 +1108,11 @@ void stack(int x, int y, int w, int h, const Desktop *d) {
  * are the head
  */
 void swap_master(void) {
-    Desktop *d = &desktops[currdeskidx];
+    Desktop *d = &monitors[currmonidx].desktops[monitors[currmonidx].currdeskidx];
     if (!d->curr || !d->head->next) return;
     if (d->curr == d->head) move_down();
     else while (d->curr != d->head) move_up();
-    focus(d->head, d);
+    focus(d->head, d, &monitors[currmonidx]);
 }
 
 /**
@@ -1122,10 +1122,10 @@ void swap_master(void) {
  * if mode is FLOAT set all clients floating
  */
 void switch_mode(const Arg *arg) {
-    Desktop *d = &desktops[currdeskidx];
+    Desktop *d = &monitors[currmonidx].desktops[monitors[currmonidx].currdeskidx];
     if (d->mode != arg->i) d->mode = arg->i;
     else if (d->mode != FLOAT) for (Client *c = d->head; c; c = c->next) c->isfloat = False;
-    if (d->head) { tile(d); focus(d->curr, d); }
+    if (d->head) { tile(d, &monitors[currmonidx]); focus(d->curr, d, &monitors[currmonidx]); }
     desktopinfo();
 }
 
