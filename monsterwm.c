@@ -1102,6 +1102,7 @@ void setup(void) {
 
     grabkeys();
     if (DEFAULT_DESKTOP >= 0 && DEFAULT_DESKTOP < DESKTOPS) change_desktop(&(Arg){.i = DEFAULT_DESKTOP});
+    if (DEFAULT_MONITOR >= 0 && DEFAULT_MONITOR < nmonitors) change_monitor(&(Arg){.i = DEFAULT_MONITOR});
 }
 
 void sigchld(__attribute__((unused)) int sig) {

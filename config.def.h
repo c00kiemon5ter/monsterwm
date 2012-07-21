@@ -26,6 +26,7 @@
 #define UNFOCUS         "#444444" /* unfocused window border color */
 #define INFOCUS         "#9c3885" /* focused window border color on unfocused monitor */
 #define MINWSZ          50        /* minimum window size in pixels */
+#define DEFAULT_MONITOR 0         /* the monitor to focus initially */
 #define DEFAULT_DESKTOP 0         /* the desktop to focus initially */
 #define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
 
