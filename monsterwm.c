@@ -325,20 +325,22 @@ void cleanup(void) {
  * then remove it from the current desktop
  */
 void client_to_desktop(const Arg *arg) {
-    if (arg->i == currdeskidx || arg->i < 0 || arg->i >= DESKTOPS || !desktops[currdeskidx].curr) return;
-    Desktop *d = &desktops[currdeskidx], *n = &desktops[arg->i];
-    Client *c = d->curr, *p = prevclient(d->curr, d), *l = prevclient(n->head, n);
+    Monitor *m = &monitors[currmonidx]; Desktop *d = &m->desktops[m->currdeskidx], *n = NULL;
+    if (arg->i == m->currdeskidx || arg->i < 0 || arg->i >= DESKTOPS || !d->curr) return;
+
+    Client *c = d->curr, *p = prevclient(d->curr, d),
+           *l = prevclient(m->desktops[arg->i].head, (n = &m->desktops[arg->i]));
 
     /* unlink current client from current desktop */
     if (d->head == c || !p) d->head = c->next; else p->next = c->next;
     c->next = NULL;
     XChangeWindowAttributes(dis, root, CWEventMask, &(XSetWindowAttributes){.do_not_propagate_mask = SubstructureNotifyMask});
-    if (XUnmapWindow(dis, c->win)) focus(d->prev, d);
+    if (XUnmapWindow(dis, c->win)) focus(d->prev, d, m);
     XChangeWindowAttributes(dis, root, CWEventMask, &(XSetWindowAttributes){.event_mask = ROOTMASK});
-    if (!(c->isfloat || c->istrans) || (d->head && !d->head->next)) tile(d);
+    if (!(c->isfloat || c->istrans) || (d->head && !d->head->next)) tile(d, m);
 
     /* link client to new desktop and make it the current */
-    focus(l ? (l->next = c):n->head ? (n->head->next = c):(n->head = c), n);
+    focus(l ? (l->next = c):n->head ? (n->head->next = c):(n->head = c), n, m);
 
     if (FOLLOW_WINDOW) change_desktop(arg); else desktopinfo();
 }
