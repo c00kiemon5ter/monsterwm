@@ -164,7 +164,7 @@ static void maprequest(XEvent *e);
 static void monocle(int x, int y, int w, int h, const Desktop *d);
 static Client* prevclient(Client *c, Desktop *d);
 static void propertynotify(XEvent *e);
-static void removeclient(Client *c, Desktop *d);
+static void removeclient(Client *c, Desktop *d, Monitor *m);
 static void run(void);
 static void setfullscreen(Client *c, Desktop *d, Monitor *m, Bool fullscrn);
 static void setup(void);
@@ -945,13 +945,13 @@ void quit(void) {
  * if c was the previous client, previous must be updated.
  * if c was the current client, current must be updated.
  */
-void removeclient(Client *c, Desktop *d) {
+void removeclient(Client *c, Desktop *d, Monitor *m) {
     Client **p = NULL;
     for (p = &d->head; *p && (*p != c); p = &(*p)->next);
     if (!*p) return; else *p = c->next;
     if (c == d->prev && !(d->prev = prevclient(d->curr, d))) d->prev = d->head;
-    if (c == d->curr || (d->head && !d->head->next)) focus(d->prev, d);
-    if (!(c->isfloat || c->istrans) || (d->head && !d->head->next)) tile(d);
+    if (c == d->curr || (d->head && !d->head->next)) focus(d->prev, d, m);
+    if (!(c->isfloat || c->istrans) || (d->head && !d->head->next)) tile(d, m);
     free(c);
     desktopinfo();
 }
