@@ -967,12 +967,21 @@ void setup(void) {
     const int screen = DefaultScreen(dis);
     root = RootWindow(dis, screen);
 
-    /* screen width and height */
-    ww = XDisplayWidth(dis,  screen);
-    wh = XDisplayHeight(dis, screen) - PANEL_HEIGHT;
+    /* initialize monitors and desktops */
+    XineramaScreenInfo *info = XineramaQueryScreens(dis, &nmonitors);
 
-    /* initialize mode for each desktop */
-    for (unsigned int d = 0; d < DESKTOPS; d++) desktops[d] = (Desktop){ .mode = DEFAULT_MODE };
+    if (!nmonitors || !info)
+        errx(EXIT_FAILURE, "Xinerama is not active");
+    if (!(monitors = calloc(nmonitors, sizeof(Monitor))))
+        err(EXIT_FAILURE, "cannot allocate monitors");
+
+    for (int m = 0; m < nmonitors; m++) {
+        monitors[m] = (Monitor){ .x = info[m].x_org, .y = info[m].y_org,
+                                 .w = info[m].width, .h = info[m].height };
+        for (unsigned int d = 0; d < DESKTOPS; d++)
+            monitors[m].desktops[d] = (Desktop){ .mode = DEFAULT_MODE };
+    }
+    XFree(info);
 
     /* get color for focused and unfocused client borders */
     win_focus = getcolor(FOCUS, screen);
