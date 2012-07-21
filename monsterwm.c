@@ -757,7 +757,7 @@ void maprequest(XEvent *e) {
  * once a window has been moved or resized, it's marked as floating.
  */
 void mousemotion(const Arg *arg) {
-    Desktop *d = &desktops[currdeskidx];
+    Monitor *m = &monitors[currmonidx]; Desktop *d = &m->desktops[m->currdeskidx];
     XWindowAttributes wa;
     XEvent ev;
 
@@ -770,7 +770,8 @@ void mousemotion(const Arg *arg) {
     if (XGrabPointer(dis, root, False, BUTTONMASK|PointerMotionMask, GrabModeAsync,
                      GrabModeAsync, None, None, CurrentTime) != GrabSuccess) return;
 
-    if (!d->curr->isfloat && !d->curr->istrans) { d->curr->isfloat = True; tile(d); focus(d->curr, d); }
+    if (!d->curr->isfloat && !d->curr->istrans) { d->curr->isfloat = True; tile(d, m); focus(d->curr, d, m); }
+    XRaiseWindow(dis, d->curr->win);
 
     do {
         XMaskEvent(dis, BUTTONMASK|PointerMotionMask|SubstructureRedirectMask, &ev);
@@ -878,10 +879,11 @@ void move_up(void) {
  * move and resize a window with the keyboard
  */
 void moveresize(const Arg *arg) {
-    Desktop *d = &desktops[currdeskidx];
+    Monitor *m = &monitors[currmonidx]; Desktop *d = &m->desktops[m->currdeskidx];
     XWindowAttributes wa;
     if (!d->curr || !XGetWindowAttributes(dis, d->curr->win, &wa)) return;
-    if (!d->curr->isfloat && !d->curr->istrans) { d->curr->isfloat = True; tile(d); focus(d->curr, d); }
+    if (!d->curr->isfloat && !d->curr->istrans) { d->curr->isfloat = True; tile(d, m); focus(d->curr, d, m); }
+    XRaiseWindow(dis, d->curr->win);
     XMoveResizeWindow(dis, d->curr->win, wa.x + ((int *)arg->v)[0], wa.y + ((int *)arg->v)[1],
                                 wa.width + ((int *)arg->v)[2], wa.height + ((int *)arg->v)[3]);
 }
