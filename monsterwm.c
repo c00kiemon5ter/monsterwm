@@ -460,8 +460,8 @@ void desktopinfo(void) {
  * on receival, remove the client that held that window
  */
 void destroynotify(XEvent *e) {
-    Desktop *d = NULL; Client *c = NULL;
-    if (wintoclient(e->xdestroywindow.window, &c, &d)) removeclient(c, d);
+    Monitor *m = NULL; Desktop *d = NULL; Client *c = NULL;
+    if (wintoclient(e->xdestroywindow.window, &c, &d, &m)) removeclient(c, d, m);
 }
 
 /**
