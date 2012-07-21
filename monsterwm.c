@@ -83,6 +83,7 @@ typedef struct {
 static void change_desktop(const Arg *arg);
 static void change_monitor(const Arg *arg);
 static void client_to_desktop(const Arg *arg);
+static void client_to_monitor(const Arg *arg);
 static void killclient();
 static void move_down();
 static void move_up();
@@ -343,6 +344,41 @@ void client_to_desktop(const Arg *arg) {
     focus(l ? (l->next = c):n->head ? (n->head->next = c):(n->head = c), n, m);
 
     if (FOLLOW_WINDOW) change_desktop(arg); else desktopinfo();
+}
+
+/**
+ * move the current focused client to another monitor
+ *
+ * add the current client as the last on the new monitor's current desktop
+ * then remove it from the current monitor's current desktop
+ *
+ * removing the client means unlinking it and unmapping it.
+ * add the client means linking it as the last client, and
+ * mapping it. mapping must happen after the client has been
+ * unmapped from the current monitor's current desktop.
+ */
+void client_to_monitor(const Arg *arg) {
+    Monitor *cm = &monitors[currmonidx], *nm = NULL;
+    Desktop *cd = &cm->desktops[cm->currdeskidx], *nd = NULL;
+    if (arg->i == currmonidx || arg->i < 0 || arg->i >= nmonitors || !cd->curr) return;
+
+    nd = &monitors[arg->i].desktops[(nm = &monitors[arg->i])->currdeskidx];
+    Client *c = cd->curr, *p = prevclient(c, cd), *l = prevclient(nd->head, nd);
+
+    /* unlink current client from current monitor's current desktop */
+    if (cd->head == c || !p) cd->head = c->next; else p->next = c->next;
+    c->next = NULL;
+    focus(cd->prev, cd, cm);
+    if (!(c->isfloat || c->istrans) || (cd->head && !cd->head->next)) tile(cd, cm);
+
+    /* reset floating and fullscreen state */
+    if (ISFFT(c)) c->isfloat = c->isfull = False;
+
+    /* link to new monitor's current desktop */
+    focus(l ? (l->next = c):nd->head ? (nd->head->next = c):(nd->head = c), nd, nm);
+    tile(nd, nm);
+
+    if (FOLLOW_MONITOR) change_monitor(arg); else desktopinfo();
 }
 
 /**
