@@ -251,15 +251,21 @@ Client* addwindow(Window w, Desktop *d) {
  * call the appropriate handler
  */
 void buttonpress(XEvent *e) {
-    Desktop *d = NULL; Client *c = NULL;
-    Bool w = wintoclient(e->xbutton.window, &c, &d);
+    Monitor *m = NULL; Desktop *d = NULL; Client *c = NULL;
+    Bool w = wintoclient(e->xbutton.window, &c, &d, &m);
 
-    if (w && CLICK_TO_FOCUS && c != d->curr && e->xbutton.button == FOCUS_BUTTON) focus(c, d);
+    int cm = 0; while (m != &monitors[cm] && cm < nmonitors) ++cm;
+
+    if (w && CLICK_TO_FOCUS && e->xbutton.button == FOCUS_BUTTON && (c != d->curr || cm != currmonidx)) {
+        if (cm != currmonidx) change_monitor(&(Arg){.i = cm});
+        focus(c, d, m);
+    }
 
     for (unsigned int i = 0; i < LENGTH(buttons); i++)
         if (CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state) &&
             buttons[i].func && buttons[i].button == e->xbutton.button) {
-            if (c && d->curr != c) focus(c, d);
+            if (w && cm != currmonidx) change_monitor(&(Arg){.i = cm});
+            if (w && c != d->curr) focus(c, d, m);
             buttons[i].func(&(buttons[i].arg));
         }
 }
