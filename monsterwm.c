@@ -442,14 +442,17 @@ void deletewindow(Window w) {
  * once the info is collected, immediately flush the stream
  */
 void desktopinfo(void) {
-    Desktop *d = NULL;
+    Monitor *m = NULL;
     Client *c = NULL;
     Bool urgent = False;
 
-    for (int w = 0, i = 0; i < DESKTOPS; i++, w = 0, urgent = False) {
-        for (d = &desktops[i], c = d->head; c; urgent |= c->isurgn, ++w, c = c->next);
-        printf("%d:%d:%d:%d:%d%c", i, w, d->mode, i == currdeskidx, urgent, i == DESKTOPS-1 ? '\n':' ');
-    }
+    for (int cm = 0; cm < nmonitors; cm++)
+        for (int cd = 0, w = 0; cd < DESKTOPS; cd++, w = 0, urgent = False) {
+            for (m = &monitors[cm], c = m->desktops[cd].head; c; urgent |= c->isurgn, ++w, c = c->next);
+            printf("%d:%d:%d:%d:%d:%d:%d ", cm, cm == currmonidx, cd, w, m->desktops[cd].mode, cd == m->currdeskidx, urgent);
+        }
+
+    printf("\n");
     fflush(stdout);
 }
 
