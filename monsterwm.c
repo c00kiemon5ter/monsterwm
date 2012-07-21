@@ -166,7 +166,7 @@ static Client* prevclient(Client *c, Desktop *d);
 static void propertynotify(XEvent *e);
 static void removeclient(Client *c, Desktop *d);
 static void run(void);
-static void setfullscreen(Client *c, Desktop *d, Bool fullscrn);
+static void setfullscreen(Client *c, Desktop *d, Monitor *m, Bool fullscrn);
 static void setup(void);
 static void sigchld(int sig);
 static void stack(int x, int y, int w, int h, const Desktop *d);
@@ -367,15 +367,15 @@ void client_to_desktop(const Arg *arg) {
  * on its desktop.
  */
 void clientmessage(XEvent *e) {
-    Desktop *d = NULL; Client *c = NULL;
-    if (!wintoclient(e->xclient.window, &c, &d)) return;
+    Monitor *m = NULL; Desktop *d = NULL; Client *c = NULL;
+    if (!wintoclient(e->xclient.window, &c, &d, &m)) return;
 
     if (e->xclient.message_type        == netatoms[NET_WM_STATE] && (
         (unsigned)e->xclient.data.l[1] == netatoms[NET_FULLSCREEN]
      || (unsigned)e->xclient.data.l[2] == netatoms[NET_FULLSCREEN])) {
-        setfullscreen(c, d, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfull)));
-        if (!(c->isfloat || c->istrans) || !d->head->next) tile(d);
-    } else if (e->xclient.message_type == netatoms[NET_ACTIVE]) focus(c, d);
+        setfullscreen(c, d, m, (e->xclient.data.l[0] == 1 || (e->xclient.data.l[0] == 2 && !c->isfull)));
+        if (!(c->isfloat || c->istrans) || !d->head->next) tile(d, m);
+    } else if (e->xclient.message_type == netatoms[NET_ACTIVE]) focus(c, d, m);
 }
 
 /**
@@ -973,11 +973,11 @@ void run(void) {
  * the border should be BORDER_WIDTH,
  * except if no other client is on that desktop.
  */
-void setfullscreen(Client *c, Desktop *d, Bool fullscrn) {
+void setfullscreen(Client *c, Desktop *d, Monitor *m, Bool fullscrn) {
     if (fullscrn != c->isfull) XChangeProperty(dis, c->win,
             netatoms[NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (unsigned char*)
             ((c->isfull = fullscrn) ? &netatoms[NET_FULLSCREEN]:0), fullscrn);
-    if (fullscrn) XMoveResizeWindow(dis, c->win, 0, 0, ww, wh + PANEL_HEIGHT);
+    if (fullscrn) XMoveResizeWindow(dis, c->win, m->x, m->y, m->w, m->h);
     XSetWindowBorderWidth(dis, c->win, (c->isfull || !d->head->next ? 0:BORDER_WIDTH));
 }
 
