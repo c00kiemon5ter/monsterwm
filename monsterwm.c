@@ -152,7 +152,7 @@ static void deletewindow(Window w);
 static void desktopinfo(void);
 static void destroynotify(XEvent *e);
 static void enternotify(XEvent *e);
-static void focus(Client *c, Desktop *d);
+static void focus(Client *c, Desktop *d, Monitor *m);
 static void focusin(XEvent *e);
 static unsigned long getcolor(const char* color, const int screen);
 static void grabbuttons(Client *c);
@@ -479,7 +479,7 @@ void enternotify(XEvent *e) {
  * 3. highlight borders and set active window property
  * 4. give input focus to the current/active/focused client
  */
-void focus(Client *c, Desktop *d) {
+void focus(Client *c, Desktop *d, Monitor *m) {
     /* update references to prev and curr,
      * previously focused and currently focused clients.
      *
@@ -548,7 +548,7 @@ void focus(Client *c, Desktop *d) {
     Window w[n];
     w[(d->curr->isfloat || d->curr->istrans) ? 0:ft] = d->curr->win;
     for (fl += !ISFFT(d->curr) ? 1:0, c = d->head; c; c = c->next) {
-        XSetWindowBorder(dis, c->win, c == d->curr ? win_focus:win_unfocus);
+        XSetWindowBorder(dis, c->win, (c != d->curr) ? win_unfocus:(m == &monitors[currmonidx]) ? win_focus:win_infocus);
         /*
          * a window should have borders in any case, except if
          *  - the window is fullscreen
@@ -998,6 +998,7 @@ void setup(void) {
     /* get color for focused and unfocused client borders */
     win_focus = getcolor(FOCUS, screen);
     win_unfocus = getcolor(UNFOCUS, screen);
+    win_infocus = getcolor(INFOCUS, screen);
 
     /* set numlockmask */
     XModifierKeymap *modmap = XGetModifierMapping(dis);

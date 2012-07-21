@@ -22,6 +22,7 @@
 #define BORDER_WIDTH    2         /* window border width */
 #define FOCUS           "#ff950e" /* focused window border color   */
 #define UNFOCUS         "#444444" /* unfocused window border color */
+#define INFOCUS         "#9c3885" /* focused window border color on unfocused monitor */
 #define MINWSZ          50        /* minimum window size in pixels */
 #define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
 
