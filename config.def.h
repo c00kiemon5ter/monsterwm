@@ -41,6 +41,9 @@ static const AppRule rules[] = { \
  */
 static const char *termcmd[] = { "xterm", NULL };
 
+#define MONITORCHANGE(K,N) \
+    {  MOD4,             K,              change_monitor, {.i = N}},
+
 #define DESKTOPCHANGE(K,N) \
     {  MOD1,             K,              change_desktop, {.i = N}}, \
     {  MOD1|ShiftMask,   K,              client_to_desktop, {.i = N}},
@@ -75,6 +78,8 @@ static Key keys[] = {
        DESKTOPCHANGE(    XK_F2,                             1)
        DESKTOPCHANGE(    XK_F3,                             2)
        DESKTOPCHANGE(    XK_F4,                             3)
+       MONITORCHANGE(    XK_F1,                             0)
+       MONITORCHANGE(    XK_F2,                             1)
 };
 
 /**

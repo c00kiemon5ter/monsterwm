@@ -80,6 +80,7 @@ typedef struct {
 
 /* exposed function prototypes sorted alphabetically */
 static void change_desktop(const Arg *arg);
+static void change_monitor(const Arg *arg);
 static void client_to_desktop(const Arg *arg);
 static void killclient();
 static void move_down();
@@ -281,6 +282,17 @@ void change_desktop(const Arg *arg) {
     if (d->curr) XUnmapWindow(dis, d->curr->win);
     XChangeWindowAttributes(dis, root, CWEventMask, &(XSetWindowAttributes){.event_mask = ROOTMASK});
     if (n->head) { tile(n); focus(n->curr, n); }
+    desktopinfo();
+}
+
+/**
+ * focus another monitor
+ */
+void change_monitor(const Arg *arg) {
+    if (arg->i == currmonidx || arg->i < 0 || arg->i >= nmonitors) return;
+    Monitor *m = &monitors[currmonidx], *n = &monitors[(currmonidx = arg->i)];
+    focus(m->desktops[m->currdeskidx].curr, &m->desktops[m->currdeskidx], m);
+    focus(n->desktops[n->currdeskidx].curr, &n->desktops[n->currdeskidx], n);
     desktopinfo();
 }
 
