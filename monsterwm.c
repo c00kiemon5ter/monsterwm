@@ -918,11 +918,12 @@ void prev_win(void) {
  * set unrgent hint for a window
  */
 void propertynotify(XEvent *e) {
-    Desktop *d = NULL; Client *c = NULL;
-    if (e->xproperty.atom != XA_WM_HINTS || !wintoclient(e->xproperty.window, &c, &d)) return;
+    Monitor *m = NULL; Desktop *d = NULL; Client *c = NULL;
+    if (e->xproperty.atom != XA_WM_HINTS || !wintoclient(e->xproperty.window, &c, &d, &m)) return;
 
     XWMHints *wmh = XGetWMHints(dis, c->win);
-    c->isurgn = (c != desktops[currdeskidx].curr && wmh && (wmh->flags & XUrgencyHint));
+    Desktop *cd = &monitors[currmonidx].desktops[monitors[currmonidx].currdeskidx];
+    c->isurgn = (c != cd->curr && wmh && (wmh->flags & XUrgencyHint));
 
     if (wmh) XFree(wmh);
     desktopinfo();
