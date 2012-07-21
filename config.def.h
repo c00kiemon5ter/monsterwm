@@ -27,13 +27,15 @@
 #define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
 
 /**
- * open applications to specified desktop with specified mode.
+ * open applications to specified monitor and desktop
+ * with the specified properties.
+ * if monitor is negative, then current is assumed
  * if desktop is negative, then current is assumed
  */
 static const AppRule rules[] = { \
-    /*  class     desktop  follow  float */
-    { "MPlayer",     3,    True,   False },
-    { "Gimp",        0,    False,  True  },
+    /*  class     monitor  desktop  follow  float */
+    { "MPlayer",     0,       3,    True,   False },
+    { "Gimp",        1,       0,    False,  True  },
 };
 
 /**

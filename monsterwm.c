@@ -74,6 +74,7 @@ typedef struct {
  */
 typedef struct {
     const char *class;
+    const int monitor;
     const int desktop;
     const Bool follow, floating;
 } AppRule;
@@ -692,17 +693,18 @@ void killclient(void) {
  * then display/map the window, else, if follow is set, focus the new desktop.
  */
 void maprequest(XEvent *e) {
-    Desktop *d = NULL; Client *c = NULL;
+    Monitor *m = NULL; Desktop *d = NULL; Client *c = NULL;
     Window w = e->xmaprequest.window;
     XWindowAttributes wa = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    if (wintoclient(w, &c, &d) || (XGetWindowAttributes(dis, w, &wa) && wa.override_redirect)) return;
+    if (wintoclient(w, &c, &d, &m) || (XGetWindowAttributes(dis, w, &wa) && wa.override_redirect)) return;
 
     XClassHint ch = {0, 0};
     Bool follow = False, floating = False;
-    int newdsk = currdeskidx;
+    int newmon = currmonidx, newdsk = monitors[currmonidx].currdeskidx;
 
     if (XGetClassHint(dis, w, &ch)) for (unsigned int i = 0; i < LENGTH(rules); i++)
         if (strstr(ch.res_class, rules[i].class) || strstr(ch.res_name, rules[i].class)) {
+            if (rules[i].monitor >= 0 && rules[i].monitor < nmonitors) newmon = rules[i].monitor;
             if (rules[i].desktop >= 0 && rules[i].desktop < DESKTOPS) newdsk = rules[i].desktop;
             follow = rules[i].follow, floating = rules[i].floating;
             break;
@@ -710,20 +712,20 @@ void maprequest(XEvent *e) {
     if (ch.res_class) XFree(ch.res_class);
     if (ch.res_name) XFree(ch.res_name);
 
-    c = addwindow(w, (d = &desktops[newdsk])); /* from now on, use c->win */
+    c = addwindow(w, (d = &(m = &monitors[newmon])->desktops[newdsk])); /* from now on, use c->win */
     c->istrans = XGetTransientForHint(dis, c->win, &w);
     if ((c->isfloat = (floating || d->mode == FLOAT)) && !c->istrans)
-        XMoveWindow(dis, c->win, (ww - wa.width)/2, (wh - wa.height)/2);
+        XMoveWindow(dis, c->win, m->x + (m->w - wa.width)/2, m->y + (m->h - wa.height)/2);
 
     int i; unsigned long l; unsigned char *state = NULL; Atom a;
     if (XGetWindowProperty(dis, c->win, netatoms[NET_WM_STATE], 0L, sizeof a,
                 False, XA_ATOM, &a, &i, &l, &l, &state) == Success && state)
-        setfullscreen(c, d, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
+        setfullscreen(c, d, m, (*(Atom *)state == netatoms[NET_FULLSCREEN]));
     if (state) XFree(state);
 
-    if (currdeskidx == newdsk) { if (!ISFFT(c)) tile(d); XMapWindow(dis, c->win); }
-    else if (follow) change_desktop(&(Arg){.i = newdsk});
-    focus(c, d);
+    if (m->currdeskidx == newdsk) { if (!ISFFT(c)) tile(d, m); XMapWindow(dis, c->win); }
+    if (follow) { change_monitor(&(Arg){.i = newmon}); change_desktop(&(Arg){.i = newdsk}); }
+    focus(c, d, m);
 
     if (!follow) desktopinfo();
 }
