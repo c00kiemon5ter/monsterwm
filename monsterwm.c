@@ -679,13 +679,14 @@ void keypress(XEvent *e) {
  * otherwise forcefully kill and remove the client
  */
 void killclient(void) {
-    Desktop *d = &desktops[currdeskidx];
+    Monitor *m = &monitors[currmonidx];
+    Desktop *d = &m->desktops[m->currdeskidx];
     if (!d->curr) return;
 
     Atom *prot = NULL; int n = -1;
     if (XGetWMProtocols(dis, d->curr->win, &prot, &n))
         while(--n >= 0 && prot[n] != wmatoms[WM_DELETE_WINDOW]);
-    if (n < 0) { XKillClient(dis, d->curr->win); removeclient(d->curr, d); }
+    if (n < 0) { XKillClient(dis, d->curr->win); removeclient(d->curr, d, m); }
     else deletewindow(d->curr->win);
     if (prot) XFree(prot);
 }
