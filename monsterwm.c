@@ -604,10 +604,11 @@ unsigned long getcolor(const char* color, const int screen) {
  * occurs (see buttonpress).
  */
 void grabbuttons(Client *c) {
+    Monitor *cm = &monitors[currmonidx];
     unsigned int b, m, modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
     for (m = 0; CLICK_TO_FOCUS && m < LENGTH(modifiers); m++)
-        if (c != desktops[currdeskidx].curr) XGrabButton(dis, FOCUS_BUTTON, modifiers[m],
+        if (c != cm->desktops[cm->currdeskidx].curr) XGrabButton(dis, FOCUS_BUTTON, modifiers[m],
                 c->win, False, BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
         else XUngrabButton(dis, FOCUS_BUTTON, modifiers[m], c->win);
 
