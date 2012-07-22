@@ -641,11 +641,12 @@ void killclient(void) {
     Desktop *d = &desktops[currdeskidx];
     if (!d->curr) return;
 
-    Atom *prot; int n = -1;
+    Atom *prot = NULL; int n = -1;
     if (XGetWMProtocols(dis, d->curr->win, &prot, &n))
         while(--n >= 0 && prot[n] != wmatoms[WM_DELETE_WINDOW]);
     if (n < 0) { XKillClient(dis, d->curr->win); removeclient(d->curr, d); }
     else deletewindow(d->curr->win);
+    if (prot) XFree(prot);
 }
 
 /**
