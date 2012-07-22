@@ -7,9 +7,10 @@ monsterwm
 **monsterwm** is a minimal, lightweight, tiny but monsterous dynamic tiling window manager.
 It will try to stay as small as possible. Currently under 700 lines with the config file included.
 It provides a set of different layout modes (see below), including floating mode support.
-Each virtual desktop has its own properties, unaffected by other desktops' settings.
-For screenshots and ramblings/updates check the [topic on ArchLinux forums][monsterwm].
+Each virtual desktop has its own properties, unaffected by other desktops' or monitors' settings.
+For [screenshots][scrot] and ramblings/updates check the [topic on ArchLinux forums][monsterwm].
 
+  [scrot]: https://bbs.archlinux.org/viewtopic.php?id=141853
   [monsterwm]: https://bbs.archlinux.org/viewtopic.php?id=132122
 
 
@@ -121,6 +122,13 @@ it does not control whether there is a panel or not.
 
   [unix]: http://en.wikipedia.org/wiki/Unix_philosophy
 
+Here is a list of minimal and lightweight panels:
+
+ * [`bar`](https://github.com/LemonBoy/bar)
+ * [`some_sorta_bar`](https://github.com/moetunes/Some_sorta_bar)
+ * [`splitter_bar`](https://github.com/moetunes/splitter_bar)
+ * [`mopag`](https://github.com/c00kiemon5ter/mopag) (pager)
+
 
 Installation
 ------------
@@ -167,18 +175,22 @@ Currently:
   [warpcursor]:     https://github.com/c00kiemon5ter/monsterwm/tree/warpcursor
   [windowtitles]:   https://github.com/c00kiemon5ter/monsterwm/tree/windowtitles
 
-[Cloudef] has developed a [multi-monitor] version of monsterwm.
-It is also mirrored in this tree, see [multi-monitor branch][mm].
-
-  [Cloudef]:        https://github.com/Cloudef
-  [multi-monitor]:  https://github.com/Cloudef/monsterwm/tree/multi-monitor
-  [mm]:             https://github.com/c00kiemon5ter/monsterwm/tree/multi-monitor
-
 There is also another branch, called [`core`].
 `core` is an even more stripped and minimal version of `monsterwm`,
 on top of which the `master` branch is built and extended.
 
   [core]: https://github.com/c00kiemon5ter/monsterwm/tree/core
+
+The is also **xinerama** support for multiple monitors.
+
+ * [xinerama-core][xc]   : the equivalent of `core` branch with xinerama support
+ * [xinerama-master][xm] : the equivalent of `master` branch with xinerama support
+ * [xinerama-init][xi]   : configurable initial values for each desktop on each monitor
+
+ [xc]: https://github.com/c00kiemon5ter/monsterwm/tree/xinerama-core
+ [xm]: https://github.com/c00kiemon5ter/monsterwm/tree/xinerama-master
+ [xi]: https://github.com/c00kiemon5ter/monsterwm/tree/xinerama-init
+
 
 Bugs
 ----
@@ -199,14 +211,17 @@ Licensed under MIT/X Consortium License, see [LICENSE][law] file for more copyri
 Thanks
 ------
 
-[the suckless team][skls] for [dwm][],
-[moetunes][] for [dminiwm][],
-[pyknite][] for [catwm][]
+ * [the suckless team](http://suckless.org/)
+ * [moetunes](https://github.com/moetunes)
+ * [pyknite](https://github.com/pyknite)
+ * [richo4](https://github.com/richo4)
+ * [Cloudef](https://github.com/Cloudef)
+ * [jasonwryan](https://github.com/jasonwryan)
+ * [LemonBoy](https://github.com/LemonBoy)
+ * [djura-san](https://github.com/djura-san)
+ * [prasinoulhs](https://github.com/prasinoulhs)
+ * [mil](https://github.com/mil)
+ * [dnuux](https://github.com/dnuux)
+ * Matus Telgarsky
 
-  [skls]: http://suckless.org/
-  [dwm]:  http://dwm.suckless.org/
-  [moetunes]: https://github.com/moetunes
-  [dminiwm]:  https://bbs.archlinux.org/viewtopic.php?id=126463
-  [pyknite]: https://github.com/pyknite
-  [catwm]:   https://github.com/pyknite/catwm
 
