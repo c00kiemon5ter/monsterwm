@@ -1124,6 +1124,13 @@ void setup(void) {
     }
     XFree(info);
 
+    /* init values for each monitor and desktop */
+    for (unsigned int i = 0, m = init[0].m, d = init[0].d; i < LENGTH(init); i++, m = init[i].m, d = init[i].d) {
+        monitors[m].desktops[d].mode = init[i].dl.mode;
+        monitors[m].desktops[d].sbar = init[i].dl.sbar;
+        monitors[m].desktops[d].masz = init[i].dl.masz;
+    }
+
     /* get color for focused and unfocused client borders */
     win_focus = getcolor(FOCUS, screen);
     win_unfocus = getcolor(UNFOCUS, screen);

@@ -30,6 +30,33 @@
 #define DEFAULT_DESKTOP 0         /* the desktop to focus initially */
 #define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
 
+struct ml {
+    int m; /* monitor that the desktop in on  */
+    int d; /* desktop which properties follow */
+    struct {
+        int mode;  /* layout mode for desktop d of monitor m    */
+        int masz;  /* incread or decrease master area in px     */
+        Bool sbar; /* whether or not to show panel on desktop d */
+    } dl;
+};
+
+/**
+ * define initial values for each monitor and dekstop properties
+ *
+ * in the example below:
+ * - the first desktop (0) on the first monitor (0) will have
+ *   tile layout, with its master area increased by 50px and
+ *   the panel will be visible.
+ * - the third desktop (2) on the second monitor (1) will have
+ *   grid layout, with no changes to its master area and
+ *   the panel will be hidden.
+ */
+static const struct ml init[] = { \
+    /* monitor  desktop   mode  masz  sbar   */
+    {     0,       0,   { TILE,  50,  True  } },
+    {     1,       2,   { GRID,  0,   False } },
+};
+
 /**
  * open applications to specified monitor and desktop
  * with the specified properties.
