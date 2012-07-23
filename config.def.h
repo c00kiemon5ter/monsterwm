@@ -3,7 +3,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-/** buttons **/
+/** modifiers **/
 #define MOD1            Mod1Mask    /* ALT key */
 #define MOD4            Mod4Mask    /* Super/Windows key */
 #define CONTROL         ControlMask /* Control key */
@@ -11,13 +11,13 @@
 
 /** generic settings **/
 #define MASTER_SIZE     0.52
-#define TOP_PANEL       True      /* False mean panel is on bottom */
+#define TOP_PANEL       True      /* False means panel is on bottom */
 #define PANEL_HEIGHT    18        /* 0 for no space for panel, thus no panel */
 #define DEFAULT_MODE    TILE      /* initial layout/mode: TILE MONOCLE BSTACK GRID FLOAT */
 #define ATTACH_ASIDE    True      /* False means new window is master */
-#define FOLLOW_WINDOW   False     /* Follow the window when moved to a different desktop */
-#define FOLLOW_MOUSE    False     /* Focus the window the mouse just entered */
-#define CLICK_TO_FOCUS  False     /* Focus an unfocused window when clicked  */
+#define FOLLOW_WINDOW   False     /* follow the window when moved to a different desktop */
+#define FOLLOW_MOUSE    False     /* focus the window the mouse just entered */
+#define CLICK_TO_FOCUS  False     /* focus an unfocused window when clicked  */
 #define BORDER_WIDTH    2         /* window border width */
 #define FOCUS           "#ff950e" /* focused window border color   */
 #define UNFOCUS         "#444444" /* unfocused window border color */
@@ -36,7 +36,7 @@ static const AppRule rules[] = { \
 
 /**
  * custom commands
- * must always end with '.., NULL };'
+ * must always end with ', NULL };'
  */
 static const char *termcmd[] = { "xterm", NULL };
 
