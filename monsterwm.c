@@ -575,7 +575,7 @@ unsigned long getcolor(const char* color, const int screen) {
 void grabbuttons(Client *c) {
     unsigned int b, m, modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
-    if (CLICK_TO_FOCUS) for (m = 0; m < LENGTH(modifiers); m++)
+    for (m = 0; CLICK_TO_FOCUS && m < LENGTH(modifiers); m++)
         if (c != desktops[currdeskidx].curr) XGrabButton(dis, Button1, modifiers[m],
                 c->win, False, BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
         else XUngrabButton(dis, Button1, modifiers[m], c->win);
@@ -665,8 +665,8 @@ void maprequest(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
     Window w = e->xmaprequest.window;
-    XWindowAttributes wa = {0};
-    XClassHint ch = {0};
+    XWindowAttributes wa = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    XClassHint ch = {0, 0};
     Bool follow = False, floating = False;
     int newdsk = currdeskidx;
 
