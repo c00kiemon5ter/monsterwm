@@ -291,18 +291,18 @@ void cleanup(void) {
 void client_to_desktop(const Arg *arg) {
     if (arg->i == currdeskidx || arg->i < 0 || arg->i >= DESKTOPS || !desktops[currdeskidx].curr) return;
     Desktop *d = &desktops[currdeskidx], *n = &desktops[arg->i];
+    Client *c = d->curr, *p = prevclient(d->curr, d), *l = prevclient(n->head, n);
 
-    Client *p = prevclient(d->curr, d), *l = prevclient(n->head, n);
-    focus(l ? (l->next = d->curr):n->head ? (n->head->next = d->curr):(n->head = d->curr), n);
+    /* unlink current client from current desktop */
+    if (d->head == c || !p) d->head = c->next; else p->next = c->next;
+    c->next = NULL;
+    if (XUnmapWindow(dis, c->win)) focus(d->prev, d);
+    if (!(c->isfloat || c->istrans) || (d->head && !d->head->next)) tile(d);
 
-    if (d->curr == d->head || !p) d->head = d->curr->next; else p->next = d->curr->next;
-    d->curr->next = NULL;
-    XUnmapWindow(dis, d->curr->win);
-    focus(d->prev, d);
+    /* link client to new desktop and make it the current */
+    focus(l ? (l->next = c):n->head ? (n->head->next = c):(n->head = c), n);
 
-    if (FOLLOW_WINDOW) change_desktop(arg);
-    else if (!(n->curr->isfloat || n->curr->istrans) || (d->head && !d->head->next)) tile(d);
-    if (!FOLLOW_WINDOW) desktopinfo();
+    if (FOLLOW_WINDOW) change_desktop(arg); else desktopinfo();
 }
 
 /**
