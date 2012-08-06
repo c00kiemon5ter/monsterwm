@@ -348,27 +348,30 @@ void clientmessage(XEvent *e) {
  * a configure request attempts to reconfigure those properties for a window.
  *
  * we don't really care about those values, because a tiling wm will impose
- * by its own, the position, size and stacking order of windows.
- * however the requested values must be set initially, or
- * the window will misbehave (see gedit, geany, gvim etc).
+ * its own values for those properties.
+ * however the requested values must be set initially for some windows,
+ * otherwise the window will misbehave or even crash (see gedit, geany, gvim).
  *
- * this is actually not respecting the prefered size of the windows,
  * some windows depend on the number of columns and rows to set their
- * size, and not on pixels (terminals, consoles, some editors).
+ * size, and not on pixels (terminals, consoles, some editors etc).
  * normally those clients when tiled and respecting the prefered size
  * will create gaps around them (window_hints).
- * when the configure request is sent and processed,
- * clients are tiled to match the wm's prefered size.
+ * however, clients are tiled to match the wm's prefered size,
+ * not respecting those prefered values.
  *
- * set the appropriate values as requested,
- * then tile the desktop that contain that window.
+ * some windows implement window manager functions themselves.
+ * that is windows explicitly steal focus, or manage subwindows,
+ * or move windows around w/o the window manager's help, etc..
+ * to disallow this behavior, one should 'tile()' the desktop
+ * from which the configure request came from.
+ * however we skip this, and let such apps (ie Chromium) do their thing.
+ * to reset the window just retile the desktop.
  */
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     XWindowChanges wc = { ev->x, ev->y,  ev->width, ev->height, ev->border_width, ev->above, ev->detail };
     XConfigureWindow(dis, ev->window, ev->value_mask, &wc);
     XSync(dis, False);
-    tile(&desktops[currdeskidx]);
 }
 
 /**
