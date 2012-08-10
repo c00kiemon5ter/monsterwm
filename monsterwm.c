@@ -725,7 +725,7 @@ void mousemotion(const Arg *arg) {
 
     if (!d->curr || !XGetWindowAttributes(dis, d->curr->win, &wa)) return;
 
-    if (arg->i == RESIZE) XWarpPointer(dis, d->curr->win, d->curr->win, 0, 0, 0, 0, wa.width, wa.height);
+    if (arg->i == RESIZE) XWarpPointer(dis, d->curr->win, d->curr->win, 0, 0, 0, 0, --wa.width, --wa.height);
     int rx, ry, c, xw, yh; unsigned int v; Window w;
     if (!XQueryPointer(dis, root, &w, &w, &rx, &ry, &c, &c, &v) || w != d->curr->win) return;
 
