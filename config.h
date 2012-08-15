@@ -5,6 +5,8 @@
 
 /* "name" desktops */
 enum { CURRENT=-1, WEB, DEV, FOO, NIL };
+/* "name" monitors */
+enum { LARGE, SMALL };
 
 /** modifiers **/
 #define MOD1            Mod1Mask    /* ALT key */
@@ -20,25 +22,30 @@ enum { CURRENT=-1, WEB, DEV, FOO, NIL };
 #define DEFAULT_MODE    TILE      /* initial layout/mode: TILE MONOCLE BSTACK GRID FLOAT */
 #define ATTACH_ASIDE    True      /* False means new window is master */
 #define FOLLOW_WINDOW   True      /* follow the window when moved to a different desktop */
+#define FOLLOW_MONITOR  False     /* follow the window when moved to a different monitor */
 #define FOLLOW_MOUSE    False     /* focus the window the mouse just entered */
 #define CLICK_TO_FOCUS  False     /* focus an unfocused window when clicked  */
 #define BORDER_WIDTH    2         /* window border width */
 #define FOCUS           "#ff950e" /* focused window border color   */
 #define UNFOCUS         "#666666" /* unfocused window border color */
+#define INFOCUS         "#9c3885" /* focused window border color on unfocused monitor */
 #define MINWSZ          50        /* minimum window size in pixels */
-#define DEFAULT_DESKTOP 0         /* the desktop to focus initially */
 #define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
+#define DEFAULT_DESKTOP WEB       /* the desktop to focus initially */
+#define DEFAULT_MONITOR LARGE     /* the monitor to focus initially */
 
 /**
- * open applications to specified desktop with specified mode.
+ * open applications to specified monitor and desktop
+ * with the specified properties.
+ * if monitor is negative, then current is assumed
  * if desktop is negative, then current is assumed
  */
 static const AppRule rules[] = { \
-    /*  class     desktop  follow  float */
-    { "MPlayer",  CURRENT, True,   True  },
-    { "Gimp",       FOO,   True,   True  },
-    { "Deluge",     FOO,   False,  False },
-    { "IRC-",       WEB,   False,  False },
+    /*  class     monitor  desktop  follow  float */
+    { "MPlayer",   SMALL,  CURRENT, True,   True  },
+    { "Gimp",      LARGE,    FOO,   True,   True  },
+    { "Deluge",    SMALL,    FOO,   False,  False },
+    { "IRC-",      LARGE,    WEB,   False,  False },
 };
 
 /* helper for spawning shell commands */
@@ -64,6 +71,10 @@ static const char *mstopcmd[]   = { "mpc", "stop",   NULL };
 static const char *mnextcmd[]   = { "mpc", "next",   NULL };
 static const char *mprevcmd[]   = { "mpc", "prev",   NULL };
 static const char *mtogglecmd[] = { "mpc", "toggle", NULL };
+
+#define MONITORCHANGE(K,N) \
+    {  MOD4,             K,              change_monitor, {.i = N}}, \
+    {  MOD4|ShiftMask,   K,              client_to_monitor, {.i = N}},
 
 #define DESKTOPCHANGE(K,N) \
     {  MOD1,             K,              change_desktop, {.i = N}}, \
@@ -124,6 +135,8 @@ static Key keys[] = {
        DESKTOPCHANGE(    XK_F2,                             DEV)
        DESKTOPCHANGE(    XK_F3,                             FOO)
        DESKTOPCHANGE(    XK_F4,                             NIL)
+       MONITORCHANGE(    XK_F1,                             SMALL)
+       MONITORCHANGE(    XK_F2,                             LARGE)
 };
 
 /**
