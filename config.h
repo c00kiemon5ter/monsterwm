@@ -16,12 +16,12 @@
 #define PANEL_HEIGHT    18        /* 0 for no space for panel, thus no panel */
 #define DEFAULT_MODE    TILE      /* initial layout/mode: TILE MONOCLE BSTACK GRID FLOAT */
 #define ATTACH_ASIDE    True      /* False means new window is master */
-#define FOLLOW_WINDOW   False     /* follow the window when moved to a different desktop */
+#define FOLLOW_WINDOW   True      /* follow the window when moved to a different desktop */
 #define FOLLOW_MOUSE    False     /* focus the window the mouse just entered */
 #define CLICK_TO_FOCUS  False     /* focus an unfocused window when clicked  */
 #define BORDER_WIDTH    2         /* window border width */
 #define FOCUS           "#ff950e" /* focused window border color   */
-#define UNFOCUS         "#444444" /* unfocused window border color */
+#define UNFOCUS         "#666666" /* unfocused window border color */
 #define MINWSZ          50        /* minimum window size in pixels */
 #define DEFAULT_DESKTOP 0         /* the desktop to focus initially */
 #define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
@@ -32,8 +32,10 @@
  */
 static const AppRule rules[] = { \
     /*  class     desktop  follow  float */
-    { "MPlayer",     3,    True,   False },
-    { "Gimp",        0,    False,  True  },
+    { "MPlayer",    -1,    True,   True  },
+    { "Gimp",        2,    True,   True  },
+    { "Deluge",      2,    False,  False },
+    { "IRC-",        0,    False,  False },
 };
 
 /* helper for spawning shell commands */
@@ -43,8 +45,22 @@ static const AppRule rules[] = { \
  * custom commands
  * must always end with ', NULL };'
  */
-static const char *termcmd[] = { "xterm",     NULL };
-static const char *menucmd[] = { "dmenu_run", NULL };
+static const char *termcmd[]  = { "xterm",     NULL };
+static const char *menucmd[]  = { "dmenu_run", NULL };
+static const char *torrent[]  = { "deluge",    NULL };
+static const char *ctermcmd[] = { "urxvtdc",   NULL };
+static const char *surfcmd[]  = { "chromium", "--enable-seccomp-sandbox", "--memory-model=low",
+                                  "--purge-memory-button", "--disk-cache-dir=/tmp/chromium", NULL };
+
+/* audio volume */
+static const char *volupcmd[]     = { "volctrl", "+2",     NULL };
+static const char *voldncmd[]     = { "volctrl", "-2",     NULL };
+static const char *voltogglecmd[] = { "volctrl", "toggle", NULL };
+/* audio playback [mpd/mpc] */
+static const char *mstopcmd[]   = { "mpc", "stop",   NULL };
+static const char *mnextcmd[]   = { "mpc", "next",   NULL };
+static const char *mprevcmd[]   = { "mpc", "prev",   NULL };
+static const char *mtogglecmd[] = { "mpc", "toggle", NULL };
 
 #define DESKTOPCHANGE(K,N) \
     {  MOD1,             K,              change_desktop, {.i = N}}, \
@@ -81,6 +97,18 @@ static Key keys[] = {
     {  MOD1|CONTROL,     XK_q,          quit,              {.i = 1}}, /* quit with exit value 1 */
     {  MOD1|SHIFT,       XK_Return,     spawn,             {.com = termcmd}},
     {  MOD4,             XK_v,          spawn,             {.com = menucmd}},
+    {  MOD4,             XK_t,          spawn,             {.com = torrent}},
+    {  MOD4,             XK_w,          spawn,             {.com = surfcmd}},
+    {  MOD4,             XK_grave,      spawn,             {.com = ctermcmd}},
+    {  MOD4,             XK_equal,      spawn,             {.com = volupcmd}},
+    {  MOD4,             XK_KP_Add,     spawn,             {.com = volupcmd}},
+    {  MOD4,             XK_minus,      spawn,             {.com = voldncmd}},
+    {  MOD4,             XK_KP_Subtract,spawn,             {.com = voldncmd}},
+    {  MOD4,             XK_m,          spawn,             {.com = voltogglecmd}},
+    {  MOD4,             XK_s,          spawn,             {.com = mstopcmd}},
+    {  MOD4,             XK_period,     spawn,             {.com = mnextcmd}},
+    {  MOD4,             XK_comma,      spawn,             {.com = mprevcmd}},
+    {  MOD4,             XK_p,          spawn,             {.com = mtogglecmd}},
     {  MOD4,             XK_j,          moveresize,        {.v = (int []){   0,  25,   0,   0 }}}, /* move down  */
     {  MOD4,             XK_k,          moveresize,        {.v = (int []){   0, -25,   0,   0 }}}, /* move up    */
     {  MOD4,             XK_l,          moveresize,        {.v = (int []){  25,   0,   0,   0 }}}, /* move right */
