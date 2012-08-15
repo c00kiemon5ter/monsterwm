@@ -34,6 +34,37 @@ enum { LARGE, SMALL };
 #define DEFAULT_DESKTOP WEB       /* the desktop to focus initially */
 #define DEFAULT_MONITOR LARGE     /* the monitor to focus initially */
 
+struct ml {
+    int m; /* monitor that the desktop in on  */
+    int d; /* desktop which properties follow */
+    struct {
+        int mode;  /* layout mode for desktop d of monitor m    */
+        int masz;  /* incread or decrease master area in px     */
+        Bool sbar; /* whether or not to show panel on desktop d */
+    } dl;
+};
+
+/**
+ * define initial values for each monitor and dekstop properties
+ *
+ * in the example below:
+ * - the first desktop (0) on the first monitor (0) will have
+ *   tile layout, with its master area increased by 50px and
+ *   the panel will be visible.
+ * - the third desktop (2) on the second monitor (1) will have
+ *   grid layout, with no changes to its master area and
+ *   the panel will be hidden.
+ */
+static const struct ml init[] = { \
+    /* monitor  desktop   mode    masz  sbar   */
+    {   SMALL,    WEB,  { BSTACK, 400,  False } },
+    {   SMALL,    DEV,  { GRID,    0,   False } },
+    {   SMALL,    FOO,  { TILE,    0,   False } },
+    {   SMALL,    NIL,  { FLOAT,   0,   False } },
+    {   LARGE,    WEB,  { TILE,    0,   True  } },
+    {   LARGE,    DEV,  { GRID,    0,   False } },
+};
+
 /**
  * open applications to specified monitor and desktop
  * with the specified properties.
