@@ -126,8 +126,13 @@ Here is a list of minimal and lightweight panels:
 
  * [`bar`](https://github.com/LemonBoy/bar)
  * [`some_sorta_bar`](https://github.com/moetunes/Some_sorta_bar)
- * [`splitter_bar`](https://github.com/moetunes/splitter_bar)
+ * [`bipolarbar`](https://github.com/moetunes/bipolarbar)
  * [`mopag`](https://github.com/c00kiemon5ter/mopag) (pager)
+
+You can find an examples configurations of panels [here](https://gist.github.com/1905427).
+You can actually parse monsterwm's output with any language you want,
+build anything you want, and display the information however you like.
+Do not be limited by those examples.
 
 
 Installation
@@ -154,7 +159,7 @@ Easiest way to apply a patch, is to `git merge` that branch.
 Currently:
 
  * [centerwindow]   : center new floating windows on the screen and  center any window with a shortcut
- * [fib]            : adds fibonacci layout mode
+ * [fibonacci]      : adds fibonacci layout mode
  * [initlayouts]    : define initial layouts for every desktop
  * [monocleborders] : adds borders to the monocle layout
  * [nmaster]        : adds nmaster layout - multiple master windows for BSTACK and TILE layouts
@@ -165,7 +170,7 @@ Currently:
  * [windowtitles]   : along with the rest desktop info, output the title of the current window
 
   [centerwindow]:   https://github.com/c00kiemon5ter/monsterwm/tree/centerwindow
-  [fib]:            https://github.com/c00kiemon5ter/monsterwm/tree/fib
+  [fibonacci]:      https://github.com/c00kiemon5ter/monsterwm/tree/fibonacci
   [initlayouts]:    https://github.com/c00kiemon5ter/monsterwm/tree/initlayouts
   [monocleborders]: https://github.com/c00kiemon5ter/monsterwm/tree/monocleborders
   [nmaster]:        https://github.com/c00kiemon5ter/monsterwm/tree/nmaster
