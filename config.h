@@ -3,6 +3,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+/* "name" desktops */
+enum { CURRENT=-1, WEB, DEV, FOO, NIL };
+
 /** modifiers **/
 #define MOD1            Mod1Mask    /* ALT key */
 #define MOD4            Mod4Mask    /* Super/Windows key */
@@ -32,10 +35,10 @@
  */
 static const AppRule rules[] = { \
     /*  class     desktop  follow  float */
-    { "MPlayer",    -1,    True,   True  },
-    { "Gimp",        2,    True,   True  },
-    { "Deluge",      2,    False,  False },
-    { "IRC-",        0,    False,  False },
+    { "MPlayer",  CURRENT, True,   True  },
+    { "Gimp",       FOO,   True,   True  },
+    { "Deluge",     FOO,   False,  False },
+    { "IRC-",       WEB,   False,  False },
 };
 
 /* helper for spawning shell commands */
@@ -117,10 +120,10 @@ static Key keys[] = {
     {  MOD4|SHIFT,       XK_k,          moveresize,        {.v = (int []){   0,   0,   0, -25 }}}, /* height shrink */
     {  MOD4|SHIFT,       XK_l,          moveresize,        {.v = (int []){   0,   0,  25,   0 }}}, /* width grow    */
     {  MOD4|SHIFT,       XK_h,          moveresize,        {.v = (int []){   0,   0, -25,   0 }}}, /* width shrink  */
-       DESKTOPCHANGE(    XK_F1,                             0)
-       DESKTOPCHANGE(    XK_F2,                             1)
-       DESKTOPCHANGE(    XK_F3,                             2)
-       DESKTOPCHANGE(    XK_F4,                             3)
+       DESKTOPCHANGE(    XK_F1,                             WEB)
+       DESKTOPCHANGE(    XK_F2,                             DEV)
+       DESKTOPCHANGE(    XK_F3,                             FOO)
+       DESKTOPCHANGE(    XK_F4,                             NIL)
 };
 
 /**
