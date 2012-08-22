@@ -317,6 +317,7 @@ void cleanup(void) {
     for (unsigned int i = 0; i < nchildren; i++) deletewindow(children[i]);
     if (children) XFree(children);
     XSync(dis, False);
+    free(monitors);
 }
 
 /**
