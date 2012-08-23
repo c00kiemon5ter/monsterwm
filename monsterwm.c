@@ -362,16 +362,16 @@ void clientmessage(XEvent *e) {
  * some windows implement window manager functions themselves.
  * that is windows explicitly steal focus, or manage subwindows,
  * or move windows around w/o the window manager's help, etc..
- * to disallow this behavior, one should 'tile()' the desktop
- * from which the configure request came from.
- * however we skip this, and let such apps (ie Chromium) do their thing.
- * to reset the window just retile the desktop.
+ * to disallow this behavior, we 'tile()' the desktop to which
+ * the window that sent the configure request belongs.
  */
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     XWindowChanges wc = { ev->x, ev->y,  ev->width, ev->height, ev->border_width, ev->above, ev->detail };
     XConfigureWindow(dis, ev->window, ev->value_mask, &wc);
     XSync(dis, False);
+    Desktop *d = NULL; Client *c = NULL;
+    if (wintoclient(ev->window, &c, &d)) tile(d);
 }
 
 /**
