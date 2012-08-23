@@ -1111,12 +1111,14 @@ Bool wintoclient(Window w, Client **c, Desktop **d) {
  * thus those cases are ignored (especially on UnmapNotify's).
  */
 int xerror(__attribute__((unused)) Display *dis, XErrorEvent *ee) {
-    if (ee->error_code == BadWindow   || (ee->error_code == BadAccess && ee->request_code == X_GrabKey)
-    || (ee->error_code == BadMatch    && (ee->request_code == X_SetInputFocus
-                                      ||  ee->request_code == X_ConfigureWindow))
-    || (ee->error_code == BadDrawable && (ee->request_code == X_PolyFillRectangle
-    || ee->request_code == X_CopyArea ||  ee->request_code == X_PolySegment
-                                      ||  ee->request_code == X_PolyText8))) return 0;
+    if ((ee->error_code == BadAccess   && (ee->request_code == X_GrabKey
+                                       ||  ee->request_code == X_GrabButton))
+    || (ee->error_code  == BadMatch    && (ee->request_code == X_SetInputFocus
+                                       ||  ee->request_code == X_ConfigureWindow))
+    || (ee->error_code  == BadDrawable && (ee->request_code == X_PolyFillRectangle
+    || ee->request_code == X_CopyArea  ||  ee->request_code == X_PolySegment
+                                       ||  ee->request_code == X_PolyText8))
+    || ee->error_code   == BadWindow) return 0;
     err(EXIT_FAILURE, "xerror: request: %d code: %d", ee->request_code, ee->error_code);
 }
 
