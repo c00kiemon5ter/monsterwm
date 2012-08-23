@@ -398,8 +398,8 @@ void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
     XWindowChanges wc = { ev->x, ev->y,  ev->width, ev->height, ev->border_width, ev->above, ev->detail };
     if (XConfigureWindow(dis, ev->window, ev->value_mask, &wc)) XSync(dis, False);
-    Desktop *d = NULL; Client *c = NULL;
-    if (wintoclient(ev->window, &c, &d)) tile(d);
+    Monitor *m = NULL; Desktop *d = NULL; Client *c = NULL;
+    if (wintoclient(ev->window, &c, &d, &m)) tile(d, m);
 }
 
 /**
