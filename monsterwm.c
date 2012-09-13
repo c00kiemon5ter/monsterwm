@@ -167,7 +167,7 @@ static int xerrorstart(Display *dis, XErrorEvent *ee);
  * ww           - screen width
  * dis          - the display aka dpy
  * root         - the root window
- * wmatons      - array holding atoms for ICCCM support
+ * wmatoms      - array holding atoms for ICCCM support
  * netatoms     - array holding atoms for EWMH support
  * dekstops     - array of managed desktops
  * currdeskidx  - which desktop is currently active
