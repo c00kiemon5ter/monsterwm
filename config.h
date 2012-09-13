@@ -182,3 +182,5 @@ static Button buttons[] = {
     {  MOD4,    Button3,     spawn,         {.com = menucmd}},
 };
 #endif
+
+/* vim: set expandtab ts=4 sts=4 sw=4 : */
