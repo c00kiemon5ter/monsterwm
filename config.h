@@ -72,11 +72,12 @@ static const struct ml init[] = { \
  * if desktop is negative, then current is assumed
  */
 static const AppRule rules[] = { \
-    /*  class     monitor  desktop  follow  float */
-    { "MPlayer",   SMALL,  CURRENT, True,   True  },
-    { "Gimp",      LARGE,    FOO,   True,   True  },
-    { "Deluge",    SMALL,    FOO,   False,  False },
-    { "IRC-",      LARGE,    WEB,   False,  False },
+    /*  class       monitor  desktop  follow  float */
+    { "MPlayer",    SMALL,   CURRENT, True,   True  },
+    { "Gimp",       LARGE,   FOO,     True,   True  },
+    { "Deluge",     SMALL,   FOO,     False,  False },
+    { "IRC-",       LARGE,   WEB,     False,  False },
+    { "scratchpad", CURRENT, CURRENT, False,  True  },
 };
 
 /* helper for spawning shell commands */
@@ -86,10 +87,11 @@ static const AppRule rules[] = { \
  * custom commands
  * must always end with ', NULL };'
  */
+static const char *dropterm[] = { "/bin/sh", "-c", "scratchpad.sh", NULL };
+static const char *mainterm[] = { "urxvtdc",   NULL };
 static const char *termcmd[]  = { "xterm",     NULL };
 static const char *menucmd[]  = { "dmenu_run", NULL };
 static const char *torrent[]  = { "deluge",    NULL };
-static const char *ctermcmd[] = { "urxvtdc",   NULL };
 static const char *surfcmd[]  = { "chromium", "--enable-seccomp-sandbox", "--memory-model=low",
                                   "--purge-memory-button", "--disk-cache-dir=/tmp/chromium", NULL };
 
@@ -144,7 +146,8 @@ static Key keys[] = {
     {  MOD4,             XK_v,          spawn,             {.com = menucmd}},
     {  MOD4,             XK_t,          spawn,             {.com = torrent}},
     {  MOD4,             XK_w,          spawn,             {.com = surfcmd}},
-    {  MOD4,             XK_grave,      spawn,             {.com = ctermcmd}},
+    {  MOD4,             XK_grave,      spawn,             {.com = mainterm}},
+    {  MOD1,             XK_grave,      spawn,             {.com = dropterm}},
     {  MOD4,             XK_equal,      spawn,             {.com = volupcmd}},
     {  MOD4,             XK_KP_Add,     spawn,             {.com = volupcmd}},
     {  MOD4,             XK_minus,      spawn,             {.com = voldncmd}},
