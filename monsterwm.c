@@ -1142,3 +1142,5 @@ int main(int argc, char *argv[]) {
     XCloseDisplay(dis);
     return 0;
 }
+
+/* vim: set expandtab ts=4 sts=4 sw=4 : */
