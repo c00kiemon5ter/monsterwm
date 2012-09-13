@@ -20,7 +20,7 @@
 
 enum { RESIZE, MOVE };
 enum { TILE, MONOCLE, BSTACK, GRID, FLOAT, MODES };
-enum { WM_PROTOCOLS, WM_DELETE_WINDOW, WM_COUNT };
+enum { WM_PROTOCOLS, WM_STATE, WM_DELETE_WINDOW, WM_COUNT };
 enum { NET_SUPPORTED, NET_FULLSCREEN, NET_WM_STATE, NET_ACTIVE, NET_COUNT };
 
 /**
@@ -971,6 +971,7 @@ void setup(void) {
     XFreeModifiermap(modmap);
 
     /* set up atoms for dialog/notification windows */
+    wmatoms[WM_STATE]         = XInternAtom(dis, "WM_STATE",         False);
     wmatoms[WM_PROTOCOLS]     = XInternAtom(dis, "WM_PROTOCOLS",     False);
     wmatoms[WM_DELETE_WINDOW] = XInternAtom(dis, "WM_DELETE_WINDOW", False);
     netatoms[NET_SUPPORTED]   = XInternAtom(dis, "_NET_SUPPORTED",   False);
@@ -1094,7 +1095,11 @@ void tile(Desktop *d) {
 void unmapnotify(XEvent *e) {
     Desktop *d = NULL;
     Client *c = NULL;
-    if (e->xunmap.send_event && wintoclient(e->xunmap.window, &c, &d)) removeclient(c, d);
+    int i; unsigned long l; unsigned char *state = NULL; Atom a;
+
+    if (((XGetWindowProperty(dis, e->xunmap.window, wmatoms[WM_STATE], 0L, 2L, False, wmatoms[WM_STATE],
+        &a, &i, &l, &l, (unsigned char **)&state) == Success && state == WithdrawnState) ||
+        e->xunmap.send_event) && wintoclient(e->xunmap.window, &c, &d)) removeclient(c, d);
 }
 
 /**
