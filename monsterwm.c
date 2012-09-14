@@ -1085,12 +1085,12 @@ void tile(Desktop *d) {
 }
 
 /**
- * windows that request to unmap should lose their
- * client, so invisible windows do not exist on screen
+ * windows that request to unmap should lose their client
+ * so invisible windows do not exist on screen
  */
 void unmapnotify(XEvent *e) {
     Desktop *d = NULL; Client *c = NULL;
-    if (e->xunmap.send_event && wintoclient(e->xunmap.window, &c, &d)) removeclient(c, d);
+    if (wintoclient(e->xunmap.window, &c, &d)) removeclient(c, d);
 }
 
 /**
