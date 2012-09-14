@@ -238,7 +238,7 @@ void buttonpress(XEvent *e) {
     Client *c = NULL;
 
     if (wintoclient(e->xbutton.window, &c, &d) && CLICK_TO_FOCUS &&
-            c != d->curr && e->xbutton.button == Button1) focus(c, d);
+            c != d->curr && e->xbutton.button == FOCUS_BUTTON) focus(c, d);
 
     for (unsigned int i = 0; i < LENGTH(buttons); i++)
         if (CLEANMASK(buttons[i].mask) == CLEANMASK(e->xbutton.state) &&
@@ -579,9 +579,9 @@ void grabbuttons(Client *c) {
     unsigned int b, m, modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
     for (m = 0; CLICK_TO_FOCUS && m < LENGTH(modifiers); m++)
-        if (c != desktops[currdeskidx].curr) XGrabButton(dis, Button1, modifiers[m],
+        if (c != desktops[currdeskidx].curr) XGrabButton(dis, FOCUS_BUTTON, modifiers[m],
                 c->win, False, BUTTONMASK, GrabModeAsync, GrabModeAsync, None, None);
-        else XUngrabButton(dis, Button1, modifiers[m], c->win);
+        else XUngrabButton(dis, FOCUS_BUTTON, modifiers[m], c->win);
 
     for (b = 0, m = 0; b < LENGTH(buttons); b++, m = 0) while (m < LENGTH(modifiers))
         XGrabButton(dis, buttons[b].button, buttons[b].mask|modifiers[m++], c->win,
