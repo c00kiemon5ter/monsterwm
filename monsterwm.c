@@ -173,8 +173,8 @@ static int xerrorstart(Display *dis, XErrorEvent *ee);
  * currdeskidx  - which desktop is currently active
  */
 static Bool running = True;
-static int wh, ww, currdeskidx = 0;
-static unsigned int numlockmask = 0, win_unfocus, win_focus;
+static int wh, ww, currdeskidx;
+static unsigned int numlockmask, win_unfocus, win_focus;
 static Display *dis;
 static Window root;
 static Atom wmatoms[WM_COUNT], netatoms[NET_COUNT];
