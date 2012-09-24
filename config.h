@@ -29,7 +29,7 @@ enum { LARGE, SMALL };
 #define BORDER_WIDTH    2         /* window border width */
 #define FOCUS           "#ff950e" /* focused window border color   */
 #define UNFOCUS         "#666666" /* unfocused window border color */
-#define INFOCUS         "#9c3885" /* focused window border color on unfocused monitor */
+#define INFOCUS         "#1177AA" /* focused window border color on unfocused monitor */
 #define MINWSZ          50        /* minimum window size in pixels */
 #define DESKTOPS        4         /* number of desktops - edit DESKTOPCHANGE keys to suit */
 #define DEFAULT_DESKTOP WEB       /* the desktop to focus initially */
