@@ -17,6 +17,7 @@
 #define CLEANMASK(mask) (mask & ~(numlockmask | LockMask))
 #define BUTTONMASK      ButtonPressMask|ButtonReleaseMask
 #define ISFFT(c)        (c->isfull || c->isfloat || c->istrans)
+#define ROOTMASK        SubstructureRedirectMask|ButtonPressMask|SubstructureNotifyMask|PropertyChangeMask
 
 enum { RESIZE, MOVE };
 enum { TILE, MONOCLE, BSTACK, GRID, FLOAT, MODES };
@@ -261,8 +262,10 @@ void change_desktop(const Arg *arg) {
     Desktop *d = &desktops[currdeskidx], *n = &desktops[(currdeskidx = arg->i)];
     if (n->curr) XMapWindow(dis, n->curr->win);
     for (Client *c = n->head; c; c = c->next) XMapWindow(dis, c->win);
+    XChangeWindowAttributes(dis, root, CWEventMask, &(XSetWindowAttributes){.do_not_propagate_mask = SubstructureNotifyMask});
     for (Client *c = d->head; c; c = c->next) if (c != d->curr) XUnmapWindow(dis, c->win);
     if (d->curr) XUnmapWindow(dis, d->curr->win);
+    XChangeWindowAttributes(dis, root, CWEventMask, &(XSetWindowAttributes){.event_mask = ROOTMASK});
     if (n->head) { tile(n); focus(n->curr, n); }
     desktopinfo();
 }
@@ -295,7 +298,9 @@ void client_to_desktop(const Arg *arg) {
     /* unlink current client from current desktop */
     if (d->head == c || !p) d->head = c->next; else p->next = c->next;
     c->next = NULL;
+    XChangeWindowAttributes(dis, root, CWEventMask, &(XSetWindowAttributes){.do_not_propagate_mask = SubstructureNotifyMask});
     if (XUnmapWindow(dis, c->win)) focus(d->prev, d);
+    XChangeWindowAttributes(dis, root, CWEventMask, &(XSetWindowAttributes){.event_mask = ROOTMASK});
     if (!(c->isfloat || c->istrans) || (d->head && !d->head->next)) tile(d);
 
     /* link client to new desktop and make it the current */
@@ -981,8 +986,7 @@ void setup(void) {
      * if all is good set the generic error handler */
     XSetErrorHandler(xerrorstart);
     /* set masks for reporting events handled by the wm */
-    XSelectInput(dis, DefaultRootWindow(dis), SubstructureRedirectMask|ButtonPressMask|
-                                              SubstructureNotifyMask|PropertyChangeMask);
+    XSelectInput(dis, root, ROOTMASK);
     XSync(dis, False);
     XSetErrorHandler(xerror);
     XSync(dis, False);
