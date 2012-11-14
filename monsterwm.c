@@ -435,10 +435,15 @@ void destroynotify(XEvent *e) {
  * and will get focus if FOLLOW_MOUSE is set in the config.
  */
 void enternotify(XEvent *e) {
-    Desktop *d = NULL; Client *c = NULL;
+    Desktop *d = NULL; Client *c = NULL, *p = NULL;
 
-    if (FOLLOW_MOUSE && wintoclient(e->xcrossing.window, &c, &d) && e->xcrossing.mode == NotifyNormal
-        && e->xcrossing.detail != NotifyInferior && e->xcrossing.window != d->curr->win) focus(c, d);
+    if (!FOLLOW_MOUSE || (e->xcrossing.mode != NotifyNormal && e->xcrossing.detail == NotifyInferior)
+        || !wintoclient(e->xcrossing.window, &c, &d) || e->xcrossing.window == d->curr->win) return;
+
+    if ((p = d->prev))
+        XChangeWindowAttributes(dis, p->win, CWEventMask, &(XSetWindowAttributes){.do_not_propagate_mask = EnterWindowMask});
+    focus(c, d);
+    if (p) XChangeWindowAttributes(dis, p->win, CWEventMask, &(XSetWindowAttributes){.event_mask = EnterWindowMask});
 }
 
 /**
