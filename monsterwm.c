@@ -170,7 +170,7 @@ static int xerrorstart(Display *dis, XErrorEvent *ee);
  * root         - the root window
  * wmatoms      - array holding atoms for ICCCM support
  * netatoms     - array holding atoms for EWMH support
- * dekstops     - array of managed desktops
+ * desktops     - array of managed desktops
  * currdeskidx  - which desktop is currently active
  */
 static Bool running = True;
