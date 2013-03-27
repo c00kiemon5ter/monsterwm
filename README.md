@@ -60,7 +60,7 @@ one can have as many windows he wants.
 
 ---
 
- *Monocle mode* (aka fullscreen)
+ *Monocle mode* (aka maximized)
 
     -------------
     |           |
@@ -69,7 +69,7 @@ one can have as many windows he wants.
     |           |
     -------------
 
-`MONOCLE` layout presents one window at a time in fullscreen mode.
+`MONOCLE` layout presents one window at a time in maximized mode.
 Windows have no borders on this layout to save space.
 See the `monocleborders` branch to give those windows borders.
 
@@ -117,7 +117,7 @@ desktop and urgent hints whenever needed. The user can use whatever tool or
 panel suits him best (dzen2, conky, w/e), to process and display that information.
 
 To disable the panel completely set `PANEL_HEIGHT` to zero `0`.
-The `SHOW_PANELL` setting controls whether the panel is visible on startup,
+The `SHOW_PANEL` setting controls whether the panel is visible on startup,
 it does not control whether there is a panel or not.
 
   [unix]: http://en.wikipedia.org/wiki/Unix_philosophy
@@ -138,7 +138,7 @@ Do not be limited by those examples.
 Installation
 ------------
 
-You need Xlib, then,
+You need Xlib (there's an [xcb port](https://github.com/Cloudef/monsterwm-xcb)), then,
 copy `config.def.h` as `config.h`
 and edit to suit your needs.
 Build and install.
@@ -159,11 +159,11 @@ Easiest way to apply a patch, is to `git merge` that branch.
 Currently:
 
  * [centerwindow]   : center new floating windows on the screen and  center any window with a shortcut
- * [fibonacci]      : adds fibonacci layout mode
+ * [fibonacci]      : adds `fibonacci` layout mode
  * [initlayouts]    : define initial layouts for every desktop
  * [monocleborders] : adds borders to the monocle layout
- * [nmaster]        : adds nmaster layout - multiple master windows for BSTACK and TILE layouts
- * [rectangle]      : draws only a rectangle when moving/resizing windows to keep resources low (ie through an ssh forwarded session)
+ * [nmaster]        : adds `nmaster` layout - multiple master windows for BSTACK and TILE layouts
+ * [rectangle]      : draws only a rectangle when moving/resizing windows to keep resources low (i.e. through an ssh forwarded session)
  * [showhide]       : adds a function to show and hide all windows on all desktops
  * [uselessgaps]    : adds gaps around every window on screen
  * [warpcursor]     : cursors follows and is placed in the center of the current window
