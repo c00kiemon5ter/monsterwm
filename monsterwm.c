@@ -97,6 +97,7 @@ static void rotate_filled(const Arg *arg);
 static void spawn(const Arg *arg);
 static void swap_master();
 static void switch_mode(const Arg *arg);
+static void togglefullscreen();
 static void togglepanel();
 
 #include "config.h"
@@ -127,15 +128,17 @@ typedef struct Client {
  * masz - the size of the master area
  * sasz - additional size of the first stack window area
  * mode - the desktop's tiling layout mode
+ * pmod - the desktop's previous tiling layout mode (used for restoring from fullscreen)
  * head - the start of the client list
  * curr - the currently highlighted window
  * prev - the client that previously had focus
  * sbar - the visibility status of the panel/statusbar
+ * psbr - its visibility before going into fullscreen mode
  */
 typedef struct {
-    int mode, masz, sasz;
+    int mode, pmod, masz, sasz;
     Client *head, *curr, *prev;
-    Bool sbar;
+    Bool sbar, psbr, isfullscreen;
 } Desktop;
 
 /* hidden function prototypes sorted alphabetically */
@@ -1026,7 +1029,7 @@ void setup(void) {
 
     /* initialize mode and panel visibility for each desktop */
     for (unsigned int d = 0; d < DESKTOPS; d++)
-        desktops[d] = (Desktop){ .mode = DEFAULT_MODE, .sbar = SHOW_PANEL };
+        desktops[d] = (Desktop){ .mode = DEFAULT_MODE, .sbar = SHOW_PANEL, .isfullscreen = False };
 
     /* get color for focused and unfocused client borders */
     win_focus = getcolor(FOCUS, screen);
@@ -1180,6 +1183,25 @@ void tile(Desktop *d) {
     if (!d->head || d->mode == FLOAT) return; /* nothing to arange */
     layout[d->head->next ? d->mode:MONOCLE](0, TOP_PANEL && d->sbar ? PANEL_HEIGHT:0,
                                                   ww, wh + (d->sbar ? 0:PANEL_HEIGHT), d);
+}
+
+/**
+ * toggle fullscreen mode.
+ * fullscreen mode is a monocle layout without a visible panel/bar, from which it is possible to recover to the previous layout and panel/bar visibility state
+ */
+void togglefullscreen(void) {
+    Desktop *d = &desktops[currdeskidx];
+    if (d->isfullscreen) {
+        if (d->sbar != d->psbr) togglepanel();
+        switch_mode(&(Arg){.i = d->pmod});
+    }
+    else {
+        d->psbr = d->sbar;
+        if (d->sbar) togglepanel();
+        d->pmod = d->mode;
+        switch_mode(&(Arg){.i = MONOCLE});
+    }
+    d->isfullscreen = !d->isfullscreen;
 }
 
 /**

@@ -24,15 +24,16 @@ the stack clients are tiled on the side of master.
 the stack clients are tiled beneath the master.
 .TP
 .B Grid mode
-clients are tiled in a grid, equaly sharing and dividing the screen space
+clients are tiled in a grid, equally sharing and dividing the screen space
 .TP
 .B Monocle mode
-also known as fullscreen or max mode, where the clients take up the entire
+also known as max mode, where the clients take up the entire
 screen space. Other clients are hidden behind the current shown window.
-On this layout, fullscreen clients don't need and don't have borders.
+On this layout, maximized clients don't need and don't have borders.
 You can change that behavior with the
 .I monocleborders
-patch, in the corresponding branch.
+patch, in the corresponding branch. The state of the panel is preserved.
+
 .TP
 .B Floating mode
 windows can move and be resized freely in the screen space, like on a stacking
@@ -48,7 +49,7 @@ prints version information to standard output, then exits.
 .I monsterwm
 does not provide a status bar. Consistent with the Unix philosophy,
 .I monsterwm
-provides information to the status bar or panel of choice via ouputing
+provides information to the status bar or panel of choice via outputting
 text with information about the state of the windows.
 .P
 the available settings in
@@ -141,8 +142,11 @@ Sets grid layout
 .B Mod1\-Shift\-f
 Sets float layout
 .TP
+.B Mod1\-f
+Toggles fullscreen mode
+.TP
 .B Mod1\-Shift\-r
-Quit with exit value 0 (usefull for restarts of the wm).
+Quit with exit value 0 (useful for restarts of the wm).
 .TP
 .B Mod1\-Shift\-q
 Quit with exit value 1 (differentiate quit from restart).
@@ -213,7 +217,7 @@ whether to focus the window the mouse just entered
 whether to follow the window to the new desktop where it moved
 .TP
 .B CLICK_TO_FOCUS
-whether an action on a window (eg clicking, or scrolling)
+whether an action on a window (e.g. clicking, or scrolling)
 will give the window focus. Disabling this gives the user
 the ability to, for example, look up things on a web browser
 but not lose focus from the terminal etc.
@@ -232,7 +236,7 @@ which desktop to focus by default
 .TP
 .B MINWSZ
 the minimum window size allowed. Prevents over resizing with
-the mouse or keyboard (eg resizing the master area)
+the mouse or keyboard (e.g. resizing the master area)
 .P
 users can set
 .B rules
