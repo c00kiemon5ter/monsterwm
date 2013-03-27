@@ -1170,6 +1170,10 @@ void swap_master(void) {
  */
 void switch_mode(const Arg *arg) {
     Desktop *d = &desktops[currdeskidx];
+    if (d->isfs) {
+        if (d->sbar != d->psbr) togglepanel();
+        d->isfs = False;
+    }
     if (d->mode != arg->i) d->mode = arg->i;
     else if (d->mode != FLOAT) for (Client *c = d->head; c; c = c->next) c->isfloat = False;
     if (d->head) { tile(d); focus(d->curr, d); }
@@ -1201,8 +1205,8 @@ void togglefullscreen(void) {
         if (d->sbar) togglepanel();
         d->pmod = d->mode;
         switch_mode(&(Arg){.i = MONOCLE});
+        d->isfs = True;
     }
-    d->isfs = !d->isfs;
 }
 
 /**
