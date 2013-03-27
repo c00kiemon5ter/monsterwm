@@ -133,12 +133,13 @@ typedef struct Client {
  * curr - the currently highlighted window
  * prev - the client that previously had focus
  * sbar - the visibility status of the panel/statusbar
- * psbr - its visibility before going into fullscreen mode
+ * psbr - its visibility status before going into fullscreen mode
+ * isfs - whether the desktop is in fullscreen mode
  */
 typedef struct {
     int mode, pmod, masz, sasz;
     Client *head, *curr, *prev;
-    Bool sbar, psbr, isfullscreen;
+    Bool sbar, psbr, isfs;
 } Desktop;
 
 /* hidden function prototypes sorted alphabetically */
@@ -1029,7 +1030,7 @@ void setup(void) {
 
     /* initialize mode and panel visibility for each desktop */
     for (unsigned int d = 0; d < DESKTOPS; d++)
-        desktops[d] = (Desktop){ .mode = DEFAULT_MODE, .sbar = SHOW_PANEL, .isfullscreen = False };
+        desktops[d] = (Desktop){ .mode = DEFAULT_MODE, .sbar = SHOW_PANEL, .isfs = False };
 
     /* get color for focused and unfocused client borders */
     win_focus = getcolor(FOCUS, screen);
@@ -1191,7 +1192,7 @@ void tile(Desktop *d) {
  */
 void togglefullscreen(void) {
     Desktop *d = &desktops[currdeskidx];
-    if (d->isfullscreen) {
+    if (d->isfs) {
         if (d->sbar != d->psbr) togglepanel();
         switch_mode(&(Arg){.i = d->pmod});
     }
@@ -1201,7 +1202,7 @@ void togglefullscreen(void) {
         d->pmod = d->mode;
         switch_mode(&(Arg){.i = MONOCLE});
     }
-    d->isfullscreen = !d->isfullscreen;
+    d->isfs = !d->isfs;
 }
 
 /**
