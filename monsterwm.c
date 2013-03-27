@@ -783,7 +783,7 @@ void mousemotion(const Arg *arg) {
 }
 
 /**
- * monocle aka max aka fullscreen mode/layout
+ * monocle aka max(imized) mode/layout
  * each window should cover all the available screen space
  */
 void monocle(int x, int y, int w, int h, const Desktop *d) {
