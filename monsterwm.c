@@ -83,6 +83,7 @@ static void client_to_desktop(const Arg *arg);
 static void focusurgent();
 static void killclient();
 static void last_desktop();
+static void map_window();
 static void move_down();
 static void move_up();
 static void moveresize(const Arg *arg);
@@ -98,6 +99,7 @@ static void spawn(const Arg *arg);
 static void swap_master();
 static void switch_mode(const Arg *arg);
 static void togglepanel();
+static void unmap_window();
 
 #include "config.h"
 
@@ -131,11 +133,13 @@ typedef struct Client {
  * curr - the currently highlighted window
  * prev - the client that previously had focus
  * sbar - the visibility status of the panel/statusbar
+ * hidden - array containing the hidden windows
  */
 typedef struct {
     int mode, masz, sasz;
     Client *head, *curr, *prev;
     Bool sbar;
+    Window hidden[MAXHIDDEN];
 } Desktop;
 
 /* hidden function prototypes sorted alphabetically */
@@ -733,6 +737,25 @@ void maprequest(XEvent *e) {
 }
 
 /**
+ * if there are hidden windows in the current desktop, show the last hidden window
+ */
+void map_window(){
+    if(desktops[currdeskidx].hidden[0] == 0) return;
+    for(int i = MAXHIDDEN; i >= 0; --i)
+    {
+        if(desktops[currdeskidx].hidden[i] != 0)
+        {
+            XMapWindow(dis,desktops[currdeskidx].hidden[i]);
+            Client* c = addwindow(desktops[currdeskidx].hidden[i],&desktops[currdeskidx]);
+            desktops[currdeskidx].hidden[i] = 0;
+            tile(&desktops[currdeskidx]);
+            focus(c,&desktops[currdeskidx]);
+            return;
+        }
+    }
+};
+
+/**
  * handle resize and positioning of a window with the pointer.
  *
  * grab the pointer and get it's current position.
@@ -1026,7 +1049,14 @@ void setup(void) {
 
     /* initialize mode and panel visibility for each desktop */
     for (unsigned int d = 0; d < DESKTOPS; d++)
+    {
         desktops[d] = (Desktop){ .mode = DEFAULT_MODE, .sbar = SHOW_PANEL };
+        for(unsigned int n = 0; n < MAXHIDDEN; n++) /* initialize all the array slots to 0 */
+        {
+            desktops[d].hidden[n] = 0;
+        }
+    }
+
 
     /* get color for focused and unfocused client borders */
     win_focus = getcolor(FOCUS, screen);
@@ -1197,6 +1227,22 @@ void togglepanel(void) {
 void unmapnotify(XEvent *e) {
     Desktop *d = NULL; Client *c = NULL;
     if (wintoclient(e->xunmap.window, &c, &d)) removeclient(c, d);
+}
+
+/**
+ * hide the focused window
+ */
+void unmap_window(){
+    Window current = desktops[currdeskidx].curr->win;
+    for(int i = 0; i < MAXHIDDEN;i++)
+    {
+        if(desktops[currdeskidx].hidden[i] == 0)
+        {
+            desktops[currdeskidx].hidden[i] = current;
+            break;
+        }
+    }
+    XUnmapWindow(dis,current);
 }
 
 /**
